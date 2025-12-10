@@ -261,7 +261,23 @@ export default function Home() {
     };
   }, [isLinkedinConnected, userId]);
 
-  const handleRegister = async (email: string, password: string, phone: string, country: string, city: string) => {
+  const handleRegister = async (
+    email: string,
+    password: string,
+    phone: string,
+    country: string,
+    city: string,
+    name: string,
+    last_name: string,
+    english: string,
+    current_salary: number | null,
+    desired_salary: number | null,
+    years_experience: number | null,
+    primary_education_institution: string,
+    preferred_work_modality: string[],
+    age: number | null,
+    gender: string
+  ) => {
     setIsLoading(true);
     setStatus({ message: 'Registrando cuenta...', type: 'info' });
 
@@ -271,7 +287,23 @@ export default function Home() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password, phone, country, city }),
+        body: JSON.stringify({
+          email,
+          password,
+          phone,
+          country,
+          city,
+          name,
+          last_name,
+          english,
+          current_salary,
+          desired_salary,
+          years_experience,
+          primary_education_institution,
+          preferred_work_modality,
+          age,
+          gender,
+        }),
       });
 
       const data = await response.json();
