@@ -34,7 +34,7 @@ const navItems: NavItem[] = [
     icon: <IoPersonOutline />,
   },
   {
-    label: "Configuración de Búsqueda",
+    label: "Búsqueda",
     href: "/job-search",
     icon: <IoSearchOutline />,
   },
@@ -68,7 +68,13 @@ export const Sidebar: React.FC = () => {
   return (
     <aside className={styles.sidebar}>
       <div className={styles.header}>
-        <h1 className={styles.logo}>worksfound.io</h1>
+        <div className={styles.logoContainer}>
+          <img
+            src="/Images/Logos/wf (2).png"
+            alt="worksfound.io"
+            className={styles.logo}
+          />
+        </div>
       </div>
 
       <nav className={styles.nav}>

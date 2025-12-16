@@ -79,7 +79,7 @@ export default function ProfilePage() {
                 type="number"
                 value={formData.age}
                 onChange={(e) => handleChange("age", e.target.value)}
-                placeholder="Ej: 28"
+                placeholder="28"
               />
 
               <Select
@@ -103,7 +103,7 @@ export default function ProfilePage() {
                 type="text"
                 value={formData.country}
                 onChange={(e) => handleChange("country", e.target.value)}
-                placeholder="Ej: Argentina"
+                placeholder="Argentina"
               />
 
               <Input
@@ -111,7 +111,7 @@ export default function ProfilePage() {
                 type="text"
                 value={formData.city}
                 onChange={(e) => handleChange("city", e.target.value)}
-                placeholder="Ej: Buenos Aires"
+                placeholder="Buenos Aires"
               />
             </div>
           </div>
@@ -124,7 +124,7 @@ export default function ProfilePage() {
                 type="number"
                 value={formData.experienceYears}
                 onChange={(e) => handleChange("experienceYears", e.target.value)}
-                placeholder="Ej: 5"
+                placeholder="5"
               />
 
               <Input
@@ -132,7 +132,7 @@ export default function ProfilePage() {
                 type="text"
                 value={formData.degreeTitle}
                 onChange={(e) => handleChange("degreeTitle", e.target.value)}
-                placeholder="Ej: Ingeniero en Sistemas"
+                placeholder="Ingeniero en Sistemas"
               />
 
               <Input
@@ -140,7 +140,7 @@ export default function ProfilePage() {
                 type="text"
                 value={formData.institution}
                 onChange={(e) => handleChange("institution", e.target.value)}
-                placeholder="Ej: Universidad de Buenos Aires"
+                placeholder="Universidad de Buenos Aires"
               />
 
               <Select
@@ -161,7 +161,7 @@ export default function ProfilePage() {
                 type="number"
                 value={formData.currentSalary}
                 onChange={(e) => handleChange("currentSalary", e.target.value)}
-                placeholder="Ej: 50000"
+                placeholder="50000"
               />
 
               <Input
@@ -169,7 +169,7 @@ export default function ProfilePage() {
                 type="number"
                 value={formData.expectedSalary}
                 onChange={(e) => handleChange("expectedSalary", e.target.value)}
-                placeholder="Ej: 60000"
+                placeholder="60000"
               />
             </div>
           </div>

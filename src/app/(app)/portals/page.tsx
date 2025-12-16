@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState, useEffect, useRef } from "react"
-import { FaLinkedin } from "react-icons/fa"
+import { FaLinkedin, FaBriefcase } from "react-icons/fa"
 import { IoPlay, IoPause } from "react-icons/io5"
 import { Button } from "@/components/UI/Button/Button"
 import { Input } from "@/components/UI/Input/Input"
@@ -289,6 +289,7 @@ export default function PortalsPage() {
       )}
 
       <div className={styles.grid}>
+        {/* LinkedIn - Activo */}
         <div className={styles.card}>
           <div className={styles.cardContent}>
             <div className={styles.portalInfo}>
@@ -336,6 +337,190 @@ export default function PortalsPage() {
                   Vincular
                 </Button>
               )}
+            </div>
+          </div>
+        </div>
+
+        {/* Bumeran - Deshabilitado */}
+        <div className={`${styles.card} ${styles.disabled}`}>
+          <div className={styles.cardContent}>
+            <div className={styles.portalInfo}>
+              <div className={styles.iconWrapper} style={{ color: "#999" }}>
+                <FaBriefcase size={48} />
+              </div>
+              <div className={styles.portalDetails}>
+                <h3 className={styles.portalName} style={{ color: "#999" }}>Bumeran</h3>
+                <span className={`${styles.statusBadge} ${styles.disabled}`}>
+                  Próximamente
+                </span>
+              </div>
+            </div>
+
+            <div className={styles.actions}>
+              <Button variant="outline" size="small" disabled>
+                Vincular
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Zonajobs - Deshabilitado */}
+        <div className={`${styles.card} ${styles.disabled}`}>
+          <div className={styles.cardContent}>
+            <div className={styles.portalInfo}>
+              <div className={styles.iconWrapper} style={{ color: "#999" }}>
+                <FaBriefcase size={48} />
+              </div>
+              <div className={styles.portalDetails}>
+                <h3 className={styles.portalName} style={{ color: "#999" }}>Zonajobs</h3>
+                <span className={`${styles.statusBadge} ${styles.disabled}`}>
+                  Próximamente
+                </span>
+              </div>
+            </div>
+
+            <div className={styles.actions}>
+              <Button variant="outline" size="small" disabled>
+                Vincular
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Glassdoor - Deshabilitado */}
+        <div className={`${styles.card} ${styles.disabled}`}>
+          <div className={styles.cardContent}>
+            <div className={styles.portalInfo}>
+              <div className={styles.iconWrapper} style={{ color: "#999" }}>
+                <FaBriefcase size={48} />
+              </div>
+              <div className={styles.portalDetails}>
+                <h3 className={styles.portalName} style={{ color: "#999" }}>Glassdoor</h3>
+                <span className={`${styles.statusBadge} ${styles.disabled}`}>
+                  Próximamente
+                </span>
+              </div>
+            </div>
+
+            <div className={styles.actions}>
+              <Button variant="outline" size="small" disabled>
+                Vincular
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Teamtailor - Deshabilitado */}
+        <div className={`${styles.card} ${styles.disabled}`}>
+          <div className={styles.cardContent}>
+            <div className={styles.portalInfo}>
+              <div className={styles.iconWrapper} style={{ color: "#999" }}>
+                <FaBriefcase size={48} />
+              </div>
+              <div className={styles.portalDetails}>
+                <h3 className={styles.portalName} style={{ color: "#999" }}>Teamtailor</h3>
+                <span className={`${styles.statusBadge} ${styles.disabled}`}>
+                  Próximamente
+                </span>
+              </div>
+            </div>
+
+            <div className={styles.actions}>
+              <Button variant="outline" size="small" disabled>
+                Vincular
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Workday - Deshabilitado */}
+        <div className={`${styles.card} ${styles.disabled}`}>
+          <div className={styles.cardContent}>
+            <div className={styles.portalInfo}>
+              <div className={styles.iconWrapper} style={{ color: "#999" }}>
+                <FaBriefcase size={48} />
+              </div>
+              <div className={styles.portalDetails}>
+                <h3 className={styles.portalName} style={{ color: "#999" }}>Workday</h3>
+                <span className={`${styles.statusBadge} ${styles.disabled}`}>
+                  Próximamente
+                </span>
+              </div>
+            </div>
+
+            <div className={styles.actions}>
+              <Button variant="outline" size="small" disabled>
+                Vincular
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* AshbyHQ - Deshabilitado */}
+        <div className={`${styles.card} ${styles.disabled}`}>
+          <div className={styles.cardContent}>
+            <div className={styles.portalInfo}>
+              <div className={styles.iconWrapper} style={{ color: "#999" }}>
+                <FaBriefcase size={48} />
+              </div>
+              <div className={styles.portalDetails}>
+                <h3 className={styles.portalName} style={{ color: "#999" }}>AshbyHQ</h3>
+                <span className={`${styles.statusBadge} ${styles.disabled}`}>
+                  Próximamente
+                </span>
+              </div>
+            </div>
+
+            <div className={styles.actions}>
+              <Button variant="outline" size="small" disabled>
+                Vincular
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Indeed - Deshabilitado */}
+        <div className={`${styles.card} ${styles.disabled}`}>
+          <div className={styles.cardContent}>
+            <div className={styles.portalInfo}>
+              <div className={styles.iconWrapper} style={{ color: "#999" }}>
+                <FaBriefcase size={48} />
+              </div>
+              <div className={styles.portalDetails}>
+                <h3 className={styles.portalName} style={{ color: "#999" }}>Indeed</h3>
+                <span className={`${styles.statusBadge} ${styles.disabled}`}>
+                  Próximamente
+                </span>
+              </div>
+            </div>
+
+            <div className={styles.actions}>
+              <Button variant="outline" size="small" disabled>
+                Vincular
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Google Jobs - Deshabilitado */}
+        <div className={`${styles.card} ${styles.disabled}`}>
+          <div className={styles.cardContent}>
+            <div className={styles.portalInfo}>
+              <div className={styles.iconWrapper} style={{ color: "#999" }}>
+                <FaBriefcase size={48} />
+              </div>
+              <div className={styles.portalDetails}>
+                <h3 className={styles.portalName} style={{ color: "#999" }}>Google Jobs</h3>
+                <span className={`${styles.statusBadge} ${styles.disabled}`}>
+                  Próximamente
+                </span>
+              </div>
+            </div>
+
+            <div className={styles.actions}>
+              <Button variant="outline" size="small" disabled>
+                Vincular
+              </Button>
             </div>
           </div>
         </div>

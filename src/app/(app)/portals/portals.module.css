@@ -102,6 +102,21 @@
   color: #666;
 }
 
+.statusBadge.disabled {
+  background: #e0e0e0;
+  color: #999;
+}
+
+.card.disabled {
+  opacity: 0.6;
+  filter: grayscale(0.3);
+  cursor: not-allowed;
+}
+
+.card.disabled:hover {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
 .actions {
   display: flex;
   gap: 0.5rem;

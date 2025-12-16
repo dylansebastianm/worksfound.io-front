@@ -114,7 +114,7 @@ export default function JobSearchPage() {
                 <div className={styles.groupHeader}>
                   <input
                     type="text"
-                    placeholder="Ej: Frontend Developer"
+                    placeholder="Frontend Developer"
                     value={group.jobTitle}
                     onChange={(e) => updateSearchGroup(group.id, "jobTitle", e.target.value)}
                     className={styles.jobTitleInput}
