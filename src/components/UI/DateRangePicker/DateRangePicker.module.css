@@ -1,0 +1,173 @@
+.container {
+  position: relative;
+  /* removed width: 100% to allow natural sizing */
+  min-width: 200px;
+  max-width: 250px;
+}
+
+.trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: white;
+  border: 1px solid #d0d0d0;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  height: 40px;
+}
+
+.trigger:hover {
+  border-color: #999;
+}
+
+.trigger:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.icon {
+  color: #666;
+  flex-shrink: 0;
+}
+
+.displayText {
+  flex: 1;
+  text-align: left;
+  color: #666;
+  font-size: 13px;
+}
+
+.dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  background: white;
+  border: 1px solid #d0d0d0;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  padding: 16px;
+  z-index: 100;
+  min-width: 320px;
+}
+
+/* Added calendar UI styles */
+.calendarHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.navButton {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  transition: color 0.2s ease;
+}
+
+.navButton:hover {
+  color: var(--primary);
+}
+
+.monthYear {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  text-transform: capitalize;
+}
+
+.weekDays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.weekDay {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: #666;
+  padding: 8px 0;
+}
+
+.daysGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-bottom: 16px;
+}
+
+.day,
+.dayEmpty {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: #333;
+  transition: all 0.2s ease;
+}
+
+.dayEmpty {
+  cursor: default;
+}
+
+.day:hover {
+  background: #f5f5f5;
+}
+
+.daySelected {
+  background: var(--primary) !important;
+  color: white !important;
+}
+
+.dayInRange {
+  background: rgba(255, 99, 0, 0.1);
+}
+
+.actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.clearButton,
+.todayButton {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  background: transparent;
+  color: var(--primary);
+}
+
+.clearButton:hover,
+.todayButton:hover {
+  background: rgba(255, 99, 0, 0.1);
+}
+
+@media (max-width: 768px) {
+  .dropdown {
+    min-width: 280px;
+  }
+}

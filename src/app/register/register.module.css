@@ -3,14 +3,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--app-background);
+  background-color: var(--surface);
   padding: var(--spacing-md);
 }
 
 .card {
   width: 100%;
-  max-width: 420px;
-  background-color: white;
+  max-width: 480px;
+  background-color: #ffffff; /* Igual que login */
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
   padding: var(--spacing-2xl);
@@ -39,6 +39,13 @@
   gap: var(--spacing-lg);
 }
 
+.nameRow {
+  display: grid;
+  /* En registro preferimos inputs uno debajo del otro para que no se corte el ancho */
+  grid-template-columns: 1fr;
+  gap: var(--spacing-md);
+}
+
 .footer {
   margin-top: var(--spacing-lg);
   text-align: center;
@@ -61,6 +68,12 @@
 }
 
 /* Responsive */
+@media (max-width: 768px) {
+  .nameRow {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 480px) {
   .card {
     padding: var(--spacing-lg);

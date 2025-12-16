@@ -1,55 +1,30 @@
-import React from 'react';
-import styles from './Input.module.css';
+import { type InputHTMLAttributes, forwardRef } from "react"
+import styles from "./Input.module.css"
 
-interface InputProps {
-  type?: 'text' | 'password' | 'email' | 'number' | 'tel';
-  id?: string;
-  name?: string;
-  value: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  label?: string;
-  placeholder?: string;
-  required?: boolean;
-  disabled?: boolean;
-  autoComplete?: string;
-  className?: string;
+interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
+  label?: string
+  error?: string
+  fullWidth?: boolean
 }
 
-export default function Input({
-  type = 'text',
-  id,
-  name,
-  value,
-  onChange,
-  label,
-  placeholder,
-  required = false,
-  disabled = false,
-  autoComplete,
-  className = '',
-}: InputProps) {
-  const inputId = id || name;
+export const Input = forwardRef<HTMLInputElement, InputProps>(
+  ({ label, error, fullWidth = false, className = "", ...props }, ref) => {
+    const wrapperClasses = [styles.inputWrapper, fullWidth ? styles.fullWidth : ""].filter(Boolean).join(" ")
 
-  return (
-    <div className={`${styles.inputGroup} ${className}`}>
-      {label && (
-        <label htmlFor={inputId} className={styles.label}>
-          {label}
-        </label>
-      )}
-      <input
-        type={type}
-        id={inputId}
-        name={name}
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        required={required}
-        disabled={disabled}
-        autoComplete={autoComplete}
-        className={styles.input}
-      />
-    </div>
-  );
-}
+    const inputClasses = [styles.input, error ? styles.error : "", className].filter(Boolean).join(" ")
 
+    return (
+      <div className={wrapperClasses}>
+        {label && (
+          <label className={styles.label} htmlFor={props.id}>
+            {label}
+          </label>
+        )}
+        <input ref={ref} className={inputClasses} {...props} />
+        {error && <span className={styles.errorText}>{error}</span>}
+      </div>
+    )
+  },
+)
+
+Input.displayName = "Input"

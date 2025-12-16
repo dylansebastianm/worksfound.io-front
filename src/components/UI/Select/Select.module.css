@@ -1,45 +1,175 @@
-.selectGroup {
+.selectWrapper {
   display: flex;
   flex-direction: column;
-  margin-bottom: 1rem;
+  gap: var(--spacing-xs);
+}
+
+.fullWidth {
+  width: 100%;
 }
 
 .label {
-  font-size: 0.875rem;
+  font-size: 14px;
   font-weight: 500;
-  color: #333;
-  margin-bottom: 0.5rem;
+  color: var(--text-primary);
 }
 
-.select {
+.selectContainer {
+  position: relative;
+}
+
+.selectButton {
   width: 100%;
-  padding: 0.75rem;
-  font-size: 1rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  background-color: #fff;
-  color: #333;
-  transition: border-color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  font-size: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background-color: white;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  min-height: 40px;
 }
 
-.select:focus {
+.selectButton:focus {
   outline: none;
-  border-color: #007bff;
-  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(255, 99, 0, 0.1);
 }
 
-.select:disabled {
-  background-color: #f5f5f5;
+.disabled {
+  background-color: var(--surface);
   cursor: not-allowed;
   opacity: 0.6;
 }
 
-.select[multiple] {
-  min-height: 120px;
-  padding: 0.5rem;
+.selectedText {
+  color: var(--text-primary);
+  text-align: left;
 }
 
-.select[multiple] option {
-  padding: 0.5rem;
+.placeholder {
+  color: var(--text-disabled);
+  text-align: left;
 }
 
+.icon {
+  color: var(--text-secondary);
+  transition: transform var(--transition-fast);
+  flex-shrink: 0;
+  font-size: 20px;
+}
+
+.iconOpen {
+  transform: rotate(180deg);
+}
+
+.dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background-color: white;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  max-height: 250px;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+.option {
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.option:hover {
+  background-color: rgba(255, 99, 0, 0.1);
+  color: var(--primary-color);
+}
+
+.optionSelected {
+  background-color: rgba(255, 99, 0, 0.1);
+  color: var(--primary-color);
+  font-weight: 500;
+}
+
+.error {
+  border-color: var(--error);
+}
+
+.error:focus {
+  border-color: var(--error);
+  box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1);
+}
+
+.errorText {
+  font-size: 14px;
+  color: var(--error);
+}
+
+/* Added native select styles */
+.nativeSelectContainer {
+  position: relative;
+}
+
+.nativeSelect {
+  width: 100%;
+  padding: 10px 40px 10px 14px;
+  font-size: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background-color: white;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  min-height: 40px;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+
+.nativeSelect:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(255, 99, 0, 0.1);
+}
+
+.nativeSelect:disabled {
+  background-color: var(--surface);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.nativeIcon {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-secondary);
+  font-size: 20px;
+  pointer-events: none;
+}
+
+/* Scrollbar styling for dropdown */
+.dropdown::-webkit-scrollbar {
+  width: 8px;
+}
+
+.dropdown::-webkit-scrollbar-track {
+  background: var(--surface);
+  border-radius: var(--radius-md);
+}
+
+.dropdown::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: var(--radius-md);
+}
+
+.dropdown::-webkit-scrollbar-thumb:hover {
+  background: var(--text-disabled);
+}

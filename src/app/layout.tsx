@@ -1,21 +1,21 @@
-import type { Metadata } from "next";
-import "./globals.css";
+import type React from "react"
+import type { Metadata } from "next"
+import "./globals.css"
 
 export const metadata: Metadata = {
-  title: "Worksfou - Job Search and Apply",
-  description: "Worksuite is a platform that helps you find and apply to jobs.",
-};
+  title: "worksfound.io",
+  description: "Automatiza tu búsqueda laboral",
+}
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: {
+  children: React.ReactNode
+}) {
   return (
-    <html lang="en">
-      <body>
-        {children}
-      </body>
+    <html lang="es">
+      <body>{children}</body>
     </html>
-  );
+  )
 }
+
