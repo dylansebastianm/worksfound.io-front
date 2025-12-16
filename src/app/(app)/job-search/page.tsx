@@ -1,10 +1,10 @@
 "use client"
 
 import { useState } from "react"
-import { Button } from "@/components/ui/Button/Button"
-import { Select } from "@/components/ui/Select/Select"
-import { Switch } from "@/components/ui/Switch/Switch"
-import { TagInput } from "@/components/ui/TagInput/TagInput"
+import { Button } from "@/components/UI/Button/Button"
+import { Select } from "@/components/UI/Select/Select"
+import { Switch } from "@/components/UI/Switch/Switch"
+import { TagInput } from "@/components/UI/TagInput/TagInput"
 import { IoAdd, IoTrash } from "react-icons/io5"
 import styles from "./job-search.module.css"
 
@@ -14,6 +14,17 @@ interface JobSearchGroup {
   positiveKeywords: string[]
   negativeKeywords: string[]
   cvFile: string
+}
+
+// Función para generar placeholders dinámicos basados en el puesto
+const getPlaceholderExamples = (jobTitle: string, isPositive: boolean): string[] => {
+  if (isPositive) {
+    // Palabras clave positivas: variables del puesto (modalidad, nivel, tipo de empresa, etc.)
+    return ["Frontend Developer", "Backend Developer", "Full Stack Developer", "Software Engineer"]
+  } else {
+    // Palabras clave negativas (excluir)
+    return ["junior", "intern", "trainee", "sin experiencia", "estudiante"]
+  }
 }
 
 export default function JobSearchPage() {
@@ -134,14 +145,16 @@ export default function JobSearchPage() {
                 <div className={styles.groupContent}>
                   <TagInput
                     label="Palabras Clave Positivas"
-                    placeholder="Escribe y presiona Enter"
+                    placeholderExamples={getPlaceholderExamples(group.jobTitle, true)}
+                    helpText="Escribe y presiona Enter"
                     tags={group.positiveKeywords}
                     onTagsChange={(tags) => updateSearchGroup(group.id, "positiveKeywords", tags)}
                   />
 
                   <TagInput
                     label="Palabras Clave Negativas (excluir)"
-                    placeholder="Escribe y presiona Enter"
+                    placeholderExamples={getPlaceholderExamples(group.jobTitle, false)}
+                    helpText="Escribe y presiona Enter"
                     tags={group.negativeKeywords}
                     onTagsChange={(tags) => updateSearchGroup(group.id, "negativeKeywords", tags)}
                   />

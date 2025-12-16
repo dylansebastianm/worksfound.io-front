@@ -82,6 +82,16 @@
   color: var(--text-disabled);
 }
 
+.helpText {
+  font-size: 12px;
+  color: #666;
+  margin-top: 6px;
+  margin-bottom: 0;
+  padding-left: 2px;
+  display: block;
+  line-height: 1.4;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .input {

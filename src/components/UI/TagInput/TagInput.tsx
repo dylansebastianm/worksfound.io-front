@@ -1,18 +1,20 @@
 "use client"
 
-import { useState, type KeyboardEvent } from "react"
+import React, { useState, type KeyboardEvent } from "react"
 import { IoClose } from "react-icons/io5"
 import styles from "./TagInput.module.css"
 
 interface TagInputProps {
   label?: string
   placeholder?: string
+  placeholderExamples?: string[]
+  helpText?: string
   tags: string[]
   onTagsChange: (tags: string[]) => void
   maxTags?: number
 }
 
-export const TagInput = ({ label, placeholder, tags, onTagsChange, maxTags }: TagInputProps) => {
+export const TagInput = ({ label, placeholder, placeholderExamples, helpText, tags, onTagsChange, maxTags }: TagInputProps) => {
   const [inputValue, setInputValue] = useState("")
 
   const addTag = () => {
@@ -37,6 +39,16 @@ export const TagInput = ({ label, placeholder, tags, onTagsChange, maxTags }: Ta
     }
   }
 
+  // Generar placeholder dinámico basado en ejemplos
+  const placeholderText = React.useMemo(() => {
+    // Solo mostrar placeholder si no hay tags
+    if (tags.length > 0) return ""
+    if (placeholderExamples && placeholderExamples.length > 0) {
+      return placeholderExamples.join(", ")
+    }
+    return placeholder || ""
+  }, [tags, placeholderExamples, placeholder])
+
   return (
     <div className={styles.tagInputWrapper}>
       {label && <label className={styles.label}>{label}</label>}
@@ -56,11 +68,12 @@ export const TagInput = ({ label, placeholder, tags, onTagsChange, maxTags }: Ta
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
             onBlur={addTag}
-            placeholder={tags.length === 0 ? placeholder : ""}
+            placeholder={placeholderText}
             className={styles.input}
           />
         </div>
       </div>
+      {helpText && <p className={styles.helpText}>{helpText}</p>}
     </div>
   )
 }
