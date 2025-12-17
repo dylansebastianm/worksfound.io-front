@@ -1,0 +1,35 @@
+.floatingButton {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  /* Reduced button size from 60px to 48px */
+  width: 48px;
+  height: 48px;
+  background-color: #25d366;
+  border: none;
+  border-radius: 50%;
+  box-shadow: 0 4px 12px rgba(37, 211, 102, 0.4);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  z-index: 1000;
+}
+
+.floatingButton:hover {
+  background-color: #20ba5a;
+  transform: scale(1.1);
+  box-shadow: 0 6px 16px rgba(37, 211, 102, 0.5);
+}
+
+.floatingButton:active {
+  transform: scale(0.95);
+}
+
+.icon {
+  /* Reduced icon size from 32px to 26px */
+  width: 26px;
+  height: 26px;
+  color: white;
+}

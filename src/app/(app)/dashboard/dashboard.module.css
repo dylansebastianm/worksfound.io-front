@@ -1,5 +1,7 @@
 .container {
-  max-width: 1200px;
+  padding: var(--spacing-xl);
+  /* Changed max-width from 1800px to match other sections without max-width constraint */
+  margin: 0 auto;
 }
 
 .title {
@@ -15,27 +17,358 @@
   margin-bottom: var(--spacing-xl);
 }
 
-.grid {
+/* Added top section with 2 columns */
+.topSection {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
+}
+
+/* Added countdown card styles */
+.countdownCard {
+  background: linear-gradient(135deg, #ffffff 0%, #fff5f0 100%);
+  border: 2px solid var(--primary-color);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-xl);
+  box-shadow: var(--shadow-md);
+  height: 100%;
+}
+
+.countdownHeader {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+}
+
+.countdownIcon {
+  font-size: 2rem;
+  color: var(--primary-color);
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+.countdownInfo {
+  flex: 1;
+}
+
+.countdownTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-xs);
+}
+
+.countdownDisclaimer {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.countdownContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: var(--spacing-lg);
+}
+
+.countdownValue {
+  font-size: 4rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  line-height: 1;
+}
+
+.countdownLabel {
+  font-size: 1rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.progressBar {
+  width: 100%;
+  height: 12px;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  margin-bottom: var(--spacing-sm);
+}
+
+.progressFill {
+  height: 100%;
+  background: var(--primary-color);
+  transition: width 0.5s ease;
+  border-radius: var(--radius-full);
+}
+
+.progressText {
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+/* Removed all estimator card styles */
+
+/* Added container for top right metrics */
+.topMetricsContainer {
+  display: flex;
+  flex-direction: column;
   gap: var(--spacing-lg);
 }
 
-.card {
-  /* Changed background to white instead of var(--surface) */
+.topMetricsRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-lg);
+}
+
+/* Main metrics grid */
+.metricsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
+}
+
+.metricCard {
   background: #ffffff;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   padding: var(--spacing-lg);
-  transition: all var(--transition-normal);
+  transition: all var(--transition-base);
 }
 
-.card:hover {
-  border-color: var(--primary);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+.metricCard:hover {
+  border-color: var(--primary-color);
+  box-shadow: var(--shadow-md);
 }
 
-.cardTitle {
+/* Added styles for metric header with icon */
+.metricHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+}
+
+.metricIcon {
+  font-size: 1.25rem;
+  color: var(--primary-color);
+  flex-shrink: 0;
+}
+
+.metricTitle {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.metricValue {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  margin-bottom: var(--spacing-xs);
+  line-height: 1;
+}
+
+.metricLabel {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+/* Automation metrics */
+.automationGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
+}
+
+.automationCard {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-lg);
+}
+
+.automationTitle {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.automationValue {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  margin-bottom: var(--spacing-xs);
+}
+
+.automationLabel {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+/* Portals card */
+.portalsCard {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-xl);
+  margin-bottom: var(--spacing-xl);
+}
+
+.sectionTitle {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-lg);
+}
+
+.portalsList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.portalItem {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.portalInfo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Added styles for portal name with icon */
+.portalNameWrapper {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.portalName {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.portalApps {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.portalBar {
+  width: 100%;
+  height: 8px;
+  background: var(--surface);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.portalBarFill {
+  height: 100%;
+  background: var(--primary-color);
+  transition: width 0.3s ease;
+}
+
+/* Comparison and savings */
+.comparisonGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--spacing-lg);
+}
+
+.comparisonCard {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-xl);
+}
+
+/* Added styles for comparison header with icon */
+.comparisonHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-lg);
+}
+
+.comparisonTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.comparisonStats {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+}
+
+.statItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.statLabel {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.statValue {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--primary-color);
+}
+
+.statDivider {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.extraApplications {
+  font-size: 0.875rem;
+  color: var(--primary-color);
+  font-weight: 500;
+  text-align: center;
+  padding: var(--spacing-sm);
+  background: var(--primary-light);
+  border-radius: var(--radius-sm);
+}
+
+.savingsCard {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-xl);
+  display: flex;
+  gap: var(--spacing-xl);
+}
+
+.savingItem {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.savingTitle {
   font-size: 0.875rem;
   font-weight: 500;
   color: var(--text-secondary);
@@ -44,22 +377,56 @@
   letter-spacing: 0.5px;
 }
 
-.cardValue {
-  font-size: 2.5rem;
+.savingValue {
+  font-size: 2rem;
   font-weight: 700;
-  color: var(--primary);
+  color: var(--primary-color);
   margin-bottom: var(--spacing-xs);
-  line-height: 1;
 }
 
-.cardLabel {
+.savingLabel {
   font-size: 0.875rem;
   color: var(--text-secondary);
 }
 
+.savingDivider {
+  width: 1px;
+  background: var(--border);
+}
+
 @media (max-width: 768px) {
-  .grid {
+  .container {
+    padding: var(--spacing-lg);
+  }
+
+  /* Stack top section on mobile */
+  .topSection {
     grid-template-columns: 1fr;
+  }
+
+  .topMetricsRow {
+    grid-template-columns: 1fr;
+  }
+
+  .metricsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .automationGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .comparisonGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .savingsCard {
+    flex-direction: column;
+  }
+
+  .savingDivider {
+    width: 100%;
+    height: 1px;
   }
 
   .title {

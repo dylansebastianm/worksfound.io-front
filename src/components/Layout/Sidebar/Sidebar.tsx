@@ -11,6 +11,7 @@ import {
   IoGridOutline,
   IoDocumentTextOutline,
   IoLinkOutline,
+  IoChatbubblesOutline,
 } from "react-icons/io5"
 import { logout } from "@/lib/auth"
 import styles from "./Sidebar.module.css"
@@ -47,6 +48,11 @@ const navItems: NavItem[] = [
     label: "Portales",
     href: "/portals",
     icon: <IoLinkOutline />,
+  },
+  {
+    label: "Feedback",
+    href: "/feedback",
+    icon: <IoChatbubblesOutline />,
   },
   {
     label: "Generador de CV",

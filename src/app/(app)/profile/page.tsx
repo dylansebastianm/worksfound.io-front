@@ -1,41 +1,71 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
-import { Input } from "@/components/ui/Input/Input"
-import { Select } from "@/components/ui/Select/Select"
-import { FileUpload } from "@/components/ui/FileUpload/FileUpload"
-import { Button } from "@/components/ui/Button/Button"
+import { Input } from "@/components/UI/Input/Input"
+import { Select } from "@/components/UI/Select/Select"
+import { FileUpload } from "@/components/UI/FileUpload/FileUpload"
+import { Button } from "@/components/UI/Button/Button"
+import { LoadingSpinner } from "@/components/UI/LoadingSpinner/LoadingSpiner"
+import { Alert } from "@/components/UI/Alert/Alert"
 import styles from "./profile.module.css"
 
 export default function ProfilePage() {
   const [formData, setFormData] = useState({
-    age: "",
-    gender: "",
-    experienceYears: "",
-    currentSalary: "",
-    expectedSalary: "",
-    degreeTitle: "",
-    institution: "",
-    englishLevel: "",
-    country: "",
-    city: "",
-    phone: "",
+    age: "28",
+    gender: "male",
+    experienceYears: "5",
+    currentSalary: "85000",
+    expectedSalary: "110000",
+    degreeTitle: "Ingeniero en Sistemas",
+    institution: "Universidad de Buenos Aires",
+    englishLevel: "c1",
+    country: "Argentina",
+    city: "Buenos Aires",
+    phone: "+54 11 5555-1234",
+  })
+
+  const [editMode, setEditMode] = useState({
+    personal: false,
+    experience: false,
+    salary: false,
+    documents: false,
   })
 
   const [curriculum, setCurriculum] = useState<File | null>(null)
   const [coverLetter, setCoverLetter] = useState<File | null>(null)
 
+  const [isLoading, setIsLoading] = useState(false)
+  const [alert, setAlert] = useState<{ status: "success" | "error"; message: string } | null>(null)
+
   const handleChange = (name: string, value: string) => {
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const toggleEditMode = (section: keyof typeof editMode) => {
+    setEditMode((prev) => ({ ...prev, [section]: !prev[section] }))
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log("[v0] Profile data:", formData)
-    console.log("[v0] Curriculum:", curriculum)
-    console.log("[v0] Cover Letter:", coverLetter)
+    setIsLoading(true)
+
+    // Simulate API call
+    await new Promise((resolve) => setTimeout(resolve, 2000))
+
+    setIsLoading(false)
+    setAlert({
+      status: "success",
+      message: "Los datos han sido actualizados correctamente",
+    })
+
+    // Reset all edit modes
+    setEditMode({
+      personal: false,
+      experience: false,
+      salary: false,
+      documents: false,
+    })
   }
 
   const genderOptions = [
@@ -43,14 +73,6 @@ export default function ProfilePage() {
     { value: "female", label: "Femenino" },
     { value: "other", label: "Otro" },
     { value: "prefer-not-say", label: "Prefiero no decir" },
-  ]
-
-  const educationOptions = [
-    { value: "high-school", label: "Secundario" },
-    { value: "technical", label: "Técnico" },
-    { value: "bachelor", label: "Universitario" },
-    { value: "master", label: "Maestría" },
-    { value: "phd", label: "Doctorado" },
   ]
 
   const englishLevelOptions = [
@@ -65,142 +87,179 @@ export default function ProfilePage() {
 
   return (
     <div className={styles.container}>
-        <div className={styles.header}>
-          <h1 className={styles.title}>Perfil</h1>
-          <p className={styles.subtitle}>Configura tu información personal para mejorar las aplicaciones</p>
+      {isLoading && <LoadingSpinner />}
+
+      {alert && <Alert status={alert.status} message={alert.message} onClose={() => setAlert(null)} />}
+
+      <div className={styles.header}>
+        <h1 className={styles.title}>Perfil</h1>
+        <p className={styles.subtitle}>Configura tu información personal para mejorar las aplicaciones</p>
+      </div>
+
+      <form className={styles.form} onSubmit={handleSubmit}>
+        <div className={styles.section}>
+          <div className={styles.sectionHeader}>
+            <h2 className={styles.sectionTitle}>Información Personal</h2>
+            <button type="button" className={styles.editButton} onClick={() => toggleEditMode("personal")}>
+              {editMode.personal ? "Cancelar" : "Editar"}
+            </button>
+          </div>
+          <div className={styles.grid}>
+            <Input
+              label="Edad"
+              type="number"
+              value={formData.age}
+              onChange={(e) => handleChange("age", e.target.value)}
+              placeholder="Ej: 28"
+              disabled={!editMode.personal}
+            />
+
+            <Select
+              label="Género"
+              options={genderOptions}
+              value={formData.gender}
+              onChange={(value) => handleChange("gender", value)}
+              placeholder="Selecciona tu género"
+              disabled={!editMode.personal}
+            />
+
+            <Input
+              label="Teléfono"
+              type="tel"
+              value={formData.phone}
+              onChange={(e) => handleChange("phone", e.target.value)}
+              placeholder="+54 11 1234-5678"
+              disabled={!editMode.personal}
+            />
+
+            <Input
+              label="País"
+              type="text"
+              value={formData.country}
+              onChange={(e) => handleChange("country", e.target.value)}
+              placeholder="Ej: Argentina"
+              disabled={!editMode.personal}
+            />
+
+            <Input
+              label="Ciudad"
+              type="text"
+              value={formData.city}
+              onChange={(e) => handleChange("city", e.target.value)}
+              placeholder="Ej: Buenos Aires"
+              disabled={!editMode.personal}
+            />
+          </div>
         </div>
 
-        <form className={styles.form} onSubmit={handleSubmit}>
-          <div className={styles.section}>
-            <h2 className={styles.sectionTitle}>Información Personal</h2>
-            <div className={styles.grid}>
-              <Input
-                label="Edad"
-                type="number"
-                value={formData.age}
-                onChange={(e) => handleChange("age", e.target.value)}
-                placeholder="28"
-              />
-
-              <Select
-                label="Género"
-                options={genderOptions}
-                value={formData.gender}
-                onChange={(value) => handleChange("gender", value)}
-                placeholder="Selecciona tu género"
-              />
-
-              <Input
-                label="Teléfono"
-                type="tel"
-                value={formData.phone}
-                onChange={(e) => handleChange("phone", e.target.value)}
-                placeholder="+54 11 1234-5678"
-              />
-
-              <Input
-                label="País"
-                type="text"
-                value={formData.country}
-                onChange={(e) => handleChange("country", e.target.value)}
-                placeholder="Argentina"
-              />
-
-              <Input
-                label="Ciudad"
-                type="text"
-                value={formData.city}
-                onChange={(e) => handleChange("city", e.target.value)}
-                placeholder="Buenos Aires"
-              />
-            </div>
-          </div>
-
-          <div className={styles.section}>
+        <div className={styles.section}>
+          <div className={styles.sectionHeader}>
             <h2 className={styles.sectionTitle}>Experiencia y Educación</h2>
-            <div className={styles.grid}>
-              <Input
-                label="Años de Experiencia"
-                type="number"
-                value={formData.experienceYears}
-                onChange={(e) => handleChange("experienceYears", e.target.value)}
-                placeholder="5"
-              />
-
-              <Input
-                label="Título"
-                type="text"
-                value={formData.degreeTitle}
-                onChange={(e) => handleChange("degreeTitle", e.target.value)}
-                placeholder="Ingeniero en Sistemas"
-              />
-
-              <Input
-                label="Institución"
-                type="text"
-                value={formData.institution}
-                onChange={(e) => handleChange("institution", e.target.value)}
-                placeholder="Universidad de Buenos Aires"
-              />
-
-              <Select
-                label="Nivel de Inglés"
-                options={englishLevelOptions}
-                value={formData.englishLevel}
-                onChange={(value) => handleChange("englishLevel", value)}
-                placeholder="Selecciona tu nivel"
-              />
-            </div>
+            <button type="button" className={styles.editButton} onClick={() => toggleEditMode("experience")}>
+              {editMode.experience ? "Cancelar" : "Editar"}
+            </button>
           </div>
+          <div className={styles.grid}>
+            <Input
+              label="Años de Experiencia"
+              type="number"
+              value={formData.experienceYears}
+              onChange={(e) => handleChange("experienceYears", e.target.value)}
+              placeholder="Ej: 5"
+              disabled={!editMode.experience}
+            />
 
-          <div className={styles.section}>
+            <Input
+              label="Título"
+              type="text"
+              value={formData.degreeTitle}
+              onChange={(e) => handleChange("degreeTitle", e.target.value)}
+              placeholder="Ej: Ingeniero en Sistemas"
+              disabled={!editMode.experience}
+            />
+
+            <Input
+              label="Institución"
+              type="text"
+              value={formData.institution}
+              onChange={(e) => handleChange("institution", e.target.value)}
+              placeholder="Ej: Universidad de Buenos Aires"
+              disabled={!editMode.experience}
+            />
+
+            <Select
+              label="Nivel de Inglés"
+              options={englishLevelOptions}
+              value={formData.englishLevel}
+              onChange={(value) => handleChange("englishLevel", value)}
+              placeholder="Selecciona tu nivel"
+              disabled={!editMode.experience}
+            />
+          </div>
+        </div>
+
+        <div className={styles.section}>
+          <div className={styles.sectionHeader}>
             <h2 className={styles.sectionTitle}>Información Salarial</h2>
-            <div className={styles.grid}>
-              <Input
-                label="Salario Actual"
-                type="number"
-                value={formData.currentSalary}
-                onChange={(e) => handleChange("currentSalary", e.target.value)}
-                placeholder="50000"
-              />
-
-              <Input
-                label="Salario Pretendido"
-                type="number"
-                value={formData.expectedSalary}
-                onChange={(e) => handleChange("expectedSalary", e.target.value)}
-                placeholder="60000"
-              />
-            </div>
+            <button type="button" className={styles.editButton} onClick={() => toggleEditMode("salary")}>
+              {editMode.salary ? "Cancelar" : "Editar"}
+            </button>
           </div>
+          <div className={styles.grid}>
+            <Input
+              label="Salario Actual (USD/año)"
+              type="number"
+              value={formData.currentSalary}
+              onChange={(e) => handleChange("currentSalary", e.target.value)}
+              placeholder="Ej: 50000"
+              disabled={!editMode.salary}
+            />
 
-          <div className={styles.section}>
+            <Input
+              label="Salario Pretendido (USD/año)"
+              type="number"
+              value={formData.expectedSalary}
+              onChange={(e) => handleChange("expectedSalary", e.target.value)}
+              placeholder="Ej: 60000"
+              disabled={!editMode.salary}
+            />
+          </div>
+        </div>
+
+        <div className={styles.section}>
+          <div className={styles.sectionHeader}>
             <h2 className={styles.sectionTitle}>Documentos</h2>
-            <div className={styles.uploads}>
-              <FileUpload
-                label="Curriculum Vitae (CV)"
-                accept=".pdf,.doc,.docx"
-                value={curriculum}
-                onChange={setCurriculum}
-                placeholder="Sube tu CV en formato PDF o DOC"
-              />
-
-              <FileUpload
-                label="Carta de Presentación"
-                accept=".pdf,.doc,.docx"
-                value={coverLetter}
-                onChange={setCoverLetter}
-                placeholder="Sube tu carta de presentación"
-              />
-            </div>
+            <button type="button" className={styles.editButton} onClick={() => toggleEditMode("documents")}>
+              {editMode.documents ? "Cancelar" : "Editar"}
+            </button>
           </div>
+          <div className={styles.uploads}>
+            <FileUpload
+              label="Curriculum Vitae (CV)"
+              accept=".pdf,.doc,.docx"
+              value={curriculum}
+              onChange={setCurriculum}
+              placeholder="Sube tu CV en formato PDF o DOC"
+              disabled={!editMode.documents}
+            />
 
-          <div className={styles.actions}>
-            <Button type="submit" variant="primary" size="large">
-              Guardar Cambios
-            </Button>
+            <FileUpload
+              label="Carta de Presentación"
+              accept=".pdf,.doc,.docx"
+              value={coverLetter}
+              onChange={setCoverLetter}
+              placeholder="Sube tu carta de presentación"
+              disabled={!editMode.documents}
+            />
           </div>
-        </form>
+        </div>
+
+        <div className={styles.actions}>
+          <Button type="submit" variant="primary" size="large">
+            Guardar Cambios
+          </Button>
+        </div>
+      </form>
     </div>
   )
 }

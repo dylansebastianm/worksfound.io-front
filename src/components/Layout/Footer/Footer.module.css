@@ -1,0 +1,14 @@
+.footer {
+  /* Made footer more subtle and minimal */
+  padding: var(--spacing-md);
+  text-align: center;
+  background-color: transparent;
+  border-top: none;
+  margin-top: auto;
+}
+
+.copyright {
+  font-size: 0.75rem;
+  color: var(--text-disabled);
+  margin: 0;
+}
