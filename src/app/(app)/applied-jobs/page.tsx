@@ -1,12 +1,13 @@
 "use client"
 
 import { useState } from "react"
-import { FiSearch, FiX, FiCalendar, FiChevronDown } from "react-icons/fi"
+import { FiX, FiCalendar, FiChevronDown, FiSearch } from "react-icons/fi"
 import { BsLinkedin } from "react-icons/bs"
-import { Button } from "@/components/ui/Button/Button"
-import { Select } from "@/components/ui/Select/Select"
-import { Pagination } from "@/components/ui/Pagination/Pagination"
-import { DateRangePicker } from "@/components/ui/DateRangePicker/DateRangePicker"
+import { Button } from "@/components/UI/Button/Button"
+import { Select } from "@/components/UI/Select/Select"
+import { SearchInput } from "@/components/UI/SearchInput/SearchInput"
+import { Pagination } from "@/components/UI/Pagination/Pagination"
+import { DateRangePicker } from "@/components/UI/DateRangePicker/DateRangePicker"
 import styles from "./applied-jobs.module.css"
 
 interface JobApplication {
@@ -401,16 +402,11 @@ export default function AppliedJobsPage() {
       {/* Filtros */}
       <div className={styles.filtersCard}>
         <div className={styles.filters}>
-          <div className={styles.searchInput}>
-            <FiSearch className={styles.searchIcon} />
-            <input
-              type="text"
-              placeholder="Buscar"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className={styles.search}
-            />
-          </div>
+          <SearchInput
+            placeholder="Buscar"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
 
           <Select
             options={portalOptions}

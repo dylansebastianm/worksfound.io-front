@@ -1,6 +1,7 @@
 "use client"
 
 import type React from "react"
+import { useState } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import {
@@ -12,15 +13,18 @@ import {
   IoDocumentTextOutline,
   IoLinkOutline,
   IoChatbubblesOutline,
+  IoChevronDownOutline,
+  IoSettingsOutline,
 } from "react-icons/io5"
 import { logout } from "@/lib/auth"
 import styles from "./Sidebar.module.css"
 
 interface NavItem {
   label: string
-  href: string
+  href?: string
   icon: React.ReactNode
   disabled?: boolean
+  submenu?: NavItem[]
 }
 
 const navItems: NavItem[] = [
@@ -55,6 +59,22 @@ const navItems: NavItem[] = [
     icon: <IoChatbubblesOutline />,
   },
   {
+    label: "Admin",
+    icon: <IoSettingsOutline />,
+    submenu: [
+      {
+        label: "Dashboard Admin",
+        href: "/admin/dashboard",
+        icon: <IoGridOutline />,
+      },
+      {
+        label: "Usuarios",
+        href: "/admin/users",
+        icon: <IoPersonOutline />,
+      },
+    ],
+  },
+  {
     label: "Generador de CV",
     href: "/curriculum-generator",
     icon: <IoDocumentTextOutline />,
@@ -65,10 +85,20 @@ const navItems: NavItem[] = [
 export const Sidebar: React.FC = () => {
   const pathname = usePathname()
   const router = useRouter()
+  const [expandedMenus, setExpandedMenus] = useState<string[]>(["Admin"])
 
   const handleLogout = () => {
     logout()
-    router.push("/")
+    router.push("/login")
+  }
+
+  const toggleSubmenu = (label: string) => {
+    setExpandedMenus((prev) => (prev.includes(label) ? prev.filter((item) => item !== label) : [...prev, label]))
+  }
+
+  const isSubmenuActive = (submenu?: NavItem[]) => {
+    if (!submenu) return false
+    return submenu.some((item) => item.href === pathname)
   }
 
   return (
@@ -85,6 +115,41 @@ export const Sidebar: React.FC = () => {
 
       <nav className={styles.nav}>
         {navItems.map((item) => {
+          if (item.submenu) {
+            const isExpanded = expandedMenus.includes(item.label)
+            const hasActiveSubmenu = isSubmenuActive(item.submenu)
+
+            return (
+              <div key={item.label}>
+                <div
+                  className={`${styles.navItem} ${hasActiveSubmenu ? styles.active : ""}`}
+                  onClick={() => toggleSubmenu(item.label)}
+                >
+                  <span className={styles.icon}>{item.icon}</span>
+                  <span className={styles.label}>{item.label}</span>
+                  <IoChevronDownOutline className={`${styles.expandIcon} ${isExpanded ? styles.expanded : ""}`} />
+                </div>
+                {isExpanded && (
+                  <div className={styles.submenu}>
+                    {item.submenu.map((subitem) => {
+                      const isActive = pathname === subitem.href
+                      return (
+                        <Link
+                          key={subitem.href}
+                          href={subitem.href || "#"}
+                          className={`${styles.submenuItem} ${isActive ? styles.active : ""}`}
+                        >
+                          <span className={styles.icon}>{subitem.icon}</span>
+                          <span className={styles.label}>{subitem.label}</span>
+                        </Link>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            )
+          }
+
           const isActive = pathname === item.href
           if (item.disabled) {
             return (
@@ -96,7 +161,11 @@ export const Sidebar: React.FC = () => {
           }
 
           return (
-            <Link key={item.href} href={item.href} className={`${styles.navItem} ${isActive ? styles.active : ""}`}>
+            <Link
+              key={item.href}
+              href={item.href || "#"}
+              className={`${styles.navItem} ${isActive ? styles.active : ""}`}
+            >
               <span className={styles.icon}>{item.icon}</span>
               <span className={styles.label}>{item.label}</span>
             </Link>

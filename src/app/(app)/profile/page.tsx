@@ -23,10 +23,12 @@ export default function ProfilePage() {
     country: "Argentina",
     city: "Buenos Aires",
     phone: "+54 11 5555-1234",
+    jobChangeReason: "",
   })
 
   const [editMode, setEditMode] = useState({
     personal: false,
+    additional: false,
     experience: false,
     salary: false,
     documents: false,
@@ -62,6 +64,7 @@ export default function ProfilePage() {
     // Reset all edit modes
     setEditMode({
       personal: false,
+      additional: false,
       experience: false,
       salary: false,
       documents: false,
@@ -83,6 +86,21 @@ export default function ProfilePage() {
     { value: "c1", label: "C1 - Avanzado" },
     { value: "c2", label: "C2 - Dominio" },
     { value: "native", label: "Nativo" },
+  ]
+
+  const jobChangeReasonOptions = [
+    { value: "unemployed", label: "Estoy desempleado/a" },
+    { value: "work-environment", label: "Ambiente laboral" },
+    { value: "schedules", label: "Horarios" },
+    { value: "modality", label: "Modalidad (Presencial/Híbrido a remoto o viceversa)" },
+    { value: "benefits", label: "Beneficios" },
+    { value: "salary", label: "Salario" },
+    {
+      value: "currency",
+      label: "Moneda (Cobro mi salario en monedas con mucha diferencia frente a EUR o USD)",
+    },
+    { value: "no-growth", label: "Sin posibilidad de crecimiento" },
+    { value: "contract-termination", label: "Finalización de contrato sin renovación" },
   ]
 
   return (
@@ -148,6 +166,25 @@ export default function ProfilePage() {
               onChange={(e) => handleChange("city", e.target.value)}
               placeholder="Ej: Buenos Aires"
               disabled={!editMode.personal}
+            />
+          </div>
+        </div>
+
+        <div className={styles.section}>
+          <div className={styles.sectionHeader}>
+            <h2 className={styles.sectionTitle}>Información Adicional</h2>
+            <button type="button" className={styles.editButton} onClick={() => toggleEditMode("additional")}>
+              {editMode.additional ? "Cancelar" : "Editar"}
+            </button>
+          </div>
+          <div className={styles.grid}>
+            <Select
+              label="¿Por qué quieres cambiar de trabajo? *"
+              options={jobChangeReasonOptions}
+              value={formData.jobChangeReason}
+              onChange={(value) => handleChange("jobChangeReason", value)}
+              placeholder="Selecciona una opción"
+              disabled={!editMode.additional}
             />
           </div>
         </div>

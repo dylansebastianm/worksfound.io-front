@@ -14,11 +14,12 @@
   background: white;
   border: 1px solid #d0d0d0;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 16px;
   color: #333;
   cursor: pointer;
   transition: all 0.2s ease;
   height: 40px;
+  box-sizing: border-box;
 }
 
 .trigger:hover {

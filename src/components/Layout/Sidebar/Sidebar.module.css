@@ -40,6 +40,13 @@
   flex: 1;
   padding: 20px 16px;
   overflow-y: auto;
+  /* Hide scrollbar but keep scroll functionality */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.nav::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
 }
 
 .navItem {
@@ -116,6 +123,49 @@
   color: var(--sidebar-text);
 }
 
+/* Added styles for submenu items */
+.submenu {
+  display: flex;
+  flex-direction: column;
+  margin-top: 4px;
+  margin-left: 8px;
+}
+
+.submenuItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  padding-left: 40px;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  margin-bottom: 4px;
+}
+
+.submenuItem:hover {
+  background-color: var(--sidebar-hover);
+  color: var(--sidebar-text);
+}
+
+.submenuItem.active {
+  background-color: var(--sidebar-active);
+  color: var(--sidebar-text);
+  font-weight: 600;
+}
+
+.expandIcon {
+  margin-left: auto;
+  transition: transform 0.2s ease;
+}
+
+.expandIcon.expanded {
+  transform: rotate(180deg);
+}
+
 /* Mobile Responsive */
 @media (max-width: 768px) {
   .sidebar {
@@ -147,6 +197,7 @@
 
   .active {
     border-bottom: 3px solid var(--primary-color);
+    border-left: none;
     border-radius: 0;
   }
 

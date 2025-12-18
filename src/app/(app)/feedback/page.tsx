@@ -4,6 +4,7 @@ import type React from "react"
 
 import { useState } from "react"
 import { Input } from "@/components/UI/Input/Input"
+import { Checkbox } from "@/components/UI/Checkbox/Checkbox"
 import { Button } from "@/components/UI/Button/Button"
 import { LoadingSpinner } from "@/components/UI/LoadingSpinner/LoadingSpiner"
 import { Alert } from "@/components/UI/Alert/Alert"
@@ -13,10 +14,10 @@ export default function FeedbackPage() {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    type: "recommendation",
     subject: "",
     message: "",
   })
+  const [isAnonymous, setIsAnonymous] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [alert, setAlert] = useState<{ status: "success" | "error"; message: string } | null>(null)
 
@@ -37,10 +38,10 @@ export default function FeedbackPage() {
     setFormData({
       name: "",
       email: "",
-      type: "recommendation",
       subject: "",
       message: "",
     })
+    setIsAnonymous(false)
 
     // Ocultar alerta después de 5 segundos
     setTimeout(() => setAlert(null), 5000)
@@ -73,7 +74,8 @@ export default function FeedbackPage() {
                 value={formData.name}
                 onChange={handleChange}
                 placeholder="Tu nombre completo"
-                required
+                required={!isAnonymous}
+                disabled={isAnonymous}
               />
             </div>
 
@@ -85,20 +87,17 @@ export default function FeedbackPage() {
                 value={formData.email}
                 onChange={handleChange}
                 placeholder="tu@email.com"
-                required
+                required={!isAnonymous}
+                disabled={isAnonymous}
               />
             </div>
           </div>
 
-          <div className={styles.field}>
-            <label className={styles.label}>Tipo de mensaje</label>
-            <select name="type" value={formData.type} onChange={handleChange} className={styles.select} required>
-              <option value="recommendation">Recomendación</option>
-              <option value="feature">Nueva funcionalidad</option>
-              <option value="bug">Reportar un problema</option>
-              <option value="other">Otro</option>
-            </select>
-          </div>
+          <Checkbox
+            label="Quiero enviar mi recomendación de forma anónima"
+            checked={isAnonymous}
+            onChange={(e) => setIsAnonymous(e.target.checked)}
+          />
 
           <div className={styles.field}>
             <label className={styles.label}>Asunto</label>

@@ -22,7 +22,7 @@
   width: 100%;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   padding: 10px 14px;
   font-size: 16px;
   border: 1px solid var(--border);
@@ -31,7 +31,9 @@
   color: var(--text-primary);
   cursor: pointer;
   transition: all var(--transition-fast);
-  min-height: 40px;
+  height: 40px;
+  box-sizing: border-box;
+  gap: 20px;
 }
 
 .selectButton:focus {
@@ -49,11 +51,13 @@
 .selectedText {
   color: var(--text-primary);
   text-align: left;
+  flex: 1;
 }
 
 .placeholder {
   color: var(--text-disabled);
   text-align: left;
+  flex: 1;
 }
 
 .icon {
@@ -61,6 +65,7 @@
   transition: transform var(--transition-fast);
   flex-shrink: 0;
   font-size: 20px;
+  margin-left: auto;
 }
 
 .iconOpen {
@@ -127,7 +132,8 @@
   color: var(--text-primary);
   cursor: pointer;
   transition: all var(--transition-fast);
-  min-height: 40px;
+  height: 40px;
+  box-sizing: border-box;
   appearance: none;
   -webkit-appearance: none;
   -moz-appearance: none;
