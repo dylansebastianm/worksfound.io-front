@@ -6,6 +6,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/UI/Button/Button"
 import { Input } from "@/components/UI/Input/Input"
+import { LoadingSpinner } from "@/components/UI/LoadingSpinner/LoadingSpiner"
 import { login } from "@/lib/auth"
 import styles from "./login.module.css"
 import { TermsModal } from "@/components/UI/TermsModal/TermsModal"
@@ -14,24 +15,51 @@ export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+  const [isAcceptingTerms, setIsAcceptingTerms] = useState(false)
   const [showTermsModal, setShowTermsModal] = useState(false)
   const router = useRouter()
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
+    setIsLoading(true)
 
-    login(email, password)
-    setShowTermsModal(true)
+    try {
+      const response = await login(email, password)
+
+      if (response.success && response.user) {
+        // Guardar datos del usuario en sessionStorage
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem("user_id", response.user.id.toString())
+          sessionStorage.setItem("user_email", response.user.email)
+        }
+        // Mostrar modal de términos
+        setShowTermsModal(true)
+      } else {
+        setError(response.error || "Error al iniciar sesión")
+      }
+    } catch (err) {
+      setError("Error conectando con el servidor")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
-  const handleAcceptTerms = () => {
+  const handleAcceptTerms = async () => {
     setShowTermsModal(false)
+    setIsAcceptingTerms(true)
+
+    // Esperar 2 segundos antes de redirigir
+    await new Promise((resolve) => setTimeout(resolve, 2000))
+
+    setIsAcceptingTerms(false)
     router.push("/dashboard")
   }
 
   return (
     <>
+      {isAcceptingTerms && <LoadingSpinner />}
       <div className={styles.container}>
         <div className={styles.card}>
           <div className={styles.header}>
@@ -59,8 +87,8 @@ export default function LoginPage() {
               error={error}
             />
 
-            <Button type="submit" fullWidth>
-              Iniciar sesión
+            <Button type="submit" fullWidth disabled={isLoading}>
+              {isLoading ? "Iniciando sesión..." : "Iniciar sesión"}
             </Button>
           </form>
 
