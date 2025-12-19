@@ -2,9 +2,11 @@
 
 import type React from "react"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { getCurrentUser, type User } from "@/lib/auth"
+import { scrapeJobs, cancelScrapeJobs } from "@/lib/jobs"
+import { Alert } from "@/components/UI/Alert/Alert"
 import {
   FaUsers,
   FaUserCheck,
@@ -14,6 +16,7 @@ import {
   FaClock,
   FaLinkedin,
   FaPlay,
+  FaStop,
 } from "react-icons/fa"
 import { SiIndeed, SiGlassdoor } from "react-icons/si"
 import { FcGoogle } from "react-icons/fc"
@@ -36,9 +39,13 @@ const mockAdminData = {
   ],
 }
 
+const INGEST_STORAGE_KEY = "admin_ingest_status"
+
 export default function AdminDashboardPage() {
   const [user, setUser] = useState<User | null>(null)
   const [isIngesting, setIsIngesting] = useState(false)
+  const [alert, setAlert] = useState<{ status: "success" | "error"; message: string } | null>(null)
+  const abortControllerRef = useRef<AbortController | null>(null)
   const router = useRouter()
 
   useEffect(() => {
@@ -47,16 +54,111 @@ export default function AdminDashboardPage() {
       router.push("/login")
     } else {
       setUser(currentUser)
+      // Restaurar estado de ingesta desde sessionStorage
+      const savedStatus = sessionStorage.getItem(INGEST_STORAGE_KEY)
+      if (savedStatus === "ingesting") {
+        setIsIngesting(true)
+      }
     }
   }, [router])
 
-  const handleIngestOffers = () => {
+  const handleIngestOffers = async () => {
+    if (!user) return
+
+    // Si ya está ingiriendo, cancelar
+    if (isIngesting) {
+      handleCancelIngest()
+      return
+    }
+
     setIsIngesting(true)
-    // Simulate ingestion process
-    setTimeout(() => {
+    sessionStorage.setItem(INGEST_STORAGE_KEY, "ingesting")
+    setAlert(null)
+
+    // Crear AbortController para poder cancelar la petición
+    abortControllerRef.current = new AbortController()
+
+    try {
+      // URL de búsqueda genérica de LinkedIn Jobs (últimas 24 horas, todo el mundo)
+      const searchUrl =
+        "https://www.linkedin.com/jobs/search/?f_TPR=r86400&geoId=92000000&keywords=developer&origin=JOB_SEARCH_PAGE_LOCATION_AUTOCOMPLETE&refresh=true"
+
+      const response = await scrapeJobs(user.id, searchUrl, 50, abortControllerRef.current.signal)
+
+      if (response.success) {
+        const successMessage =
+          response.message || `Ingesta completada: ${response.jobs_saved || 0} ofertas nuevas guardadas`
+        setAlert({
+          status: "success",
+          message: successMessage,
+        })
+        // Ocultar alerta después de 8 segundos
+        setTimeout(() => setAlert(null), 8000)
+      } else {
+        setAlert({
+          status: "error",
+          message: response.error || "Error al realizar la ingesta",
+        })
+        // Ocultar alerta después de 8 segundos
+        setTimeout(() => setAlert(null), 8000)
+      }
+    } catch (error: any) {
+      // Si el error es por cancelación, no mostrar error
+      if (error.name === "AbortError") {
+        setAlert({
+          status: "error",
+          message: "Ingesta cancelada",
+        })
+        setTimeout(() => setAlert(null), 5000)
+      } else {
+        setAlert({
+          status: "error",
+          message: "Error conectando con el servidor",
+        })
+        // Ocultar alerta después de 8 segundos
+        setTimeout(() => setAlert(null), 8000)
+      }
+    } finally {
       setIsIngesting(false)
-      alert("Ingesta completada exitosamente")
-    }, 3000)
+      sessionStorage.removeItem(INGEST_STORAGE_KEY)
+      abortControllerRef.current = null
+    }
+  }
+
+  const handleCancelIngest = async () => {
+    if (!user) return
+
+    // Cancelar la petición HTTP si está en curso
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+
+    // Llamar al endpoint del backend para cancelar el scraping
+    try {
+      const response = await cancelScrapeJobs(user.id)
+      if (response.success) {
+        setAlert({
+          status: "error",
+          message: response.message || "Ingesta cancelada",
+        })
+      } else {
+        setAlert({
+          status: "error",
+          message: response.error || "Error al cancelar la ingesta",
+        })
+      }
+      setTimeout(() => setAlert(null), 5000)
+    } catch (error) {
+      console.error("Error cancelando scraping:", error)
+      setAlert({
+        status: "error",
+        message: "Error al cancelar la ingesta",
+      })
+      setTimeout(() => setAlert(null), 5000)
+    }
+
+    setIsIngesting(false)
+    sessionStorage.removeItem(INGEST_STORAGE_KEY)
   }
 
   if (!user) {
@@ -67,6 +169,8 @@ export default function AdminDashboardPage() {
 
   return (
     <div className={styles.container}>
+      {alert && <Alert status={alert.status} message={alert.message} onClose={() => setAlert(null)} />}
+
       <div className={styles.header}>
         <div>
           <h1 className={styles.title}>Dashboard Administrativo</h1>
@@ -75,10 +179,9 @@ export default function AdminDashboardPage() {
         <button
           className={`${styles.ingestButton} ${isIngesting ? styles.ingesting : ""}`}
           onClick={handleIngestOffers}
-          disabled={isIngesting}
         >
-          <FaPlay />
-          {isIngesting ? "Ingiriendo ofertas..." : "Realizar Ingesta"}
+          {isIngesting ? <FaStop /> : <FaPlay />}
+          {isIngesting ? "Detener Ingesta" : "Realizar Ingesta"}
         </button>
       </div>
 

@@ -6,7 +6,7 @@ import { useState, useEffect, useRef } from "react"
 import { FaLinkedin, FaBriefcase } from "react-icons/fa"
 import { IoPlay, IoPause } from "react-icons/io5"
 import { Button } from "@/components/UI/Button/Button"
-import { Input } from "@/components/UI/Input/Input"
+import { PortalConnectionModal } from "@/components/UI/PortalConnectionModal/PortalConnectionModal"
 import {
   checkLinkedInConnection,
   startLinkedInLogin,
@@ -25,8 +25,6 @@ export default function PortalsPage() {
   const [isAutoApplyLoading, setIsAutoApplyLoading] = useState(false)
   const [error, setError] = useState("")
   const [showLinkedInForm, setShowLinkedInForm] = useState(false)
-  const [linkedInEmail, setLinkedInEmail] = useState("")
-  const [linkedInPassword, setLinkedInPassword] = useState("")
   const [loginSessionId, setLoginSessionId] = useState<string | null>(null)
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -117,55 +115,104 @@ export default function PortalsPage() {
     }
   }
 
-  const handleLinkedInSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!userId || !linkedInEmail || !linkedInPassword) {
-      setError("Por favor completa todos los campos")
-      return
+  const handleLinkedInConnect = async (email: string, password: string) => {
+    if (!userId) {
+      throw new Error("Debes iniciar sesión primero")
     }
 
     setIsLoading(true)
     setError("")
 
     try {
-      const result = await startLinkedInLogin(linkedInEmail, linkedInPassword, userId)
+      const result = await startLinkedInLogin(email, password, userId)
 
       if (result.success && result.session_id) {
         setLoginSessionId(result.session_id)
+        // No cerramos el modal todavía, esperamos a que el polling complete
+        // El modal se cerrará cuando el polling detecte que el login fue exitoso
         // Iniciar polling para verificar estado
         startPollingLoginStatus(result.session_id)
+        // No lanzamos error, pero tampoco resolvemos inmediatamente
+        // El modal permanecerá abierto mostrando el loading mientras esperamos
       } else {
-        setError(result.error || "Error iniciando login de LinkedIn")
         setIsLoading(false)
+        throw new Error(result.error || "Error iniciando login de LinkedIn")
       }
     } catch (err) {
-      setError("Error conectando con el servidor")
       setIsLoading(false)
-      console.error("Error en login de LinkedIn:", err)
+      const errorMessage = err instanceof Error ? err.message : "Error conectando con el servidor"
+      setError(errorMessage)
+      throw err // Re-lanzar para que el modal maneje el error
+    }
+  }
+
+  const stopPolling = () => {
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current)
+      pollingIntervalRef.current = null
     }
   }
 
   const startPollingLoginStatus = (sessionId: string) => {
     // Limpiar polling anterior si existe
-    if (pollingIntervalRef.current) {
-      clearInterval(pollingIntervalRef.current)
-    }
+    stopPolling()
+
+    const maxPollingTime = 600000 // 10 minutos máximo de polling total
+    const maxErrorTime = 60000 // 1 minuto máximo de errores continuos
+    const startTime = Date.now()
+    let lastSuccessTime = Date.now()
+    let firstErrorTime: number | null = null
 
     // Polling cada 2 segundos
     pollingIntervalRef.current = setInterval(async () => {
       try {
+        // Verificar timeout máximo total
+        if (Date.now() - startTime > maxPollingTime) {
+          console.warn("Timeout máximo de polling alcanzado")
+          stopPolling()
+          setError("Tiempo de espera agotado. Por favor, intenta de nuevo.")
+          setIsLoading(false)
+          setLoginSessionId(null)
+          return
+        }
+
         const status = await checkLinkedInLoginStatus(sessionId)
+
+        // Si el backend devuelve error, verificar tiempo de errores continuos
+        if (!status.success && status.error) {
+          const now = Date.now()
+          
+          // Marcar el inicio del primer error si no estaba marcado
+          if (firstErrorTime === null) {
+            firstErrorTime = now
+            console.warn("Primer error detectado, iniciando contador de tiempo:", status.error)
+          }
+          
+          // Verificar si llevamos más de 1 minuto con errores
+          if (firstErrorTime !== null && now - firstErrorTime > maxErrorTime) {
+            console.warn("Demasiado tiempo con errores continuos, deteniendo polling")
+            stopPolling()
+            setError("La sesión de login expiró o no se encontró. Por favor, intenta de nuevo.")
+            setIsLoading(false)
+            setLoginSessionId(null)
+            return
+          }
+          
+          // Continuar polling si no hemos alcanzado el tiempo máximo de errores
+          return
+        }
+
+        // Si la petición fue exitosa, resetear el contador de errores
+        if (status.success) {
+          firstErrorTime = null
+          lastSuccessTime = Date.now()
+        }
 
         if (status.status === "completed") {
           // Login exitoso
-          if (pollingIntervalRef.current) {
-            clearInterval(pollingIntervalRef.current)
-            pollingIntervalRef.current = null
-          }
+          stopPolling()
           setIsLinkedInConnected(true)
-          setShowLinkedInForm(false)
-          setLinkedInEmail("")
-          setLinkedInPassword("")
+          setShowLinkedInForm(false) // Esto cerrará el modal
           setLoginSessionId(null)
           setIsLoading(false)
           setError("")
@@ -175,25 +222,33 @@ export default function PortalsPage() {
             checkAutoApplyStatus(userId)
           }
         } else if (status.status === "timeout" || status.status === "error") {
-          // Error o timeout
-          if (pollingIntervalRef.current) {
-            clearInterval(pollingIntervalRef.current)
-            pollingIntervalRef.current = null
-          }
+          // Error o timeout definitivo
+          stopPolling()
           setError(status.error || "Tiempo de espera agotado")
           setIsLoading(false)
           setLoginSessionId(null)
         }
         // Si está 'waiting', 'pending' o 'in_progress', seguir esperando
       } catch (err) {
-        console.error("Error verificando estado de login:", err)
-        if (pollingIntervalRef.current) {
-          clearInterval(pollingIntervalRef.current)
-          pollingIntervalRef.current = null
+        const now = Date.now()
+        
+        // Marcar el inicio del primer error si no estaba marcado
+        if (firstErrorTime === null) {
+          firstErrorTime = now
+          console.error("Primer error de conexión detectado, iniciando contador de tiempo:", err)
         }
-        setError("Error conectando con el servidor")
-        setIsLoading(false)
-        setLoginSessionId(null)
+        
+        // Verificar si llevamos más de 1 minuto con errores
+        if (firstErrorTime !== null && now - firstErrorTime > maxErrorTime) {
+          console.error("Demasiado tiempo con errores de conexión, deteniendo polling")
+          stopPolling()
+          setError("Error conectando con el servidor. Por favor, intenta de nuevo.")
+          setIsLoading(false)
+          setLoginSessionId(null)
+          return
+        }
+        
+        // Continuar polling si no hemos alcanzado el tiempo máximo de errores
       }
     }, 2000)
   }
@@ -204,6 +259,10 @@ export default function PortalsPage() {
       return
     }
 
+    // Detener polling si está activo
+    stopPolling()
+    setLoginSessionId(null)
+
     setIsLoading(true)
     setError("")
 
@@ -212,6 +271,7 @@ export default function PortalsPage() {
 
       if (result.success) {
         setIsLinkedInConnected(false)
+        setShowLinkedInForm(false)
         setError("")
       } else {
         setError(result.error || "Error desconectando LinkedIn")
@@ -237,54 +297,27 @@ export default function PortalsPage() {
         </div>
       )}
 
-      {showLinkedInForm && !isLinkedInConnected && (
-        <div style={{ maxWidth: "400px", margin: "0 auto 24px", padding: "24px", background: "white", borderRadius: "8px", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}>
-          <h3 style={{ marginBottom: "16px" }}>Vincular LinkedIn</h3>
-          <form onSubmit={handleLinkedInSubmit}>
-            <Input
-              type="email"
-              label="Email de LinkedIn"
-              placeholder="tu@email.com"
-              value={linkedInEmail}
-              onChange={(e) => setLinkedInEmail(e.target.value)}
-              fullWidth
-              required
-              disabled={isLoading || loginSessionId !== null}
-            />
-            <Input
-              type="password"
-              label="Contraseña de LinkedIn"
-              placeholder="••••••••"
-              value={linkedInPassword}
-              onChange={(e) => setLinkedInPassword(e.target.value)}
-              fullWidth
-              required
-              disabled={isLoading || loginSessionId !== null}
-            />
-            {loginSessionId && (
-              <div style={{ padding: "12px", background: "#e3f2fd", borderRadius: "4px", marginBottom: "16px", fontSize: "14px" }}>
-                ⏳ Esperando a que completes el login en la ventana del navegador...
-              </div>
-            )}
-            <div style={{ display: "flex", gap: "8px" }}>
-              <Button type="submit" disabled={isLoading || loginSessionId !== null} loading={isLoading || loginSessionId !== null}>
-                Vincular
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setShowLinkedInForm(false)
-                  setLinkedInEmail("")
-                  setLinkedInPassword("")
-                  setError("")
-                }}
-                disabled={isLoading || loginSessionId !== null}
-              >
-                Cancelar
-              </Button>
-            </div>
-          </form>
+      <PortalConnectionModal
+        isOpen={showLinkedInForm && !isLinkedInConnected}
+        onClose={() => {
+          if (!isLoading && loginSessionId === null) {
+            stopPolling()
+            setShowLinkedInForm(false)
+            setLoginSessionId(null)
+            setIsLoading(false)
+            setError("")
+          }
+        }}
+        portalName="LinkedIn"
+        portalIcon={<FaLinkedin size={32} />}
+        portalColor="#0077B5"
+        onConnect={handleLinkedInConnect}
+        keepOpenOnSuccess={true}
+      />
+
+      {loginSessionId && (
+        <div style={{ padding: "12px", background: "#e3f2fd", borderRadius: "4px", marginBottom: "16px", fontSize: "14px", maxWidth: "400px", margin: "0 auto 24px" }}>
+          ⏳ Esperando a que completes el login en la ventana del navegador...
         </div>
       )}
 

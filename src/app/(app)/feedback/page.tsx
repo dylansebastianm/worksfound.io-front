@@ -6,7 +6,7 @@ import { useState } from "react"
 import { Input } from "@/components/UI/Input/Input"
 import { Checkbox } from "@/components/UI/Checkbox/Checkbox"
 import { Button } from "@/components/UI/Button/Button"
-import { LoadingSpinner } from "@/components/UI/LoadingSpinner/LoadingSpiner"
+import { LoadingSpinner } from "@/components/UI/LoadingSpinner/LoadingSpinner"
 import { Alert } from "@/components/UI/Alert/Alert"
 import styles from "./feedback.module.css"
 

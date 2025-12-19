@@ -6,7 +6,7 @@ import { Input } from "@/components/UI/Input/Input"
 import { Select } from "@/components/UI/Select/Select"
 import { FileUpload } from "@/components/UI/FileUpload/FileUpload"
 import { Button } from "@/components/UI/Button/Button"
-import { LoadingSpinner } from "@/components/UI/LoadingSpinner/LoadingSpiner"
+import { LoadingSpinner } from "@/components/UI/LoadingSpinner/LoadingSpinner"
 import { Alert } from "@/components/UI/Alert/Alert"
 import styles from "./profile.module.css"
 
