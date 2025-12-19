@@ -1,13 +1,15 @@
 "use client"
 
 import { useState } from "react"
-import { FiX, FiCalendar, FiChevronDown, FiSearch } from "react-icons/fi"
+import { FiSearch, FiX, FiCalendar, FiChevronDown } from "react-icons/fi"
 import { BsLinkedin } from "react-icons/bs"
+import { SiIndeed, SiGlassdoor } from "react-icons/si"
+import { FcGoogle } from "react-icons/fc"
 import { Button } from "@/components/UI/Button/Button"
 import { Select } from "@/components/UI/Select/Select"
-import { SearchInput } from "@/components/UI/SearchInput/SearchInput"
 import { Pagination } from "@/components/UI/Pagination/Pagination"
 import { DateRangePicker } from "@/components/UI/DateRangePicker/DateRangePicker"
+import JobDetailModal from "@/components/UI/JobDetailModal/JobDetailModal"
 import styles from "./applied-jobs.module.css"
 
 interface JobApplication {
@@ -19,9 +21,30 @@ interface JobApplication {
   countryFlag: string
   date: string
   status: "Postulados" | "En revisión" | "Entrevista" | "Rechazado" | "Aceptado"
+  applicants?: number
+  workMode?: string
+  workType?: string
+  salary?: string
+  description?: string
+  jobUrl?: string
+  companyUrl?: string
+  companyFollowers?: number
+  companyCountry?: string
+  evaluationTime?: string
+  postedAgo?: string
+  applications?: number
+  recruiterTeam?: Array<{
+    name: string
+    position: string
+    profileUrl?: string
+  }>
+  industry?: string
+  companySize?: string
+  skills?: string[]
+  techStack?: string[]
+  englishRequired?: boolean
 }
 
-// Mock data de 30 ofertas
 const mockJobs: JobApplication[] = [
   {
     id: 1,
@@ -32,6 +55,28 @@ const mockJobs: JobApplication[] = [
     countryFlag: "🇺🇸",
     date: "02/10/2025 12:39",
     status: "Postulados",
+    applicants: 247,
+    workMode: "Remoto",
+    workType: "Full-Time",
+    salary: "$120,000 - $180,000/año",
+    description:
+      "Buscamos un Senior Developer Technology Engineer con experiencia en arquitecturas de GPU y desarrollo de drivers. Responsabilidades incluyen optimización de rendimiento, desarrollo de APIs y colaboración con equipos de producto.",
+    jobUrl: "https://linkedin.com/jobs/view/123456",
+    companyUrl: "https://nvidia.com",
+    companyFollowers: 3500000,
+    companyCountry: "Estados Unidos",
+    evaluationTime: "2-3 semanas",
+    postedAgo: "Hace 3 días",
+    applications: 247,
+    recruiterTeam: [
+      { name: "Sarah Johnson", position: "Technical Recruiter", profileUrl: "https://linkedin.com/in/sarahjohnson" },
+      { name: "Michael Chen", position: "Engineering Manager" },
+    ],
+    industry: "Tecnología de semiconductores",
+    companySize: "10,000+ empleados",
+    skills: ["CUDA", "C++", "GPU Architecture", "Performance Optimization"],
+    techStack: ["C++", "Python", "CUDA", "OpenGL", "Vulkan"],
+    englishRequired: true,
   },
   {
     id: 2,
@@ -42,6 +87,22 @@ const mockJobs: JobApplication[] = [
     countryFlag: "🇪🇸",
     date: "02/10/2025 12:13",
     status: "Postulados",
+    applicants: 189,
+    workMode: "Híbrido",
+    workType: "Full-Time",
+    description:
+      "Desarrollo de infraestructura para sistemas de vehículos autónomos. No disponemos de información salarial completa para esta posición.",
+    jobUrl: "https://linkedin.com/jobs/view/123457",
+    companyUrl: "https://nvidia.com",
+    companyFollowers: 3500000,
+    companyCountry: "Estados Unidos",
+    evaluationTime: "2-3 semanas",
+    postedAgo: "Hace 1 semana",
+    applications: 189,
+    industry: "Tecnología de semiconductores",
+    companySize: "10,000+ empleados",
+    techStack: ["C++", "Python", "ROS", "Docker"],
+    englishRequired: true,
   },
   {
     id: 3,
@@ -52,6 +113,25 @@ const mockJobs: JobApplication[] = [
     countryFlag: "🇨🇴",
     date: "02/10/2025 11:56",
     status: "Postulados",
+    applicants: 120,
+    workMode: "Presencial",
+    workType: "Full-Time",
+    salary: "$80,000 - $120,000/año",
+    description:
+      "Responsabilidades incluyen la supervisión y el mantenimiento de los sistemas eléctricos de los centros de datos.",
+    jobUrl: "https://linkedin.com/jobs/view/123458",
+    companyUrl: "https://salasobrien.com",
+    companyFollowers: 150000,
+    companyCountry: "Colombia",
+    evaluationTime: "1-2 semanas",
+    postedAgo: "Hace 5 días",
+    applications: 120,
+    recruiterTeam: [{ name: "Ana Martinez", position: "Recruiter" }],
+    industry: "Servicios de TI",
+    companySize: "500-1000 empleados",
+    skills: ["Electrical Engineering", "Data Center Management"],
+    techStack: ["Python", "PowerShell", "Networking"],
+    englishRequired: false,
   },
   {
     id: 4,
@@ -62,6 +142,26 @@ const mockJobs: JobApplication[] = [
     countryFlag: "🇦🇷",
     date: "02/10/2025 10:23",
     status: "En revisión",
+    applicants: 300,
+    workMode: "Híbrido",
+    workType: "Full-Time",
+    salary: "$70,000 - $100,000/año",
+    description: "Desarrollar interfaces de usuario modernas y eficientes utilizando React y otras tecnologías web.",
+    jobUrl: "https://bumeran.com/jobs/view/123459",
+    companyUrl: "https://mercadolibre.com",
+    companyFollowers: 5000000,
+    companyCountry: "Argentina",
+    evaluationTime: "1 semana",
+    postedAgo: "Hace 2 semanas",
+    applications: 300,
+    recruiterTeam: [
+      { name: "Juan Lopez", position: "Frontend Developer", profileUrl: "https://bumeran.com/in/juanlopez" },
+    ],
+    industry: "Comercio electrónico",
+    companySize: "10,000+ empleados",
+    skills: ["React", "JavaScript", "CSS"],
+    techStack: ["React", "Node.js", "MongoDB"],
+    englishRequired: true,
   },
   {
     id: 5,
@@ -72,6 +172,31 @@ const mockJobs: JobApplication[] = [
     countryFlag: "🇺🇾",
     date: "02/10/2025 09:15",
     status: "Postulados",
+    applicants: 150,
+    workMode: "Presencial",
+    workType: "Full-Time",
+    salary: "$90,000 - $150,000/año",
+    description: "Desarrollar aplicaciones web completas utilizando tecnologías front-end y back-end.",
+    jobUrl: "https://linkedin.com/jobs/view/123460",
+    companyUrl: "https://globant.com",
+    companyFollowers: 2000000,
+    companyCountry: "Uruguay",
+    evaluationTime: "2 semanas",
+    postedAgo: "Hace 4 semanas",
+    applications: 150,
+    recruiterTeam: [
+      {
+        name: "Maria Rodriguez",
+        position: "Technical Recruiter",
+        profileUrl: "https://linkedin.com/in/mariorodriguez",
+      },
+      { name: "Carlos Garcia", position: "Project Manager" },
+    ],
+    industry: "Consultoría de TI",
+    companySize: "5000-10000 empleados",
+    skills: ["JavaScript", "Node.js", "Express"],
+    techStack: ["React", "Node.js", "MongoDB", "AWS"],
+    englishRequired: true,
   },
   {
     id: 6,
@@ -82,6 +207,26 @@ const mockJobs: JobApplication[] = [
     countryFlag: "🇦🇷",
     date: "01/10/2025 18:45",
     status: "Entrevista",
+    applicants: 200,
+    workMode: "Remoto",
+    workType: "Full-Time",
+    salary: "$100,000 - $140,000/año",
+    description: "Desarrollar y mantener servicios back-end utilizando Node.js y otras tecnologías.",
+    jobUrl: "https://zonajobs.com/jobs/view/123461",
+    companyUrl: "https://auth0.com",
+    companyFollowers: 1000000,
+    companyCountry: "Argentina",
+    evaluationTime: "2 semanas",
+    postedAgo: "Hace 1 mes",
+    applications: 200,
+    recruiterTeam: [
+      { name: "Pedro Ramirez", position: "Backend Developer", profileUrl: "https://zonajobs.com/in/pedroramirez" },
+    ],
+    industry: "Seguridad en la nube",
+    companySize: "500-1000 empleados",
+    skills: ["Node.js", "REST APIs", "Database Management"],
+    techStack: ["Node.js", "Express", "PostgreSQL"],
+    englishRequired: true,
   },
   {
     id: 7,
@@ -92,6 +237,26 @@ const mockJobs: JobApplication[] = [
     countryFlag: "🇺🇸",
     date: "01/10/2025 17:30",
     status: "Postulados",
+    applicants: 350,
+    workMode: "Presencial",
+    workType: "Full-Time",
+    salary: "$110,000 - $170,000/año",
+    description: "Implementar y mantener procesos de integración y despliegue continuos.",
+    jobUrl: "https://linkedin.com/jobs/view/123462",
+    companyUrl: "https://google.com",
+    companyFollowers: 15000000,
+    companyCountry: "Estados Unidos",
+    evaluationTime: "3 semanas",
+    postedAgo: "Hace 3 meses",
+    applications: 350,
+    recruiterTeam: [
+      { name: "Laura Fernandez", position: "DevOps Engineer", profileUrl: "https://linkedin.com/in/laurafe Fernandez" },
+    ],
+    industry: "Tecnología",
+    companySize: "100,000+ empleados",
+    skills: ["CI/CD", "Infrastructure Management"],
+    techStack: ["Docker", "Kubernetes", "Jenkins"],
+    englishRequired: true,
   },
   {
     id: 8,
@@ -102,6 +267,24 @@ const mockJobs: JobApplication[] = [
     countryFlag: "🇺🇸",
     date: "01/10/2025 16:20",
     status: "Rechazado",
+    applicants: 400,
+    workMode: "Presencial",
+    workType: "Full-Time",
+    salary: "$130,000 - $200,000/año",
+    description: "Desarrollar aplicaciones móviles para iOS utilizando Swift y otras tecnologías.",
+    jobUrl: "https://glassdoor.com/jobs/view/123463",
+    companyUrl: "https://apple.com",
+    companyFollowers: 20000000,
+    companyCountry: "Estados Unidos",
+    evaluationTime: "4 semanas",
+    postedAgo: "Hace 6 meses",
+    applications: 400,
+    recruiterTeam: [{ name: "John Doe", position: "iOS Developer", profileUrl: "https://glassdoor.com/in/johndoe" }],
+    industry: "Electrónica",
+    companySize: "100,000+ empleados",
+    skills: ["Swift", "iOS Development"],
+    techStack: ["Swift", "Xcode", "UIKit"],
+    englishRequired: true,
   },
   {
     id: 9,
@@ -112,6 +295,26 @@ const mockJobs: JobApplication[] = [
     countryFlag: "🇲🇽",
     date: "01/10/2025 15:10",
     status: "Postulados",
+    applicants: 280,
+    workMode: "Híbrido",
+    workType: "Full-Time",
+    salary: "$85,000 - $125,000/año",
+    description: "Diseñar experiencias de usuario y interfaces de usuario atractivas y funcionales.",
+    jobUrl: "https://linkedin.com/jobs/view/123464",
+    companyUrl: "https://adobe.com",
+    companyFollowers: 12000000,
+    companyCountry: "México",
+    evaluationTime: "2 semanas",
+    postedAgo: "Hace 2 meses",
+    applications: 280,
+    recruiterTeam: [
+      { name: "Emily White", position: "UI/UX Designer", profileUrl: "https://linkedin.com/in/emilywhite" },
+    ],
+    industry: "Diseño",
+    companySize: "10,000+ empleados",
+    skills: ["UI/UX", "Sketch", "Figma"],
+    techStack: ["React", "Angular", "Vue"],
+    englishRequired: true,
   },
   {
     id: 10,
@@ -122,6 +325,26 @@ const mockJobs: JobApplication[] = [
     countryFlag: "🇧🇷",
     date: "01/10/2025 14:05",
     status: "En revisión",
+    applicants: 320,
+    workMode: "Presencial",
+    workType: "Full-Time",
+    salary: "$95,000 - $155,000/año",
+    description: "Analizar datos y desarrollar modelos predictivos utilizando herramientas de análisis de datos.",
+    jobUrl: "https://linkedin.com/jobs/view/123465",
+    companyUrl: "https://amazon.com",
+    companyFollowers: 18000000,
+    companyCountry: "Brasil",
+    evaluationTime: "3 semanas",
+    postedAgo: "Hace 1 mes",
+    applications: 320,
+    recruiterTeam: [
+      { name: "David Brown", position: "Data Scientist", profileUrl: "https://linkedin.com/in/davidbrown" },
+    ],
+    industry: "Retail",
+    companySize: "100,000+ empleados",
+    skills: ["Python", "R", "Machine Learning"],
+    techStack: ["Python", "TensorFlow", "Pandas"],
+    englishRequired: true,
   },
   {
     id: 11,
@@ -132,6 +355,26 @@ const mockJobs: JobApplication[] = [
     countryFlag: "🇨🇱",
     date: "01/10/2025 13:00",
     status: "Postulados",
+    applicants: 260,
+    workMode: "Remoto",
+    workType: "Full-Time",
+    salary: "$105,000 - $165,000/año",
+    description: "Diseñar y implementar arquitecturas de nube escalables y eficientes.",
+    jobUrl: "https://bumeran.com/jobs/view/123466",
+    companyUrl: "https://microsoft.com",
+    companyFollowers: 13000000,
+    companyCountry: "Chile",
+    evaluationTime: "2 semanas",
+    postedAgo: "Hace 3 meses",
+    applications: 260,
+    recruiterTeam: [
+      { name: "Sophia Green", position: "Cloud Architect", profileUrl: "https://bumeran.com/in/sophiagreen" },
+    ],
+    industry: "Software",
+    companySize: "5000-10000 empleados",
+    skills: ["Cloud Architecture", "AWS", "Azure"],
+    techStack: ["AWS", "Azure", "Google Cloud"],
+    englishRequired: true,
   },
   {
     id: 12,
@@ -142,6 +385,26 @@ const mockJobs: JobApplication[] = [
     countryFlag: "🇺🇸",
     date: "01/10/2025 11:50",
     status: "Aceptado",
+    applicants: 380,
+    workMode: "Presencial",
+    workType: "Full-Time",
+    salary: "$115,000 - $175,000/año",
+    description: "Automatizar pruebas de calidad utilizando herramientas de automatización.",
+    jobUrl: "https://linkedin.com/jobs/view/123467",
+    companyUrl: "https://tesla.com",
+    companyFollowers: 14000000,
+    companyCountry: "Estados Unidos",
+    evaluationTime: "3 semanas",
+    postedAgo: "Hace 4 meses",
+    applications: 380,
+    recruiterTeam: [
+      { name: "Michael Black", position: "QA Engineer", profileUrl: "https://linkedin.com/in/michaelblack" },
+    ],
+    industry: "Automóviles eléctricos",
+    companySize: "100,000+ empleados",
+    skills: ["QA Automation", "Test Driven Development"],
+    techStack: ["Selenium", "JUnit", "Jenkins"],
+    englishRequired: true,
   },
   {
     id: 13,
@@ -152,6 +415,26 @@ const mockJobs: JobApplication[] = [
     countryFlag: "🇪🇸",
     date: "01/10/2025 10:40",
     status: "Postulados",
+    applicants: 220,
+    workMode: "Híbrido",
+    workType: "Full-Time",
+    salary: "$90,000 - $150,000/año",
+    description: "Gestionar el ciclo de vida de productos y asegurar su éxito en el mercado.",
+    jobUrl: "https://zonajobs.com/jobs/view/123468",
+    companyUrl: "https://spotify.com",
+    companyFollowers: 11000000,
+    companyCountry: "España",
+    evaluationTime: "2 semanas",
+    postedAgo: "Hace 5 meses",
+    applications: 220,
+    recruiterTeam: [
+      { name: "Jessica White", position: "Product Manager", profileUrl: "https://zonajobs.com/in/jessicawhite" },
+    ],
+    industry: "Streaming",
+    companySize: "10,000+ empleados",
+    skills: ["Product Management", "Agile Methodologies"],
+    techStack: ["Jira", "Confluence", "Trello"],
+    englishRequired: true,
   },
   {
     id: 14,
@@ -162,6 +445,26 @@ const mockJobs: JobApplication[] = [
     countryFlag: "🇦🇷",
     date: "01/10/2025 09:30",
     status: "En revisión",
+    applicants: 270,
+    workMode: "Presencial",
+    workType: "Full-Time",
+    salary: "$80,000 - $120,000/año",
+    description: "Facilitar la implementación de metodologías Scrum y asegurar la eficiencia del equipo.",
+    jobUrl: "https://linkedin.com/jobs/view/123469",
+    companyUrl: "https://ibm.com",
+    companyFollowers: 10000000,
+    companyCountry: "Argentina",
+    evaluationTime: "2 semanas",
+    postedAgo: "Hace 6 meses",
+    applications: 270,
+    recruiterTeam: [
+      { name: "Carlos Lopez", position: "Scrum Master", profileUrl: "https://linkedin.com/in/carloslopez" },
+    ],
+    industry: "Consultoría",
+    companySize: "5000-10000 empleados",
+    skills: ["Scrum", "Agile", "Project Management"],
+    techStack: ["Jira", "Confluence", "Trello"],
+    englishRequired: true,
   },
   {
     id: 15,
@@ -172,6 +475,26 @@ const mockJobs: JobApplication[] = [
     countryFlag: "🇺🇸",
     date: "30/09/2025 18:20",
     status: "Postulados",
+    applicants: 300,
+    workMode: "Presencial",
+    workType: "Full-Time",
+    salary: "$95,000 - $155,000/año",
+    description: "Implementar y mantener medidas de seguridad para proteger sistemas y redes.",
+    jobUrl: "https://glassdoor.com/jobs/view/123470",
+    companyUrl: "https://cisco.com",
+    companyFollowers: 13000000,
+    companyCountry: "Estados Unidos",
+    evaluationTime: "3 semanas",
+    postedAgo: "Hace 7 meses",
+    applications: 300,
+    recruiterTeam: [
+      { name: "Laura Brown", position: "Security Engineer", profileUrl: "https://glassdoor.com/in/laurabrown" },
+    ],
+    industry: "Telecomunicaciones",
+    companySize: "100,000+ empleados",
+    skills: ["Network Security", "Cybersecurity"],
+    techStack: ["Cisco ASA", "Firewall", "VPN"],
+    englishRequired: true,
   },
   {
     id: 16,
@@ -182,6 +505,24 @@ const mockJobs: JobApplication[] = [
     countryFlag: "🇺🇸",
     date: "30/09/2025 17:15",
     status: "Entrevista",
+    applicants: 250,
+    workMode: "Remoto",
+    workType: "Full-Time",
+    salary: "$120,000 - $180,000/año",
+    description: "Desarrollar y implementar modelos de aprendizaje automático utilizando herramientas de IA.",
+    jobUrl: "https://linkedin.com/jobs/view/123471",
+    companyUrl: "https://openai.com",
+    companyFollowers: 8000000,
+    companyCountry: "Estados Unidos",
+    evaluationTime: "2 semanas",
+    postedAgo: "Hace 8 meses",
+    applications: 250,
+    recruiterTeam: [{ name: "James Green", position: "ML Engineer", profileUrl: "https://linkedin.com/in/jamesgreen" }],
+    industry: "Inteligencia artificial",
+    companySize: "10,000+ empleados",
+    skills: ["Machine Learning", "Deep Learning"],
+    techStack: ["TensorFlow", "PyTorch", "Keras"],
+    englishRequired: true,
   },
   {
     id: 17,
@@ -192,6 +533,24 @@ const mockJobs: JobApplication[] = [
     countryFlag: "🇧🇷",
     date: "30/09/2025 16:10",
     status: "Postulados",
+    applicants: 230,
+    workMode: "Híbrido",
+    workType: "Full-Time",
+    salary: "$90,000 - $150,000/año",
+    description: "Asegurar la disponibilidad y confiabilidad de sistemas y servicios.",
+    jobUrl: "https://bumeran.com/jobs/view/123472",
+    companyUrl: "https://netflix.com",
+    companyFollowers: 12000000,
+    companyCountry: "Brasil",
+    evaluationTime: "2 semanas",
+    postedAgo: "Hace 9 meses",
+    applications: 230,
+    recruiterTeam: [{ name: "Sophia Black", position: "SRE", profileUrl: "https://bumeran.com/in/sophiablack" }],
+    industry: "Entretenimiento",
+    companySize: "100,000+ empleados",
+    skills: ["Site Reliability", "Monitoring"],
+    techStack: ["Prometheus", "Grafana", "Kubernetes"],
+    englishRequired: true,
   },
   {
     id: 18,
@@ -202,6 +561,26 @@ const mockJobs: JobApplication[] = [
     countryFlag: "🇦🇷",
     date: "30/09/2025 15:05",
     status: "Rechazado",
+    applicants: 280,
+    workMode: "Presencial",
+    workType: "Full-Time",
+    salary: "$110,000 - $170,000/año",
+    description: "Liderar equipos técnicos y asegurar la entrega de proyectos de alta calidad.",
+    jobUrl: "https://linkedin.com/jobs/view/123473",
+    companyUrl: "https://uber.com",
+    companyFollowers: 11000000,
+    companyCountry: "Argentina",
+    evaluationTime: "3 semanas",
+    postedAgo: "Hace 10 meses",
+    applications: 280,
+    recruiterTeam: [
+      { name: "Michael White", position: "Technical Lead", profileUrl: "https://linkedin.com/in/michaelwhite" },
+    ],
+    industry: "Transporte",
+    companySize: "100,000+ empleados",
+    skills: ["Technical Leadership", "Agile Methodologies"],
+    techStack: ["Java", "Python", "Docker"],
+    englishRequired: true,
   },
   {
     id: 19,
@@ -212,6 +591,26 @@ const mockJobs: JobApplication[] = [
     countryFlag: "🇲🇽",
     date: "30/09/2025 14:00",
     status: "Postulados",
+    applicants: 240,
+    workMode: "Híbrido",
+    workType: "Full-Time",
+    salary: "$100,000 - $160,000/año",
+    description: "Desarrollar aplicaciones móviles para iOS utilizando Swift y otras tecnologías.",
+    jobUrl: "https://zonajobs.com/jobs/view/123474",
+    companyUrl: "https://airbnb.com",
+    companyFollowers: 10000000,
+    companyCountry: "México",
+    evaluationTime: "2 semanas",
+    postedAgo: "Hace 11 meses",
+    applications: 240,
+    recruiterTeam: [
+      { name: "Jessica Lopez", position: "iOS Developer", profileUrl: "https://zonajobs.com/in/jessicalopez" },
+    ],
+    industry: "Alquileres",
+    companySize: "100,000+ empleados",
+    skills: ["iOS Development", "Swift"],
+    techStack: ["Swift", "Xcode", "UIKit"],
+    englishRequired: true,
   },
   {
     id: 20,
@@ -222,6 +621,26 @@ const mockJobs: JobApplication[] = [
     countryFlag: "🇨🇱",
     date: "30/09/2025 12:55",
     status: "En revisión",
+    applicants: 290,
+    workMode: "Presencial",
+    workType: "Full-Time",
+    salary: "$95,000 - $155,000/año",
+    description: "Desarrollar aplicaciones móviles para Android utilizando Kotlin y otras tecnologías.",
+    jobUrl: "https://linkedin.com/jobs/view/123475",
+    companyUrl: "https://twitter.com",
+    companyFollowers: 9000000,
+    companyCountry: "Chile",
+    evaluationTime: "3 semanas",
+    postedAgo: "Hace 12 meses",
+    applications: 290,
+    recruiterTeam: [
+      { name: "Carlos Green", position: "Android Developer", profileUrl: "https://linkedin.com/in/carlosgreen" },
+    ],
+    industry: "Redes sociales",
+    companySize: "100,000+ empleados",
+    skills: ["Android Development", "Kotlin"],
+    techStack: ["Kotlin", "Android Studio", "Java"],
+    englishRequired: true,
   },
   {
     id: 21,
@@ -232,6 +651,26 @@ const mockJobs: JobApplication[] = [
     countryFlag: "🇺🇸",
     date: "30/09/2025 11:50",
     status: "Postulados",
+    applicants: 260,
+    workMode: "Remoto",
+    workType: "Full-Time",
+    salary: "$105,000 - $165,000/año",
+    description: "Diseñar y mantener sistemas de alta performance utilizando tecnologías Intel.",
+    jobUrl: "https://glassdoor.com/jobs/view/123476",
+    companyUrl: "https://intel.com",
+    companyFollowers: 10000000,
+    companyCountry: "Estados Unidos",
+    evaluationTime: "2 semanas",
+    postedAgo: "Hace 1 mes",
+    applications: 260,
+    recruiterTeam: [
+      { name: "Laura Black", position: "Systems Engineer", profileUrl: "https://glassdoor.com/in/laurablack" },
+    ],
+    industry: "Tecnología de semiconductores",
+    companySize: "100,000+ empleados",
+    skills: ["System Design", "Performance Optimization"],
+    techStack: ["Linux", "Docker", "Kubernetes"],
+    englishRequired: true,
   },
   {
     id: 22,
@@ -242,6 +681,24 @@ const mockJobs: JobApplication[] = [
     countryFlag: "🇪🇸",
     date: "30/09/2025 10:45",
     status: "Postulados",
+    applicants: 270,
+    workMode: "Presencial",
+    workType: "Full-Time",
+    salary: "$85,000 - $125,000/año",
+    description: "Administrar y mantener bases de datos Oracle de alta disponibilidad.",
+    jobUrl: "https://linkedin.com/jobs/view/123477",
+    companyUrl: "https://oracle.com",
+    companyFollowers: 9000000,
+    companyCountry: "España",
+    evaluationTime: "2 semanas",
+    postedAgo: "Hace 2 meses",
+    applications: 270,
+    recruiterTeam: [{ name: "Michael Green", position: "DBA", profileUrl: "https://linkedin.com/in/michaelgreen" }],
+    industry: "Base de datos",
+    companySize: "100,000+ empleados",
+    skills: ["Database Administration", "SQL"],
+    techStack: ["Oracle", "MySQL", "PostgreSQL"],
+    englishRequired: true,
   },
   {
     id: 23,
@@ -252,6 +709,26 @@ const mockJobs: JobApplication[] = [
     countryFlag: "🇨🇴",
     date: "30/09/2025 09:40",
     status: "Aceptado",
+    applicants: 280,
+    workMode: "Híbrido",
+    workType: "Full-Time",
+    salary: "$90,000 - $150,000/año",
+    description: "Diseñar y mantener redes de alta performance utilizando tecnologías Juniper.",
+    jobUrl: "https://bumeran.com/jobs/view/123478",
+    companyUrl: "https://juniper.com",
+    companyFollowers: 8000000,
+    companyCountry: "Colombia",
+    evaluationTime: "2 semanas",
+    postedAgo: "Hace 3 meses",
+    applications: 280,
+    recruiterTeam: [
+      { name: "Jessica White", position: "Network Engineer", profileUrl: "https://bumeran.com/in/jessicawhite" },
+    ],
+    industry: "Telecomunicaciones",
+    companySize: "10,000+ empleados",
+    skills: ["Network Engineering", "Routing"],
+    techStack: ["Juniper", "Cisco", "Aruba"],
+    englishRequired: true,
   },
   {
     id: 24,
@@ -262,6 +739,26 @@ const mockJobs: JobApplication[] = [
     countryFlag: "🇺🇸",
     date: "29/09/2025 18:35",
     status: "Postulados",
+    applicants: 290,
+    workMode: "Remoto",
+    workType: "Full-Time",
+    salary: "$110,000 - $170,000/año",
+    description: "Desarrollar y mantener aplicaciones blockchain utilizando tecnologías Coinbase.",
+    jobUrl: "https://linkedin.com/jobs/view/123479",
+    companyUrl: "https://coinbase.com",
+    companyFollowers: 7000000,
+    companyCountry: "Estados Unidos",
+    evaluationTime: "3 semanas",
+    postedAgo: "Hace 4 meses",
+    applications: 290,
+    recruiterTeam: [
+      { name: "Carlos Green", position: "Blockchain Developer", profileUrl: "https://linkedin.com/in/carlosgreen" },
+    ],
+    industry: "Criptomonedas",
+    companySize: "10,000+ empleados",
+    skills: ["Blockchain Development", "Smart Contracts"],
+    techStack: ["Solidity", "Ethereum", "Hyperledger"],
+    englishRequired: true,
   },
   {
     id: 25,
@@ -272,6 +769,26 @@ const mockJobs: JobApplication[] = [
     countryFlag: "🇦🇷",
     date: "29/09/2025 17:30",
     status: "En revisión",
+    applicants: 250,
+    workMode: "Híbrido",
+    workType: "Full-Time",
+    salary: "$100,000 - $160,000/año",
+    description: "Desarrollar juegos utilizando Unity y otras tecnologías de desarrollo de juegos.",
+    jobUrl: "https://zonajobs.com/jobs/view/123480",
+    companyUrl: "https://unity.com",
+    companyFollowers: 6000000,
+    companyCountry: "Argentina",
+    evaluationTime: "2 semanas",
+    postedAgo: "Hace 5 meses",
+    applications: 250,
+    recruiterTeam: [
+      { name: "Sophia Black", position: "Game Developer", profileUrl: "https://zonajobs.com/in/sophiablack" },
+    ],
+    industry: "Juegos",
+    companySize: "10,000+ empleados",
+    skills: ["Game Development", "Unity"],
+    techStack: ["Unity", "C#", "Shader"],
+    englishRequired: true,
   },
   {
     id: 26,
@@ -282,6 +799,26 @@ const mockJobs: JobApplication[] = [
     countryFlag: "🇺🇸",
     date: "29/09/2025 16:25",
     status: "Postulados",
+    applicants: 240,
+    workMode: "Presencial",
+    workType: "Full-Time",
+    salary: "$115,000 - $175,000/año",
+    description: "Desarrollar experiencias AR/VR utilizando tecnologías Meta.",
+    jobUrl: "https://linkedin.com/jobs/view/123481",
+    companyUrl: "https://meta.com",
+    companyFollowers: 7000000,
+    companyCountry: "Estados Unidos",
+    evaluationTime: "3 semanas",
+    postedAgo: "Hace 6 meses",
+    applications: 240,
+    recruiterTeam: [
+      { name: "Michael Green", position: "AR/VR Developer", profileUrl: "https://linkedin.com/in/michaelgreen" },
+    ],
+    industry: "Realidad aumentada/virtual",
+    companySize: "100,000+ empleados",
+    skills: ["AR/VR Development", "Unity"],
+    techStack: ["Unity", "C#", "Oculus SDK"],
+    englishRequired: true,
   },
   {
     id: 27,
@@ -292,29 +829,63 @@ const mockJobs: JobApplication[] = [
     countryFlag: "🇧🇷",
     date: "29/09/2025 15:20",
     status: "Entrevista",
+    applicants: 230,
+    workMode: "Híbrido",
+    workType: "Full-Time",
+    salary: "$90,000 - $150,000/año",
+    description: "Administrar y mantener infraestructuras de TI utilizando tecnologías Digital Ocean.",
+    jobUrl: "https://glassdoor.com/jobs/view/123482",
+    companyUrl: "https://digitalocean.com",
+    companyFollowers: 6000000,
+    companyCountry: "Brasil",
+    evaluationTime: "2 semanas",
+    postedAgo: "Hace 7 meses",
+    applications: 230,
+    recruiterTeam: [
+      {
+        name: "Jessica White",
+        position: "Infrastructure Engineer",
+        profileUrl: "https://glassdoor.com/in/jessicawhite",
+      },
+    ],
+    industry: "Cloud computing",
+    companySize: "5000-10000 empleados",
+    skills: ["Infrastructure Management", "Cloud Computing"],
+    techStack: ["Digital Ocean", "AWS", "Azure"],
+    englishRequired: true,
   },
   {
     id: 28,
-    title: "Technical Writer",
-    company: "MongoDB",
+    title: "Release Manager",
+    company: "Atlassian",
     portal: "LinkedIn",
     country: "Uruguay",
     countryFlag: "🇺🇾",
     date: "29/09/2025 14:15",
     status: "Postulados",
+    applicants: 220,
+    workMode: "Presencial",
+    workType: "Full-Time",
+    salary: "$85,000 - $125,000/año",
+    description: "Gestionar el ciclo de lanzamiento de productos utilizando herramientas Atlassian.",
+    jobUrl: "https://linkedin.com/jobs/view/123483",
+    companyUrl: "https://atlassian.com",
+    companyFollowers: 5000000,
+    companyCountry: "Uruguay",
+    evaluationTime: "2 semanas",
+    postedAgo: "Hace 8 meses",
+    applications: 220,
+    recruiterTeam: [
+      { name: "Carlos Green", position: "Release Manager", profileUrl: "https://linkedin.com/in/carlosgreen" },
+    ],
+    industry: "Software",
+    companySize: "10,000+ empleados",
+    skills: ["Release Management", "Agile Methodologies"],
+    techStack: ["Jira", "Confluence", "Bitbucket"],
+    englishRequired: true,
   },
   {
     id: 29,
-    title: "Release Manager",
-    company: "Atlassian",
-    portal: "Bumeran",
-    country: "México",
-    countryFlag: "🇲🇽",
-    date: "29/09/2025 13:10",
-    status: "Rechazado",
-  },
-  {
-    id: 30,
     title: "Solutions Architect",
     company: "Salesforce",
     portal: "LinkedIn",
@@ -322,6 +893,56 @@ const mockJobs: JobApplication[] = [
     countryFlag: "🇨🇱",
     date: "29/09/2025 12:05",
     status: "Postulados",
+    applicants: 210,
+    workMode: "Híbrido",
+    workType: "Full-Time",
+    salary: "$100,000 - $160,000/año",
+    description: "Diseñar soluciones de TI personalizadas utilizando tecnologías Salesforce.",
+    jobUrl: "https://linkedin.com/jobs/view/123484",
+    companyUrl: "https://salesforce.com",
+    companyFollowers: 4000000,
+    companyCountry: "Chile",
+    evaluationTime: "2 semanas",
+    postedAgo: "Hace 9 meses",
+    applications: 210,
+    recruiterTeam: [
+      { name: "Sophia Black", position: "Solutions Architect", profileUrl: "https://linkedin.com/in/sophiablack" },
+    ],
+    industry: "CRM",
+    companySize: "100,000+ empleados",
+    skills: ["Solution Architecture", "Salesforce"],
+    techStack: ["Salesforce", "Apex", "Visualforce"],
+    englishRequired: true,
+  },
+  {
+    id: 30,
+    title: "Technical Writer",
+    company: "MongoDB",
+    portal: "LinkedIn",
+    country: "Chile",
+    countryFlag: "🇨🇱",
+    date: "29/09/2025 11:00",
+    status: "Postulados",
+    applicants: 200,
+    workMode: "Presencial",
+    workType: "Full-Time",
+    salary: "$80,000 - $120,000/año",
+    description: "Redactar documentación técnica y guías de usuario para MongoDB.",
+    jobUrl: "https://linkedin.com/jobs/view/123485",
+    companyUrl: "https://mongodb.com",
+    companyFollowers: 3000000,
+    companyCountry: "Chile",
+    evaluationTime: "2 semanas",
+    postedAgo: "Hace 10 meses",
+    applications: 200,
+    recruiterTeam: [
+      { name: "Michael Green", position: "Technical Writer", profileUrl: "https://linkedin.com/in/michaelgreen" },
+    ],
+    industry: "Base de datos",
+    companySize: "5000-10000 empleados",
+    skills: ["Technical Writing", "Documentation"],
+    techStack: ["MongoDB", "Markdown", "Confluence"],
+    englishRequired: true,
   },
 ]
 
@@ -355,10 +976,26 @@ export default function AppliedJobsPage() {
   const [startDate, setStartDate] = useState<Date | null>(null)
   const [endDate, setEndDate] = useState<Date | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
+  const [selectedJob, setSelectedJob] = useState<JobApplication | null>(null)
   const itemsPerPage = 20
 
   const getPortalIcon = (portal: string) => {
-    return <BsLinkedin size={24} color="#0077B5" />
+    // The original code only had BsLinkedin, this is a placeholder for others.
+    // In a real app, you'd map portal names to their respective icons.
+    switch (portal.toLowerCase()) {
+      case "linkedin":
+        return <BsLinkedin size={24} color="#0077B5" />
+      case "indeed":
+        return <SiIndeed size={24} color="#0077B5" /> // Placeholder color
+      case "glassdoor":
+        return <SiGlassdoor size={24} color="#0077B5" /> // Placeholder color
+      case "zonajobs":
+        return <FcGoogle size={24} /> // Placeholder icon and color
+      case "bumeran":
+        return <FcGoogle size={24} /> // Placeholder icon and color
+      default:
+        return <BsLinkedin size={24} color="#0077B5" />
+    }
   }
 
   const getStatusClass = (status: string) => {
@@ -378,11 +1015,24 @@ export default function AppliedJobsPage() {
     }
   }
 
-  // Paginación
-  const totalPages = Math.ceil(mockJobs.length / itemsPerPage)
+  const filterJobs = (jobs: JobApplication[]) => {
+    return jobs.filter((job) => {
+      const matchesSearch =
+        searchTerm.toLowerCase() === "" ||
+        job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        job.company.toLowerCase().includes(searchTerm.toLowerCase())
+      const matchesPortal = selectedPortal === "all" || job.portal.toLowerCase() === selectedPortal.toLowerCase()
+      const matchesType = selectedType === "all" || job.workType?.toLowerCase() === selectedType.toLowerCase()
+      const matchesDateRange =
+        (!startDate || new Date(job.date) >= startDate) && (!endDate || new Date(job.date) <= endDate)
+      return matchesSearch && matchesPortal && matchesType && matchesDateRange
+    })
+  }
+
+  const totalPages = Math.ceil(filterJobs(mockJobs).length / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
   const endIndex = startIndex + itemsPerPage
-  const currentJobs = mockJobs.slice(startIndex, endIndex)
+  const currentJobs = filterJobs(mockJobs).slice(startIndex, endIndex)
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page)
@@ -399,14 +1049,18 @@ export default function AppliedJobsPage() {
         <h1 className={styles.title}>Ofertas Aplicadas</h1>
       </div>
 
-      {/* Filtros */}
       <div className={styles.filtersCard}>
         <div className={styles.filters}>
-          <SearchInput
-            placeholder="Buscar"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+          <div className={styles.searchInput}>
+            <FiSearch className={styles.searchIcon} />
+            <input
+              type="text"
+              placeholder="Buscar"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className={styles.search}
+            />
+          </div>
 
           <Select
             options={portalOptions}
@@ -439,9 +1093,8 @@ export default function AppliedJobsPage() {
         </div>
       </div>
 
-      {/* Tabla */}
-        <div className={styles.tableCard}>
-          <div className={styles.tableHeader}>
+      <div className={styles.tableCard}>
+        <div className={styles.tableHeader}>
           <div className={styles.columnCompany}>Empresa</div>
           <div className={styles.columnPortal}>Portal</div>
           <div className={styles.columnCountry}>País</div>
@@ -449,10 +1102,10 @@ export default function AppliedJobsPage() {
           <div className={styles.columnStatus}>Estado</div>
         </div>
 
-          <div className={styles.tableBody}>
-            {currentJobs.map((job) => (
-              <div key={job.id} className={styles.tableRow}>
-                <div className={styles.columnCompany}>
+        <div className={styles.tableBody}>
+          {currentJobs.map((job) => (
+            <div key={job.id} className={styles.tableRow} onClick={() => setSelectedJob(job)}>
+              <div className={styles.columnCompany}>
                 <div className={styles.companyInfo}>
                   <div className={styles.companyIcon}>
                     <FiSearch size={20} />
@@ -487,6 +1140,8 @@ export default function AppliedJobsPage() {
 
         <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
       </div>
+
+      {selectedJob && <JobDetailModal job={selectedJob} onClose={() => setSelectedJob(null)} />}
     </div>
   )
 }

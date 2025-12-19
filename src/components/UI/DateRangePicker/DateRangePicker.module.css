@@ -133,12 +133,20 @@
 }
 
 .daySelected {
-  background: var(--primary) !important;
+  background: var(--primary-color) !important;
   color: white !important;
+  z-index: 1;
+  position: relative;
 }
 
 .dayInRange {
   background: rgba(255, 99, 0, 0.1);
+}
+
+/* Asegurar que las fechas seleccionadas siempre tengan el color primario */
+.day.daySelected.dayInRange {
+  background: var(--primary-color) !important;
+  color: white !important;
 }
 
 .actions {

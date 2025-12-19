@@ -85,30 +85,35 @@
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
   overflow: hidden;
+  padding: 1.5rem; /* Added padding to tableCard to wrap header, body and pagination */
 }
 
 .tableHeader {
   display: grid;
   grid-template-columns: 40px 2fr 1fr 1fr 1.2fr 0.8fr 1fr 0.8fr 1.2fr;
   gap: 1rem;
-  padding: 1rem 1.5rem;
+  padding: 0.75rem 1rem;
   background: var(--surface);
   font-weight: 600;
   font-size: 0.85rem;
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  border-radius: var(--radius-md);
+  margin-bottom: 0.5rem;
 }
 
 .tableBody {
-  min-height: 400px;
+  /* Removed min-height to let content dictate size */
+  display: flex;
+  flex-direction: column;
 }
 
 .tableRow {
   display: grid;
   grid-template-columns: 40px 2fr 1fr 1fr 1.2fr 0.8fr 1fr 0.8fr 1.2fr;
   gap: 1rem;
-  padding: 1rem 1.5rem;
+  padding: 1rem;
   border-bottom: 1px solid var(--border);
   align-items: center;
   transition: var(--transition-fast);
@@ -629,31 +634,6 @@
   height: 18px;
   cursor: pointer;
   accent-color: var(--primary-color);
-  position: relative;
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  border: 2px solid var(--border);
-  border-radius: 4px;
-  background-color: white;
-  transition: all 0.2s ease;
-}
-
-.checkbox:checked {
-  background-color: var(--primary-color);
-  border-color: var(--primary-color);
-}
-
-.checkbox:checked::after {
-  content: "";
-  position: absolute;
-  left: 5px;
-  top: 2px;
-  width: 4px;
-  height: 8px;
-  border: solid white;
-  border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
 }
 
 /* Updated sortable header styles to always show arrows in gray */
