@@ -43,9 +43,9 @@ export function PortalConnectionModal({
       await onConnect(email, password)
       // Success - close modal solo si keepOpenOnSuccess es false
       if (!keepOpenOnSuccess) {
-        setEmail("")
-        setPassword("")
-        onClose()
+      setEmail("")
+      setPassword("")
+      onClose()
       }
       // Si keepOpenOnSuccess es true, el loading permanecerá activo
       // y el modal se cerrará cuando se llame explícitamente a onClose

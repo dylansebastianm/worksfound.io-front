@@ -1,3 +1,5 @@
+import { getAuthHeaders } from './auth';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 export interface ScrapeJobsResponse {
@@ -27,9 +29,7 @@ export async function scrapeJobs(
   try {
     const response = await fetch(`${API_URL}/api/jobs/scrape`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify({
         user_id,
         url,
@@ -60,9 +60,7 @@ export async function cancelScrapeJobs(user_id: number): Promise<CancelScrapeRes
   try {
     const response = await fetch(`${API_URL}/api/jobs/scrape/cancel`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify({
         user_id,
       }),

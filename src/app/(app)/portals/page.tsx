@@ -243,8 +243,8 @@ export default function PortalsPage() {
           console.error("Demasiado tiempo con errores de conexión, deteniendo polling")
           stopPolling()
           setError("Error conectando con el servidor. Por favor, intenta de nuevo.")
-          setIsLoading(false)
-          setLoginSessionId(null)
+        setIsLoading(false)
+        setLoginSessionId(null)
           return
         }
         
@@ -313,11 +313,11 @@ export default function PortalsPage() {
         portalColor="#0077B5"
         onConnect={handleLinkedInConnect}
         keepOpenOnSuccess={true}
-      />
+            />
 
-      {loginSessionId && (
+            {loginSessionId && (
         <div style={{ padding: "12px", background: "#e3f2fd", borderRadius: "4px", marginBottom: "16px", fontSize: "14px", maxWidth: "400px", margin: "0 auto 24px" }}>
-          ⏳ Esperando a que completes el login en la ventana del navegador...
+                ⏳ Esperando a que completes el login en la ventana del navegador...
         </div>
       )}
 

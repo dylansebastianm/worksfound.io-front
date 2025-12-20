@@ -12,6 +12,8 @@ import { TagInput } from "@/components/UI/TagInput/TagInput"
 import { Switch } from "@/components/UI/Switch/Switch"
 import { Pagination } from "@/components/UI/Pagination/Pagination"
 import { DateRangePicker } from "@/components/UI/DateRangePicker/DateRangePicker"
+import { LoadingSpinner } from "@/components/UI/LoadingSpinner/LoadingSpinner"
+import { getUsers, User as ApiUser } from "@/lib/users"
 import styles from "./users.module.css"
 
 interface User {
@@ -21,12 +23,12 @@ interface User {
   autoApplyEnabled: boolean
   totalApplications: number
   startDate: string
-  daysRemaining: number
-  status: "Activo" | "Finalizado" | "Contratado"
-  sector: string
-  phone: string
-  // Profile data
-  profile: {
+  daysRemaining: number | null
+  status: "Activo" | "Finalizado" | "Contratado" | "Cancelled"
+  sector: string | null
+  phone: string | null
+  // Profile data (opcional, para edición)
+  profile?: {
     age: string
     gender: string
     experienceYears: string
@@ -39,8 +41,8 @@ interface User {
     city: string
     phone: string
   }
-  // Search config
-  searchConfig: {
+  // Search config (opcional, para edición)
+  searchConfig?: {
     searchGroups: JobSearchGroup[]
     requiresEnglish: boolean
     techStackFilter: string
@@ -58,267 +60,61 @@ interface JobSearchGroup {
   cvFile: string
 }
 
-const mockUsers: User[] = [
-  {
-    id: 1,
-    name: "Dylan Martínez",
-    email: "dylan@email.com",
-    autoApplyEnabled: true,
-    totalApplications: 847,
-    startDate: "15/09/2025",
-    daysRemaining: 44,
-    status: "Activo",
-    sector: "IT",
-    phone: "+5491112345678",
-    profile: {
-      age: "28",
-      gender: "male",
-      experienceYears: "5",
-      currentSalary: "85000",
-      expectedSalary: "110000",
-      degreeTitle: "Ingeniero en Sistemas",
-      institution: "Universidad de Buenos Aires",
-      englishLevel: "c1",
-      country: "Argentina",
-      city: "Buenos Aires",
-      phone: "+54 11 5555-1234",
-    },
-    searchConfig: {
-      searchGroups: [
-        {
-          id: "1",
-          jobTitle: "Frontend Developer",
-          positiveKeywords: ["React", "TypeScript", "Next.js"],
-          negativeKeywords: ["Angular", "Vue"],
-          cvFile: "cv1",
-        },
-      ],
-      requiresEnglish: true,
-      techStackFilter: "70",
-      countryFilter: "all",
-      workType: "fulltime",
-      acceptUnpaidInternships: false,
-    },
-  },
-  {
-    id: 2,
-    name: "María González",
-    email: "maria@email.com",
-    autoApplyEnabled: false,
-    totalApplications: 523,
-    startDate: "20/09/2025",
-    daysRemaining: 49,
-    status: "Activo",
-    sector: "IT",
-    phone: "+5491123456789",
-    profile: {
-      age: "32",
-      gender: "female",
-      experienceYears: "7",
-      currentSalary: "100000",
-      expectedSalary: "130000",
-      degreeTitle: "Licenciada en Computación",
-      institution: "Universidad Autónoma de Madrid",
-      englishLevel: "b2",
-      country: "España",
-      city: "Madrid",
-      phone: "+34 91 1234-5678",
-    },
-    searchConfig: {
-      searchGroups: [
-        {
-          id: "2",
-          jobTitle: "Backend Developer",
-          positiveKeywords: ["Python", "Django", "AWS"],
-          negativeKeywords: ["Node.js"],
-          cvFile: "cv2",
-        },
-      ],
-      requiresEnglish: true,
-      techStackFilter: "70",
-      countryFilter: "hispanic",
-      workType: "fulltime",
-      acceptUnpaidInternships: false,
-    },
-  },
-  {
-    id: 3,
-    name: "Carlos Pérez",
-    email: "carlos@email.com",
-    autoApplyEnabled: true,
-    totalApplications: 1205,
-    startDate: "01/09/2025",
-    daysRemaining: 30,
-    status: "Contratado",
-    sector: "IT",
-    phone: "+5491134567890",
-    profile: {
-      age: "35",
-      gender: "male",
-      experienceYears: "10",
-      currentSalary: "120000",
-      expectedSalary: "150000",
-      degreeTitle: "Ingeniero en Informática",
-      institution: "Universidad de Chile",
-      englishLevel: "native",
-      country: "Chile",
-      city: "Santiago",
-      phone: "+56 2 1234-5678",
-    },
-    searchConfig: {
-      searchGroups: [
-        {
-          id: "3",
-          jobTitle: "Tech Lead",
-          positiveKeywords: ["Java", "Spring", "Microservices"],
-          negativeKeywords: ["React"],
-          cvFile: "cv3",
-        },
-      ],
-      requiresEnglish: false,
-      techStackFilter: "none",
-      countryFilter: "hispanic",
-      workType: "both",
-      acceptUnpaidInternships: true,
-    },
-  },
-  {
-    id: 4,
-    name: "Ana Silva",
-    email: "ana@email.com",
-    autoApplyEnabled: true,
-    totalApplications: 678,
-    startDate: "10/09/2025",
-    daysRemaining: 39,
-    status: "Activo",
-    sector: "IT",
-    phone: "+5491145678901",
-    profile: {
-      age: "26",
-      gender: "female",
-      experienceYears: "3",
-      currentSalary: "70000",
-      expectedSalary: "95000",
-      degreeTitle: "Ingeniera en Software",
-      institution: "Universidade de São Paulo",
-      englishLevel: "b1",
-      country: "Brasil",
-      city: "São Paulo",
-      phone: "+55 11 1234-5678",
-    },
-    searchConfig: {
-      searchGroups: [
-        {
-          id: "4",
-          jobTitle: "Mobile Developer",
-          positiveKeywords: ["React Native", "Mobile", "Flutter"],
-          negativeKeywords: ["iOS"],
-          cvFile: "cv4",
-        },
-      ],
-      requiresEnglish: true,
-      techStackFilter: "70",
-      countryFilter: "hispanic",
-      workType: "fulltime",
-      acceptUnpaidInternships: false,
-    },
-  },
-  {
-    id: 5,
-    name: "Luis Rodríguez",
-    email: "luis@email.com",
-    autoApplyEnabled: false,
-    totalApplications: 234,
-    startDate: "25/09/2025",
-    daysRemaining: 54,
-    status: "Finalizado",
-    sector: "IT",
-    phone: "+5491156789012",
-    profile: {
-      age: "30",
-      gender: "male",
-      experienceYears: "8",
-      currentSalary: "90000",
-      expectedSalary: "120000",
-      degreeTitle: "Ingeniero en Telecomunicaciones",
-      institution: "Universidad de la República",
-      englishLevel: "c2",
-      country: "Uruguay",
-      city: "Montevideo",
-      phone: "+598 2 1234-5678",
-    },
-    searchConfig: {
-      searchGroups: [
-        {
-          id: "5",
-          jobTitle: "DevOps Engineer",
-          positiveKeywords: ["DevOps", "Docker", "Kubernetes"],
-          negativeKeywords: ["AWS"],
-          cvFile: "cv5",
-        },
-      ],
-      requiresEnglish: false,
-      techStackFilter: "none",
-      countryFilter: "all",
-      workType: "fulltime",
-      acceptUnpaidInternships: true,
-    },
-  },
-  {
-    id: 6,
-    name: "Sofía Torres",
-    email: "sofia@email.com",
-    autoApplyEnabled: true,
-    totalApplications: 923,
-    startDate: "05/09/2025",
-    daysRemaining: 34,
-    status: "Activo",
-    sector: "IT",
-    phone: "+5491167890123",
-    profile: {
-      age: "29",
-      gender: "female",
-      experienceYears: "4",
-      currentSalary: "75000",
-      expectedSalary: "100000",
-      degreeTitle: "Licenciada en Ingeniería de Sistemas",
-      institution: "Universidad Nacional de Colombia",
-      englishLevel: "b2",
-      country: "Colombia",
-      city: "Bogotá",
-      phone: "+57 1 1234-5678",
-    },
-    searchConfig: {
-      searchGroups: [
-        {
-          id: "6",
-          jobTitle: "Frontend Developer",
-          positiveKeywords: ["Angular", "TypeScript", "RxJS"],
-          negativeKeywords: ["React"],
-          cvFile: "cv6",
-        },
-      ],
-      requiresEnglish: true,
-      techStackFilter: "70",
-      countryFilter: "hispanic",
-      workType: "fulltime",
-      acceptUnpaidInternships: false,
-    },
-  },
-]
+// Mapear estado del backend al frontend
+const mapStatus = (status: string): "Activo" | "Finalizado" | "Contratado" | "Cancelled" => {
+  switch (status) {
+    case "active":
+      return "Activo"
+    case "contracted":
+      return "Contratado"
+    case "cancelled":
+      return "Cancelled"
+    case "inactive":
+    default:
+      return "Finalizado"
+  }
+}
+
+// Mapear usuario del API al formato del componente
+const mapApiUserToComponent = (apiUser: ApiUser): User => {
+  // Formatear fecha de inicio
+  const formatDate = (dateStr: string | null): string => {
+    if (!dateStr) return ""
+    const date = new Date(dateStr)
+    const day = date.getDate().toString().padStart(2, "0")
+    const month = (date.getMonth() + 1).toString().padStart(2, "0")
+    const year = date.getFullYear()
+    return `${day}/${month}/${year}`
+  }
+
+  return {
+    id: apiUser.id,
+    name: apiUser.fullname,
+    email: apiUser.email,
+    autoApplyEnabled: apiUser.auto_apply,
+    totalApplications: apiUser.total_applications,
+    startDate: formatDate(apiUser.start_date),
+    daysRemaining: apiUser.days_remaining,
+    status: mapStatus(apiUser.status),
+    sector: apiUser.sector || "IT",
+    phone: apiUser.phone,
+  }
+}
+
 
 const statusOptions = [
   { value: "all", label: "Todos los estados" },
-  { value: "Activo", label: "Activo" },
-  { value: "Finalizado", label: "Finalizado" },
-  { value: "Contratado", label: "Contratado" },
+  { value: "active", label: "Activo" },
+  { value: "contracted", label: "Contratado" },
+  { value: "cancelled", label: "Cancelled" },
+  { value: "inactive", label: "Finalizado" },
 ]
 
 const sectorOptions = [
   { value: "all", label: "Todos los sectores" },
   { value: "IT", label: "IT" },
-  { value: "Marketing", label: "Marketing" },
-  { value: "Ventas", label: "Ventas" },
+  { value: "Sales", label: "Sales" },
+  { value: "Customer Experience", label: "Customer Experience" },
 ]
 
 export default function AdminUsersPage() {
@@ -336,10 +132,64 @@ export default function AdminUsersPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [showModal, setShowModal] = useState(false)
-  const [users, setUsers] = useState(mockUsers)
+  const [users, setUsers] = useState<User[]>([])
   const [editedUser, setEditedUser] = useState<User | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalUsers, setTotalUsers] = useState(0)
 
   const itemsPerPage = 10
+
+  // Cargar usuarios desde el API
+  useEffect(() => {
+    const loadUsers = async () => {
+      setLoading(true)
+      setError(null)
+      
+      try {
+        const params: any = {
+          page: currentPage,
+          limit: itemsPerPage,
+        }
+        
+        if (selectedStatus !== "all") {
+          params.status = selectedStatus
+        }
+        
+        if (selectedSector !== "all") {
+          params.sector = selectedSector
+        }
+        
+        if (searchTerm) {
+          params.search = searchTerm
+        }
+
+        const response = await getUsers(params)
+        
+        if (response.success && response.users) {
+          const mappedUsers = response.users.map(mapApiUserToComponent)
+          setUsers(mappedUsers)
+          
+          if (response.pagination) {
+            setTotalPages(response.pagination.total_pages)
+            setTotalUsers(response.pagination.total)
+          }
+        } else {
+          setError(response.error || "Error al cargar usuarios")
+          setUsers([])
+        }
+      } catch (err) {
+        console.error("Error loading users:", err)
+        setError("Error al conectar con el servidor")
+        setUsers([])
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadUsers()
+  }, [currentPage, selectedStatus, selectedSector, searchTerm])
 
   const handleSort = (field: "startDate" | "totalApplications") => {
     if (sortField === field) {
@@ -348,51 +198,8 @@ export default function AdminUsersPage() {
       setSortField(field)
       setSortDirection("desc")
     }
+    // TODO: Implementar ordenamiento en el backend si es necesario
   }
-
-  const parseDate = (dateStr: string): Date => {
-    const [day, month, year] = dateStr.split("/")
-    return new Date(Number.parseInt(year), Number.parseInt(month) - 1, Number.parseInt(day))
-  }
-
-  const filteredAndSortedUsers = users
-    .filter((user) => {
-      const matchesSearch =
-        user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchTerm.toLowerCase())
-      const matchesStatus = selectedStatus === "all" || user.status === selectedStatus
-      const matchesSector = selectedSector === "all" || user.sector === selectedSector
-
-      let matchesDate = true
-      if (dateRange.start || dateRange.end) {
-        const userDate = parseDate(user.startDate)
-        if (dateRange.start) {
-          matchesDate = matchesDate && userDate >= dateRange.start
-        }
-        if (dateRange.end) {
-          matchesDate = matchesDate && userDate <= dateRange.end
-        }
-      }
-
-      return matchesSearch && matchesStatus && matchesSector && matchesDate
-    })
-    .sort((a, b) => {
-      if (!sortField) return 0
-
-      if (sortField === "startDate") {
-        const dateA = parseDate(a.startDate)
-        const dateB = parseDate(b.startDate)
-        return sortDirection === "asc" ? dateA.getTime() - dateB.getTime() : dateB.getTime() - dateA.getTime()
-      }
-
-      if (sortField === "totalApplications") {
-        return sortDirection === "asc"
-          ? a.totalApplications - b.totalApplications
-          : b.totalApplications - a.totalApplications
-      }
-
-      return 0
-    })
 
   const toggleUserSelection = (userId: number) => {
     setSelectedUserIds((prev) => {
@@ -404,48 +211,51 @@ export default function AdminUsersPage() {
   }
 
   const toggleSelectAll = () => {
-    const currentUserIds = filteredAndSortedUsers
-      .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
-      .map((u) => u.id)
-    if (selectedUserIds.length === currentUserIds.length) {
+    const currentUserIds = users.map((u) => u.id)
+    if (selectedUserIds.length === currentUserIds.length && currentUserIds.length > 0) {
       setSelectedUserIds([])
     } else {
       setSelectedUserIds(currentUserIds)
     }
   }
 
-  const handleBulkAutoApply = (enable: boolean) => {
-    setUsers((prevUsers) =>
-      prevUsers.map((user) => {
-        if (selectedUserIds.includes(user.id)) {
-          return { ...user, autoApplyEnabled: enable }
-        }
-        return user
-      }),
-    )
+  const handleBulkAutoApply = async (enable: boolean) => {
+    // TODO: Implementar endpoint para actualizar auto-apply en lote
+    console.log("Bulk auto-apply:", enable, selectedUserIds)
     setSelectedUserIds([])
     setShowBulkActions(false)
+    // Recargar usuarios después de actualizar
+    // await loadUsers()
   }
 
   useEffect(() => {
     setShowBulkActions(selectedUserIds.length > 0)
   }, [selectedUserIds])
 
-  const toggleAutoApply = (userId: number) => {
-    setUsers((prevUsers) =>
-      prevUsers.map((user) => (user.id === userId ? { ...user, autoApplyEnabled: !user.autoApplyEnabled } : user)),
-    )
+  const toggleAutoApply = async (userId: number) => {
+    // TODO: Implementar endpoint para actualizar auto-apply de un usuario
+    console.log("Toggle auto-apply for user:", userId)
+    // Recargar usuarios después de actualizar
+    // await loadUsers()
   }
 
-  const handleWhatsApp = (phone: string, name: string) => {
+  const handleWhatsApp = (phone: string | null, name: string) => {
+    if (!phone) {
+      alert("El usuario no tiene teléfono registrado")
+      return
+    }
+    // Limpiar el teléfono (remover espacios, guiones, etc.)
+    const cleanPhone = phone.replace(/\D/g, "")
     const message = encodeURIComponent(`Hola ${name}, te contacto desde worksfound.io`)
-    window.open(`https://wa.me/${phone}?text=${message}`, "_blank")
+    window.open(`https://wa.me/${cleanPhone}?text=${message}`, "_blank")
   }
 
   const handleEditUser = (user: User) => {
-    setSelectedUser(user)
-    setEditedUser(JSON.parse(JSON.stringify(user)))
-    setShowModal(true)
+    // Por ahora solo mostramos un mensaje, ya que no tenemos los datos completos del perfil
+    alert("La edición de usuarios completos aún no está implementada. Solo tenemos datos básicos desde el API.")
+    // setSelectedUser(user)
+    // setEditedUser(JSON.parse(JSON.stringify(user)))
+    // setShowModal(true)
   }
 
   const updateEditedUserProfile = (field: string, value: any) => {
@@ -536,15 +346,27 @@ export default function AdminUsersPage() {
         return styles.statusFinished
       case "Contratado":
         return styles.statusHired
+      case "Cancelled":
+        return styles.statusFinished
       default:
         return styles.statusActive
     }
   }
 
-  const totalPages = Math.ceil(filteredAndSortedUsers.length / itemsPerPage)
-  const startIndex = (currentPage - 1) * itemsPerPage
-  const endIndex = startIndex + itemsPerPage
-  const currentUsers = filteredAndSortedUsers.slice(startIndex, endIndex)
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case "Activo":
+        return "Activo"
+      case "Finalizado":
+        return "Finalizado"
+      case "Contratado":
+        return "Contratado"
+      case "Cancelled":
+        return "Cancelled"
+      default:
+        return status
+    }
+  }
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page)
@@ -613,21 +435,14 @@ export default function AdminUsersPage() {
       <div className={styles.filtersCard}>
         <div className={styles.filters}>
           <SearchInput
-            placeholder="Buscar por nombre o email"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+              placeholder="Buscar por nombre o email"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
 
           <Select options={statusOptions} value={selectedStatus} onChange={setSelectedStatus} placeholder="Estado" />
 
           <Select options={sectorOptions} value={selectedSector} onChange={setSelectedSector} placeholder="Sector" />
-
-          <DateRangePicker
-            startDate={dateRange.start}
-            endDate={dateRange.end}
-            onChange={(start, end) => setDateRange({ start, end })}
-            placeholder="Fecha de alta"
-          />
 
           <button
             className={styles.clearButton}
@@ -635,8 +450,7 @@ export default function AdminUsersPage() {
               setSearchTerm("")
               setSelectedStatus("all")
               setSelectedSector("all")
-              setDateRange({ start: null, end: null })
-              setSortField(null)
+              setCurrentPage(1)
             }}
           >
             <FiX size={20} />
@@ -661,10 +475,26 @@ export default function AdminUsersPage() {
       )}
 
       <div className={styles.tableCard}>
+        {loading && <LoadingSpinner />}
+        
+        {error && !loading && (
+          <div className={styles.errorState}>
+            <p>Error: {error}</p>
+          </div>
+        )}
+
+        {!loading && !error && users.length === 0 && (
+          <div className={styles.emptyState}>
+            <p>No se encontraron usuarios</p>
+          </div>
+        )}
+
+        {!loading && !error && users.length > 0 && (
+          <>
         <div className={styles.tableHeader}>
           <div className={styles.columnCheckbox}>
             <Checkbox
-              checked={selectedUserIds.length === currentUsers.length && currentUsers.length > 0}
+              checked={selectedUserIds.length === users.length && users.length > 0}
               onChange={toggleSelectAll}
             />
           </div>
@@ -693,7 +523,7 @@ export default function AdminUsersPage() {
         </div>
 
         <div className={styles.tableBody}>
-          {currentUsers.map((user) => (
+          {users.map((user) => (
             <div key={user.id} className={styles.tableRow}>
               <div className={styles.columnCheckbox}>
                 <Checkbox
@@ -727,15 +557,17 @@ export default function AdminUsersPage() {
               </div>
 
               <div className={styles.columnDays}>
-                <span className={styles.daysCount}>{user.daysRemaining}</span>
+                <span className={styles.daysCount}>{user.daysRemaining ?? "-"}</span>
               </div>
 
               <div className={styles.columnStatus}>
-                <div className={`${styles.statusBadge} ${getStatusClass(user.status)}`}>{user.status}</div>
+                <div className={`${styles.statusBadge} ${getStatusClass(user.status)}`}>
+                  {getStatusLabel(user.status)}
+                </div>
               </div>
 
               <div className={styles.columnSector}>
-                <span className={styles.sector}>{user.sector}</span>
+                <span className={styles.sector}>{user.sector || "-"}</span>
               </div>
 
               <div className={styles.columnActions}>
@@ -753,9 +585,13 @@ export default function AdminUsersPage() {
             </div>
           ))}
         </div>
+        </>
+        )}
       </div>
 
-      <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
+      {!loading && !error && (
+        <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+      )}
 
       {showModal && selectedUser && editedUser && (
         <div className={styles.modalOverlay} onClick={() => setShowModal(false)}>

@@ -28,12 +28,8 @@ export default function LoginPage() {
     try {
       const response = await login(email, password)
 
-      if (response.success && response.user) {
-        // Guardar datos del usuario en sessionStorage
-        if (typeof window !== "undefined") {
-          sessionStorage.setItem("user_id", response.user.id.toString())
-          sessionStorage.setItem("user_email", response.user.email)
-        }
+      if (response.success && response.token && response.user) {
+        // El token y los datos del usuario ya se guardan automáticamente en la función login
         // Mostrar modal de términos
         setShowTermsModal(true)
       } else {
