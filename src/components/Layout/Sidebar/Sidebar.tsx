@@ -39,7 +39,7 @@ const navItems: NavItem[] = [
     icon: <IoPersonOutline />,
   },
   {
-    label: "Búsqueda",
+    label: "Configuración de Búsqueda",
     href: "/job-search",
     icon: <IoSearchOutline />,
   },
@@ -71,6 +71,11 @@ const navItems: NavItem[] = [
         label: "Usuarios",
         href: "/admin/users",
         icon: <IoPersonOutline />,
+      },
+      {
+        label: "Logs",
+        href: "/admin/logs",
+        icon: <IoDocumentTextOutline />,
       },
     ],
   },
