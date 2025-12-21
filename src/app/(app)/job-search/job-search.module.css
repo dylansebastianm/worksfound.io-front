@@ -75,11 +75,16 @@
   padding: 1.5rem;
   transition: var(--transition-base);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  position: relative;
 }
 
 .groupCard:hover {
   border-color: #d1d5db;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.groupSector {
+  margin-bottom: 1rem;
 }
 
 .groupHeader {
@@ -89,8 +94,21 @@
   margin-bottom: 1.25rem;
 }
 
-.jobTitleInput {
+.jobTitleWrapper {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.jobTitleLabel {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.jobTitleInput {
+  width: 100%;
   padding: 0.75rem 1rem;
   border: 1px solid #d1d5db;
   border-radius: 8px;
@@ -114,18 +132,21 @@
 }
 
 .deleteButton {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
   background: transparent;
   border: 1px solid #fee2e2;
   cursor: pointer;
   color: #ef4444;
-  font-size: 1.125rem;
-  padding: 0.625rem;
+  font-size: 1rem;
+  padding: 0.5rem;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: var(--transition-base);
   border-radius: 6px;
-  flex-shrink: 0;
+  z-index: 10;
 }
 
 .deleteButton:hover {

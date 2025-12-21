@@ -1,28 +1,29 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Input } from "@/components/UI/Input/Input"
 import { Select } from "@/components/UI/Select/Select"
 import { FileUpload } from "@/components/UI/FileUpload/FileUpload"
 import { Button } from "@/components/UI/Button/Button"
 import { LoadingSpinner } from "@/components/UI/LoadingSpinner/LoadingSpinner"
 import { Alert } from "@/components/UI/Alert/Alert"
+import { getUserProfile, updateUserProfile, UserProfile } from "@/lib/users"
 import styles from "./profile.module.css"
 
 export default function ProfilePage() {
   const [formData, setFormData] = useState({
-    age: "28",
-    gender: "male",
-    experienceYears: "5",
-    currentSalary: "85000",
-    expectedSalary: "110000",
-    degreeTitle: "Ingeniero en Sistemas",
-    institution: "Universidad de Buenos Aires",
-    englishLevel: "c1",
-    country: "Argentina",
-    city: "Buenos Aires",
-    phone: "+54 11 5555-1234",
+    age: "",
+    gender: "",
+    experienceYears: "",
+    currentSalary: "",
+    expectedSalary: "",
+    degreeTitle: "",
+    institution: "",
+    englishLevel: "",
+    country: "",
+    city: "",
+    phone: "",
     jobChangeReason: "",
   })
 
@@ -38,7 +39,50 @@ export default function ProfilePage() {
   const [coverLetter, setCoverLetter] = useState<File | null>(null)
 
   const [isLoading, setIsLoading] = useState(false)
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true)
   const [alert, setAlert] = useState<{ status: "success" | "error"; message: string } | null>(null)
+
+  // Cargar perfil al montar el componente
+  useEffect(() => {
+    const loadProfile = async () => {
+      setIsLoadingProfile(true)
+      try {
+        const response = await getUserProfile()
+        if (response.success && response.profile) {
+          const profile = response.profile
+          setFormData({
+            age: profile.age || "",
+            gender: profile.gender || "",
+            experienceYears: profile.experienceYears || "",
+            currentSalary: profile.currentSalary || "",
+            expectedSalary: profile.expectedSalary || "",
+            degreeTitle: profile.degreeTitle || "",
+            institution: profile.institution || "",
+            englishLevel: profile.englishLevel || "",
+            country: profile.country || "",
+            city: profile.city || "",
+            phone: profile.phone || "",
+            jobChangeReason: profile.jobChangeReason || "",
+          })
+        } else {
+          setAlert({
+            status: "error",
+            message: response.error || "Error al cargar el perfil",
+          })
+        }
+      } catch (error) {
+        console.error("Error loading profile:", error)
+        setAlert({
+          status: "error",
+          message: "Error al cargar el perfil",
+        })
+      } finally {
+        setIsLoadingProfile(false)
+      }
+    }
+
+    loadProfile()
+  }, [])
 
   const handleChange = (name: string, value: string) => {
     setFormData((prev) => ({ ...prev, [name]: value }))
@@ -51,24 +95,53 @@ export default function ProfilePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
+    setAlert(null)
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 2000))
+    try {
+      const response = await updateUserProfile({
+        age: formData.age,
+        gender: formData.gender,
+        experienceYears: formData.experienceYears,
+        currentSalary: formData.currentSalary,
+        expectedSalary: formData.expectedSalary,
+        degreeTitle: formData.degreeTitle,
+        institution: formData.institution,
+        englishLevel: formData.englishLevel,
+        country: formData.country,
+        city: formData.city,
+        phone: formData.phone,
+        jobChangeReason: formData.jobChangeReason,
+      })
 
-    setIsLoading(false)
-    setAlert({
-      status: "success",
-      message: "Los datos han sido actualizados correctamente",
-    })
+      if (response.success) {
+        setAlert({
+          status: "success",
+          message: response.message || "Los datos han sido actualizados correctamente",
+        })
 
-    // Reset all edit modes
-    setEditMode({
-      personal: false,
-      additional: false,
-      experience: false,
-      salary: false,
-      documents: false,
-    })
+        // Reset all edit modes
+        setEditMode({
+          personal: false,
+          additional: false,
+          experience: false,
+          salary: false,
+          documents: false,
+        })
+      } else {
+        setAlert({
+          status: "error",
+          message: response.error || "Error al actualizar el perfil",
+        })
+      }
+    } catch (error) {
+      console.error("Error updating profile:", error)
+      setAlert({
+        status: "error",
+        message: "Error al actualizar el perfil",
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const genderOptions = [
@@ -102,6 +175,14 @@ export default function ProfilePage() {
     { value: "no-growth", label: "Sin posibilidad de crecimiento" },
     { value: "contract-termination", label: "Finalización de contrato sin renovación" },
   ]
+
+  if (isLoadingProfile) {
+    return (
+      <div className={styles.container}>
+        <LoadingSpinner />
+      </div>
+    )
+  }
 
   return (
     <div className={styles.container}>
