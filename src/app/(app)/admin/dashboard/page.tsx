@@ -6,6 +6,8 @@ import { useEffect, useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { getCurrentUser, type User } from "@/lib/auth"
 import { scrapeJobs, cancelScrapeJobs } from "@/lib/jobs"
+import { getAdminStatistics } from "@/lib/admin"
+import { LoadingSpinner } from "@/components/UI/LoadingSpinner/LoadingSpinner"
 import { Alert } from "@/components/UI/Alert/Alert"
 import {
   FaUsers,
@@ -22,27 +24,12 @@ import { SiIndeed, SiGlassdoor } from "react-icons/si"
 import { FcGoogle } from "react-icons/fc"
 import styles from "./admin-dashboard.module.css"
 
-const mockAdminData = {
-  totalUsers: 156,
-  activeUsers: 142,
-  hiredUsers: 8,
-  inactiveUsers: 6,
-  hiredPercentage: 5.1,
-  avgDaysToHire: 38,
-  totalOffers: 45230,
-  totalApplications: 132847,
-  portals: [
-    { name: "LinkedIn", applications: 48920 },
-    { name: "Indeed", applications: 38450 },
-    { name: "Glassdoor", applications: 21377 },
-    { name: "Google Jobs", applications: 24100 },
-  ],
-}
-
 const INGEST_STORAGE_KEY = "admin_ingest_status"
 
 export default function AdminDashboardPage() {
   const [user, setUser] = useState<User | null>(null)
+  const [statistics, setStatistics] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(true)
   const [isIngesting, setIsIngesting] = useState(false)
   const [alert, setAlert] = useState<{ status: "success" | "error"; message: string } | null>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
@@ -59,8 +46,32 @@ export default function AdminDashboardPage() {
       if (savedStatus === "ingesting") {
         setIsIngesting(true)
       }
+      loadStatistics()
     }
   }, [router])
+
+  const loadStatistics = async () => {
+    setIsLoading(true)
+    try {
+      const response = await getAdminStatistics()
+      if (response.success && response.statistics) {
+        setStatistics(response.statistics)
+      } else {
+        setAlert({
+          status: "error",
+          message: response.error || "Error al cargar las estadísticas",
+        })
+      }
+    } catch (error) {
+      console.error("Error loading statistics:", error)
+      setAlert({
+        status: "error",
+        message: "Error al cargar las estadísticas",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const handleIngestOffers = async () => {
     if (!user) return
@@ -161,11 +172,47 @@ export default function AdminDashboardPage() {
     sessionStorage.removeItem(INGEST_STORAGE_KEY)
   }
 
-  if (!user) {
-    return null
+  if (!user || isLoading) {
+    return (
+      <div className={styles.container}>
+        <LoadingSpinner />
+      </div>
+    )
   }
 
-  const totalApplications = mockAdminData.portals.reduce((sum, p) => sum + p.applications, 0)
+  if (!statistics) {
+    return (
+      <div className={styles.container}>
+        <p>Error al cargar las estadísticas</p>
+      </div>
+    )
+  }
+
+  const totalApplications = statistics.applications.total
+
+  // Portales que siempre deben mostrarse
+  const allPortals = ["LinkedIn", "Indeed", "Google Jobs"]
+  const upcomingPortals = ["Indeed", "Google Jobs"]
+
+  // Crear un mapa de portales desde los datos del backend
+  const portalDataMap = new Map(
+    statistics.applications.byPortal.map((portal: any) => [portal.name, portal.count])
+  )
+
+  // Combinar portales fijos con datos del backend
+  const portalsToDisplay = allPortals.map((portalName) => {
+    const count = portalDataMap.get(portalName) || 0
+    return {
+      name: portalName,
+      count: count,
+    }
+  })
+
+  const portalIcons: Record<string, React.ReactNode> = {
+    LinkedIn: <FaLinkedin size={24} color="#0077B5" />,
+    Indeed: <SiIndeed size={24} color="#2164f3" />,
+    "Google Jobs": <FcGoogle size={24} />,
+  }
 
   return (
     <div className={styles.container}>
@@ -191,7 +238,7 @@ export default function AdminDashboardPage() {
             <FaUsers className={styles.metricIcon} />
             <h3 className={styles.metricTitle}>Total Usuarios</h3>
           </div>
-          <p className={styles.metricValue}>{mockAdminData.totalUsers}</p>
+          <p className={styles.metricValue}>{statistics.users.total}</p>
           <p className={styles.metricLabel}>Usuarios registrados</p>
         </div>
 
@@ -200,7 +247,7 @@ export default function AdminDashboardPage() {
             <FaUserCheck className={styles.metricIcon} style={{ color: "#10b981" }} />
             <h3 className={styles.metricTitle}>Usuarios Activos</h3>
           </div>
-          <p className={styles.metricValue}>{mockAdminData.activeUsers}</p>
+          <p className={styles.metricValue}>{statistics.users.active}</p>
           <p className={styles.metricLabel}>Suscripción vigente</p>
         </div>
 
@@ -209,7 +256,7 @@ export default function AdminDashboardPage() {
             <FaBriefcase className={styles.metricIcon} style={{ color: "#3b82f6" }} />
             <h3 className={styles.metricTitle}>Contratados</h3>
           </div>
-          <p className={styles.metricValue}>{mockAdminData.hiredUsers}</p>
+          <p className={styles.metricValue}>{statistics.users.contracted}</p>
           <p className={styles.metricLabel}>Usuarios empleados</p>
         </div>
 
@@ -218,7 +265,7 @@ export default function AdminDashboardPage() {
             <FaUserTimes className={styles.metricIcon} style={{ color: "#ef4444" }} />
             <h3 className={styles.metricTitle}>Bajas</h3>
           </div>
-          <p className={styles.metricValue}>{mockAdminData.inactiveUsers}</p>
+          <p className={styles.metricValue}>{statistics.users.cancelled}</p>
           <p className={styles.metricLabel}>Usuarios dados de baja</p>
         </div>
       </div>
@@ -229,9 +276,9 @@ export default function AdminDashboardPage() {
             <FaChartLine className={styles.statIcon} />
             <h3 className={styles.statTitle}>% Clientes Contratados</h3>
           </div>
-          <p className={styles.statValue}>{mockAdminData.hiredPercentage}%</p>
+          <p className={styles.statValue}>{statistics.users.contractedPercentage}%</p>
           <p className={styles.statDescription}>
-            {mockAdminData.hiredUsers} de {mockAdminData.totalUsers} usuarios
+            {statistics.users.contracted} de {statistics.users.total} usuarios
           </p>
         </div>
 
@@ -240,7 +287,7 @@ export default function AdminDashboardPage() {
             <FaClock className={styles.statIcon} />
             <h3 className={styles.statTitle}>Promedio Días de Contratación</h3>
           </div>
-          <p className={styles.statValue}>{mockAdminData.avgDaysToHire}</p>
+          <p className={styles.statValue}>{statistics.users.avgContractDays}</p>
           <p className={styles.statDescription}>días promedio hasta contratar</p>
         </div>
       </div>
@@ -248,13 +295,13 @@ export default function AdminDashboardPage() {
       <div className={styles.offersGrid}>
         <div className={styles.offerCard}>
           <h3 className={styles.offerTitle}>Ofertas Totales</h3>
-          <p className={styles.offerValue}>{mockAdminData.totalOffers.toLocaleString()}</p>
+          <p className={styles.offerValue}>{statistics.offers.total.toLocaleString()}</p>
           <p className={styles.offerLabel}>Disponibles en portales</p>
         </div>
 
         <div className={styles.offerCard}>
           <h3 className={styles.offerTitle}>Aplicaciones Totales</h3>
-          <p className={styles.offerValue}>{mockAdminData.totalApplications.toLocaleString()}</p>
+          <p className={styles.offerValue}>{statistics.applications.total.toLocaleString()}</p>
           <p className={styles.offerLabel}>Enviadas por el sistema</p>
         </div>
       </div>
@@ -262,29 +309,32 @@ export default function AdminDashboardPage() {
       <div className={styles.portalsCard}>
         <h2 className={styles.sectionTitle}>Distribución por Portal</h2>
         <div className={styles.portalsList}>
-          {mockAdminData.portals.map((portal) => {
-            const percentage = totalApplications > 0 ? Math.round((portal.applications / totalApplications) * 100) : 0
-            const portalIcons: Record<string, React.ReactNode> = {
-              LinkedIn: <FaLinkedin size={24} color="#0077B5" />,
-              Indeed: <SiIndeed size={24} color="#2164f3" />,
-              Glassdoor: <SiGlassdoor size={24} color="#0caa41" />,
-              "Google Jobs": <FcGoogle size={24} />,
-            }
+          {portalsToDisplay.map((portal) => {
+            const isUpcoming = upcomingPortals.includes(portal.name)
+            const percentage = isUpcoming
+              ? 0
+              : totalApplications > 0
+                ? Math.round((portal.count / totalApplications) * 100)
+                : 0
 
             return (
               <div key={portal.name} className={styles.portalItem}>
                 <div className={styles.portalInfo}>
-                  <div className={styles.portalNameWrapper}>
+                  <div className={`${styles.portalNameWrapper} ${isUpcoming ? styles.portalInactive : ""}`}>
                     {portalIcons[portal.name]}
                     <span className={styles.portalName}>{portal.name}</span>
                   </div>
                   <span className={styles.portalApps}>
-                    {portal.applications.toLocaleString()} aplicaciones ({percentage}%)
+                    {isUpcoming
+                      ? "Próximamente"
+                      : `${portal.count.toLocaleString()} aplicaciones (${percentage}%)`}
                   </span>
                 </div>
-                <div className={styles.portalBar}>
-                  <div className={styles.portalBarFill} style={{ width: `${percentage}%` }} />
-                </div>
+                {!isUpcoming && (
+                  <div className={styles.portalBar}>
+                    <div className={styles.portalBarFill} style={{ width: `${percentage}%` }} />
+                  </div>
+                )}
               </div>
             )
           })}

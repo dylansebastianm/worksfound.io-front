@@ -179,3 +179,55 @@ export async function updateUserProfile(profileData: UpdateUserProfileRequest): 
   }
 }
 
+export interface PortalStatistics {
+  name: string;
+  applications: number;
+}
+
+export interface UserStatistics {
+  totalApplications: number;
+  portals: PortalStatistics[];
+  hrInterviews: number;
+  technicalChallenges: number;
+  culturalInterviews: number;
+  proposalsReceived: number;
+  messagesSent: number;
+  directMessages: number;
+  aiResponsesGenerated: number;
+  joinDate: string | null;
+}
+
+export interface GetUserStatisticsResponse {
+  success: boolean;
+  statistics?: UserStatistics;
+  error?: string;
+}
+
+/**
+ * Obtiene las estadísticas del usuario autenticado
+ */
+export async function getUserStatistics(): Promise<GetUserStatisticsResponse> {
+  try {
+    const response = await fetch(`${API_URL}/api/user/statistics`, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+    });
+
+    if (response.status === 401) {
+      return {
+        success: false,
+        error: 'Token inválido o expirado. Por favor, inicia sesión nuevamente.',
+      };
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error obteniendo estadísticas:', error);
+    return {
+      success: false,
+      error: 'Error conectando con el servidor',
+    };
+  }
+}
+

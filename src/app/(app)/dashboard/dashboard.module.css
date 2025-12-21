@@ -261,6 +261,11 @@
   color: var(--text-primary);
 }
 
+.portalInactive {
+  filter: grayscale(100%) opacity(0.5);
+  pointer-events: none;
+}
+
 .portalApps {
   font-size: 0.875rem;
   color: var(--text-secondary);

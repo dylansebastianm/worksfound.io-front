@@ -1,204 +1,95 @@
 "use client"
 
-import { useState } from "react"
-import { FiChevronUp, FiChevronDown, FiClock, FiCheckCircle, FiXCircle, FiAlertCircle } from "react-icons/fi"
+import { useState, useEffect } from "react"
+import { FiChevronUp, FiChevronDown, FiClock, FiCheckCircle, FiXCircle, FiAlertCircle, FiExternalLink } from "react-icons/fi"
 import { Pagination } from "@/components/UI/Pagination/Pagination"
+import { LoadingSpinner } from "@/components/UI/LoadingSpinner/LoadingSpinner"
+import { Alert } from "@/components/UI/Alert/Alert"
+import { getIngestionLogs, type IngestionLog } from "@/lib/ingestion"
 import styles from "./logs.module.css"
 
-interface IngestLog {
-  id: number
-  startDateTime: string
-  status: "Exitoso" | "Fallido" | "En Proceso"
-  executionTime: string
-  url: string
-  offersFound: number
-  duplicateOffers: number
-  offersInserted: number
-}
-
-// Mock data for ingest logs
-const mockLogs: IngestLog[] = [
-  {
-    id: 1,
-    startDateTime: "15/01/2025 14:32:15",
-    status: "Exitoso",
-    executionTime: "2m 34s",
-    url: "https://www.linkedin.com/jobs/search",
-    offersFound: 847,
-    duplicateOffers: 102,
-    offersInserted: 745,
-  },
-  {
-    id: 2,
-    startDateTime: "15/01/2025 10:15:42",
-    status: "Exitoso",
-    executionTime: "1m 58s",
-    url: "https://www.indeed.com/jobs",
-    offersFound: 623,
-    duplicateOffers: 89,
-    offersInserted: 534,
-  },
-  {
-    id: 3,
-    startDateTime: "15/01/2025 06:08:22",
-    status: "Fallido",
-    executionTime: "45s",
-    url: "https://www.glassdoor.com/job-listings",
-    offersFound: 0,
-    duplicateOffers: 0,
-    offersInserted: 0,
-  },
-  {
-    id: 4,
-    startDateTime: "14/01/2025 22:45:10",
-    status: "Exitoso",
-    executionTime: "3m 12s",
-    url: "https://www.linkedin.com/jobs/search",
-    offersFound: 1023,
-    duplicateOffers: 156,
-    offersInserted: 867,
-  },
-  {
-    id: 5,
-    startDateTime: "14/01/2025 18:30:55",
-    status: "Exitoso",
-    executionTime: "2m 15s",
-    url: "https://www.indeed.com/jobs",
-    offersFound: 734,
-    duplicateOffers: 98,
-    offersInserted: 636,
-  },
-  {
-    id: 6,
-    startDateTime: "14/01/2025 14:22:33",
-    status: "En Proceso",
-    executionTime: "1m 05s",
-    url: "https://www.glassdoor.com/job-listings",
-    offersFound: 423,
-    duplicateOffers: 67,
-    offersInserted: 356,
-  },
-  {
-    id: 7,
-    startDateTime: "14/01/2025 10:18:47",
-    status: "Exitoso",
-    executionTime: "2m 42s",
-    url: "https://www.linkedin.com/jobs/search",
-    offersFound: 912,
-    duplicateOffers: 134,
-    offersInserted: 778,
-  },
-  {
-    id: 8,
-    startDateTime: "14/01/2025 06:12:20",
-    status: "Exitoso",
-    executionTime: "1m 52s",
-    url: "https://www.indeed.com/jobs",
-    offersFound: 567,
-    duplicateOffers: 72,
-    offersInserted: 495,
-  },
-  {
-    id: 9,
-    startDateTime: "13/01/2025 22:55:12",
-    status: "Fallido",
-    executionTime: "38s",
-    url: "https://www.glassdoor.com/job-listings",
-    offersFound: 0,
-    duplicateOffers: 0,
-    offersInserted: 0,
-  },
-  {
-    id: 10,
-    startDateTime: "13/01/2025 18:40:35",
-    status: "Exitoso",
-    executionTime: "2m 58s",
-    url: "https://www.linkedin.com/jobs/search",
-    offersFound: 1134,
-    duplicateOffers: 189,
-    offersInserted: 945,
-  },
-  {
-    id: 11,
-    startDateTime: "13/01/2025 14:28:18",
-    status: "Exitoso",
-    executionTime: "2m 21s",
-    url: "https://www.indeed.com/jobs",
-    offersFound: 689,
-    duplicateOffers: 95,
-    offersInserted: 594,
-  },
-  {
-    id: 12,
-    startDateTime: "13/01/2025 10:15:42",
-    status: "Exitoso",
-    executionTime: "1m 48s",
-    url: "https://www.glassdoor.com/job-listings",
-    offersFound: 456,
-    duplicateOffers: 63,
-    offersInserted: 393,
-  },
-]
-
 export default function AdminLoggingsPage() {
-  const [sortField, setSortField] = useState<"startDateTime" | "offersFound" | null>(null)
+  const [logs, setLogs] = useState<IngestionLog[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [alert, setAlert] = useState<{ status: "success" | "error"; message: string } | null>(null)
+  const [sortField, setSortField] = useState<"date_time" | "found" | null>(null)
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc")
-  const [selectedStatus, setSelectedStatus] = useState("all")
+  const [selectedStatus, setSelectedStatus] = useState<"Exitoso" | "Fallido" | "En Proceso" | "Error" | "Cancelado" | "all">("all")
   const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalCount, setTotalCount] = useState(0)
 
   const itemsPerPage = 10
 
-  const handleSort = (field: "startDateTime" | "offersFound") => {
+  useEffect(() => {
+    loadLogs()
+  }, [currentPage, selectedStatus, sortField, sortDirection])
+
+  const loadLogs = async () => {
+    setIsLoading(true)
+    try {
+      const response = await getIngestionLogs({
+        page: currentPage,
+        limit: itemsPerPage,
+        status: selectedStatus === "all" ? undefined : selectedStatus,
+        sortField: sortField || "date_time",
+        sortDirection: sortDirection,
+      })
+
+      if (response.success && response.logs && response.pagination) {
+        // Mapear estados de la base de datos a los estados del frontend
+        const mappedLogs: IngestionLog[] = response.logs.map((log) => {
+          let mappedStatus: "Exitoso" | "Fallido" | "En Proceso" = "Exitoso"
+          // Mapear estados de la base de datos a los estados del frontend
+          if (log.status === "Exitoso") {
+            mappedStatus = "Exitoso"
+          } else if (log.status === "Error" || log.status === "Cancelado" || log.status === "Fallido") {
+            mappedStatus = "Fallido"
+          } else if (log.status === "En Proceso") {
+            mappedStatus = "En Proceso"
+          }
+          return {
+            ...log,
+            status: mappedStatus
+          }
+        })
+        setLogs(mappedLogs)
+        setTotalPages(response.pagination.totalPages)
+        setTotalCount(response.pagination.total)
+      } else {
+        setAlert({
+          status: "error",
+          message: response.error || "Error al cargar los logs",
+        })
+      }
+    } catch (error) {
+      console.error("Error loading logs:", error)
+      setAlert({
+        status: "error",
+        message: "Error al cargar los logs",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleSort = (field: "date_time" | "found") => {
     if (sortField === field) {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc")
     } else {
       setSortField(field)
       setSortDirection("desc")
     }
+    setCurrentPage(1) // Resetear a primera página al cambiar ordenamiento
   }
-
-  const parseDateTime = (dateTimeStr: string): Date => {
-    const [datePart, timePart] = dateTimeStr.split(" ")
-    const [day, month, year] = datePart.split("/")
-    const [hours, minutes, seconds] = timePart.split(":")
-    return new Date(
-      Number.parseInt(year),
-      Number.parseInt(month) - 1,
-      Number.parseInt(day),
-      Number.parseInt(hours),
-      Number.parseInt(minutes),
-      Number.parseInt(seconds),
-    )
-  }
-
-  const filteredAndSortedLogs = mockLogs
-    .filter((log) => {
-      const matchesStatus = selectedStatus === "all" || log.status === selectedStatus
-      return matchesStatus
-    })
-    .sort((a, b) => {
-      if (!sortField) return 0
-
-      if (sortField === "startDateTime") {
-        const dateA = parseDateTime(a.startDateTime)
-        const dateB = parseDateTime(b.startDateTime)
-        return sortDirection === "asc" ? dateA.getTime() - dateB.getTime() : dateB.getTime() - dateA.getTime()
-      }
-
-      if (sortField === "offersFound") {
-        return sortDirection === "asc" ? a.offersFound - b.offersFound : b.offersFound - a.offersFound
-      }
-
-      return 0
-    })
-
-  const totalPages = Math.ceil(filteredAndSortedLogs.length / itemsPerPage)
-  const startIndex = (currentPage - 1) * itemsPerPage
-  const endIndex = startIndex + itemsPerPage
-  const currentLogs = filteredAndSortedLogs.slice(startIndex, endIndex)
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page)
+  }
+
+  const handleStatusChange = (status: string) => {
+    setSelectedStatus(status as typeof selectedStatus)
+    setCurrentPage(1) // Resetear a primera página al cambiar filtro
   }
 
   const getStatusClass = (status: string) => {
@@ -206,6 +97,7 @@ export default function AdminLoggingsPage() {
       case "Exitoso":
         return styles.statusSuccess
       case "Fallido":
+      case "Error":
         return styles.statusFailed
       case "En Proceso":
         return styles.statusInProgress
@@ -219,6 +111,7 @@ export default function AdminLoggingsPage() {
       case "Exitoso":
         return <FiCheckCircle size={18} />
       case "Fallido":
+      case "Error":
         return <FiXCircle size={18} />
       case "En Proceso":
         return <FiAlertCircle size={18} />
@@ -227,8 +120,16 @@ export default function AdminLoggingsPage() {
     }
   }
 
+  const truncateUrl = (url: string, maxLength: number = 30) => {
+    if (url.length <= maxLength) return url
+    return url.substring(0, maxLength) + "..."
+  }
+
   return (
     <div className={styles.container}>
+      {isLoading && <LoadingSpinner />}
+      {alert && <Alert status={alert.status} message={alert.message} onClose={() => setAlert(null)} />}
+
       <div className={styles.header}>
         <h1 className={styles.title}>Logs de Ingesta</h1>
         <p className={styles.subtitle}>Historial de procesos de obtención de ofertas laborales</p>
@@ -236,18 +137,19 @@ export default function AdminLoggingsPage() {
 
       <div className={styles.filtersCard}>
         <div className={styles.filters}>
-          <select value={selectedStatus} onChange={(e) => setSelectedStatus(e.target.value)} className={styles.select}>
+          <select value={selectedStatus} onChange={(e) => handleStatusChange(e.target.value)} className={styles.select}>
             <option value="all">Todos los estados</option>
             <option value="Exitoso">Exitoso</option>
             <option value="Fallido">Fallido</option>
+            <option value="Error">Error</option>
+            <option value="Cancelado">Cancelado</option>
             <option value="En Proceso">En Proceso</option>
           </select>
 
           <button
             className={styles.clearButton}
             onClick={() => {
-              setSelectedStatus("all")
-              setCurrentPage(1)
+              handleStatusChange("all")
             }}
           >
             Limpiar filtros
@@ -257,10 +159,10 @@ export default function AdminLoggingsPage() {
 
       <div className={styles.tableCard}>
         <div className={styles.tableHeader}>
-          <div className={styles.columnDateTime} onClick={() => handleSort("startDateTime")}>
+          <div className={styles.columnDateTime} onClick={() => handleSort("date_time")}>
             <span className={styles.sortableHeader}>
               Fecha y Hora
-              <span className={sortField === "startDateTime" ? styles.sortIconActive : styles.sortIconInactive}>
+              <span className={sortField === "date_time" ? styles.sortIconActive : styles.sortIconInactive}>
                 {sortDirection === "asc" ? <FiChevronUp size={16} /> : <FiChevronDown size={16} />}
               </span>
             </span>
@@ -268,10 +170,10 @@ export default function AdminLoggingsPage() {
           <div className={styles.columnStatus}>Estado</div>
           <div className={styles.columnTime}>Tiempo Ejec.</div>
           <div className={styles.columnUrl}>URL</div>
-          <div className={styles.columnFound} onClick={() => handleSort("offersFound")}>
+          <div className={styles.columnFound} onClick={() => handleSort("found")}>
             <span className={styles.sortableHeader}>
               Encontradas
-              <span className={sortField === "offersFound" ? styles.sortIconActive : styles.sortIconInactive}>
+              <span className={sortField === "found" ? styles.sortIconActive : styles.sortIconInactive}>
                 {sortDirection === "asc" ? <FiChevronUp size={16} /> : <FiChevronDown size={16} />}
               </span>
             </span>
@@ -281,7 +183,12 @@ export default function AdminLoggingsPage() {
         </div>
 
         <div className={styles.tableBody}>
-          {currentLogs.map((log) => (
+          {logs.length === 0 && !isLoading ? (
+            <div className={styles.emptyState}>
+              <p>No hay logs de ingesta disponibles</p>
+            </div>
+          ) : (
+            logs.map((log) => (
             <div key={log.id} className={styles.tableRow}>
               <div className={styles.columnDateTime}>
                 <div className={styles.dateTimeWrapper}>
@@ -302,8 +209,9 @@ export default function AdminLoggingsPage() {
               </div>
 
               <div className={styles.columnUrl}>
-                <a href={log.url} target="_blank" rel="noopener noreferrer" className={styles.urlLink}>
-                  {log.url}
+                <a href={log.url} target="_blank" rel="noopener noreferrer" className={styles.urlLink} title={log.url}>
+                  <span className={styles.urlText}>{truncateUrl(log.url)}</span>
+                  <FiExternalLink className={styles.externalIcon} size={14} />
                 </a>
               </div>
 
@@ -319,10 +227,13 @@ export default function AdminLoggingsPage() {
                 <span className={styles.insertedCount}>{log.offersInserted}</span>
               </div>
             </div>
-          ))}
+            ))
+          )}
         </div>
 
-        <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
+        {totalPages > 0 && (
+          <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
+        )}
       </div>
     </div>
   )

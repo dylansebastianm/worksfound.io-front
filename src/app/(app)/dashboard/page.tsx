@@ -21,46 +21,21 @@ import {
 } from "react-icons/fa"
 import { SiIndeed, SiGlassdoor, SiOpenai } from "react-icons/si"
 import { FcGoogle } from "react-icons/fc"
+import { getUserStatistics, type UserStatistics } from "@/lib/users"
+import { LoadingSpinner } from "@/components/UI/LoadingSpinner/LoadingSpinner"
 import styles from "./dashboard.module.css"
 
-const mockUserData = {
-  joinDate: new Date("2025-11-01"), // Date when user subscribed
-  applicationsSubmitted: 847,
+// Datos mockeados que se mantienen
+const mockData = {
   manualApplicationsRate: 10, // per day
-  contactsReceived: 23,
-  hrInterviews: 8,
-  technicalChallenges: 5,
-  culturalInterviews: 3,
-  proposalsReceived: 1,
-  messagesSent: 156,
-  aiResponsesGenerated: 342,
-  portals: [
-    { name: "LinkedIn", connected: true, applications: 312 },
-    { name: "Indeed", connected: true, applications: 245 },
-    { name: "Glassdoor", connected: false, applications: 0 },
-    { name: "Google Jobs", connected: true, applications: 290 },
-  ],
   avgSalaryPerDay: 250, // USD lost per day without job
 }
 
 export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null)
+  const [statistics, setStatistics] = useState<UserStatistics | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
-
-  const today = new Date()
-  const daysSubscribed = Math.floor((today.getTime() - mockUserData.joinDate.getTime()) / (1000 * 60 * 60 * 24))
-  const estimatedDaysToJob = 44
-  const daysRemaining = Math.max(0, estimatedDaysToJob - daysSubscribed)
-  const progressPercentage = Math.min(100, Math.round((daysSubscribed / estimatedDaysToJob) * 100))
-
-  const manualApplications = daysSubscribed * mockUserData.manualApplicationsRate
-  const extraApplications = mockUserData.applicationsSubmitted - manualApplications
-  const hoursPerApplication = 0.5
-  const hoursSaved = Math.floor(mockUserData.applicationsSubmitted * hoursPerApplication)
-  const moneyLost = daysSubscribed * mockUserData.avgSalaryPerDay
-
-  const connectedPortals = mockUserData.portals.filter((p) => p.connected).length
-  const totalApplications = mockUserData.portals.reduce((sum, p) => sum + p.applications, 0)
 
   useEffect(() => {
     const currentUser = getCurrentUser()
@@ -68,12 +43,60 @@ export default function DashboardPage() {
       router.push("/login")
     } else {
       setUser(currentUser)
+      loadStatistics()
     }
   }, [router])
 
-  if (!user) {
-    return null
+  const loadStatistics = async () => {
+    setIsLoading(true)
+    try {
+      const response = await getUserStatistics()
+      if (response.success && response.statistics) {
+        setStatistics(response.statistics)
+      }
+    } catch (error) {
+      console.error("Error loading statistics:", error)
+    } finally {
+      setIsLoading(false)
+    }
   }
+
+  if (!user || isLoading) {
+    return (
+      <div className={styles.container}>
+        <LoadingSpinner />
+      </div>
+    )
+  }
+
+  if (!statistics) {
+    return (
+      <div className={styles.container}>
+        <p>Error al cargar las estadísticas</p>
+      </div>
+    )
+  }
+
+  // Calcular días desde joinDate
+  const today = new Date()
+  const joinDate = statistics.joinDate ? new Date(statistics.joinDate) : today
+  const daysSubscribed = Math.floor((today.getTime() - joinDate.getTime()) / (1000 * 60 * 60 * 24))
+  const estimatedDaysToJob = 44
+  const daysRemaining = Math.max(0, estimatedDaysToJob - daysSubscribed)
+  const progressPercentage = Math.min(100, Math.round((daysSubscribed / estimatedDaysToJob) * 100))
+
+  // Cálculos mockeados (no tocar)
+  const manualApplications = daysSubscribed * mockData.manualApplicationsRate
+  const extraApplications = statistics.totalApplications - manualApplications
+  const hoursPerApplication = 0.5
+  const hoursSaved = Math.floor(statistics.totalApplications * hoursPerApplication)
+  const moneyLost = daysSubscribed * mockData.avgSalaryPerDay
+
+  // Portales conectados (solo los que tienen aplicaciones > 0 o están en la lista)
+  const upcomingPortals = ["Indeed", "Google Jobs"]
+  const activePortals = statistics.portals.filter((p) => !upcomingPortals.includes(p.name))
+  const connectedPortals = statistics.portals.length
+  const totalApplications = statistics.portals.reduce((sum, p) => sum + p.applications, 0)
 
   const portalIcons: Record<string, React.ReactNode> = {
     LinkedIn: <FaLinkedin size={24} color="#0077B5" />,
@@ -115,17 +138,17 @@ export default function DashboardPage() {
                 <FaBriefcase className={styles.metricIcon} />
                 <h3 className={styles.metricTitle}>Ofertas Aplicadas</h3>
               </div>
-              <p className={styles.metricValue}>{mockUserData.applicationsSubmitted}</p>
+              <p className={styles.metricValue}>{statistics.totalApplications}</p>
               <p className={styles.metricLabel}>Total de aplicaciones</p>
             </div>
 
             <div className={styles.metricCard}>
               <div className={styles.metricHeader}>
                 <FaUserTie className={styles.metricIcon} />
-                <h3 className={styles.metricTitle}>Contactos Recibidos</h3>
+                <h3 className={styles.metricTitle}>Mensajes Directos</h3>
               </div>
-              <p className={styles.metricValue}>{mockUserData.contactsReceived}</p>
-              <p className={styles.metricLabel}>Respuestas de reclutadores</p>
+              <p className={styles.metricValue}>{statistics.directMessages}</p>
+              <p className={styles.metricLabel}>Mensajes directos recibidos</p>
             </div>
           </div>
 
@@ -134,7 +157,7 @@ export default function DashboardPage() {
               <SiOpenai className={styles.metricIcon} />
               <h3 className={styles.metricTitle}>Respuestas con IA</h3>
             </div>
-            <p className={styles.metricValue}>{mockUserData.aiResponsesGenerated}</p>
+            <p className={styles.metricValue}>{statistics.aiResponsesGenerated}</p>
             <p className={styles.metricLabel}>Generadas automáticamente</p>
           </div>
         </div>
@@ -146,7 +169,7 @@ export default function DashboardPage() {
             <FaHandshake className={styles.metricIcon} />
             <h3 className={styles.metricTitle}>Entrevistas RRHH</h3>
           </div>
-          <p className={styles.metricValue}>{mockUserData.hrInterviews}</p>
+          <p className={styles.metricValue}>{statistics.hrInterviews}</p>
           <p className={styles.metricLabel}>Realizadas</p>
         </div>
 
@@ -155,7 +178,7 @@ export default function DashboardPage() {
             <FaCode className={styles.metricIcon} />
             <h3 className={styles.metricTitle}>Desafíos Técnicos</h3>
           </div>
-          <p className={styles.metricValue}>{mockUserData.technicalChallenges}</p>
+          <p className={styles.metricValue}>{statistics.technicalChallenges}</p>
           <p className={styles.metricLabel}>Pruebas y entrevistas técnicas</p>
         </div>
 
@@ -164,7 +187,7 @@ export default function DashboardPage() {
             <FaUsers className={styles.metricIcon} />
             <h3 className={styles.metricTitle}>Entrevista Final</h3>
           </div>
-          <p className={styles.metricValue}>{mockUserData.culturalInterviews}</p>
+          <p className={styles.metricValue}>{statistics.culturalInterviews}</p>
           <p className={styles.metricLabel}>Entrevistas culturales</p>
         </div>
 
@@ -173,7 +196,7 @@ export default function DashboardPage() {
             <FaTrophy className={styles.metricIcon} />
             <h3 className={styles.metricTitle}>Propuestas</h3>
           </div>
-          <p className={styles.metricValue}>{mockUserData.proposalsReceived}</p>
+          <p className={styles.metricValue}>{statistics.proposalsReceived}</p>
           <p className={styles.metricLabel}>Ofertas recibidas</p>
         </div>
       </div>
@@ -184,7 +207,7 @@ export default function DashboardPage() {
             <FaEnvelope className={styles.metricIcon} />
             <h3 className={styles.automationTitle}>Mensajes Enviados</h3>
           </div>
-          <p className={styles.automationValue}>{mockUserData.messagesSent}</p>
+          <p className={styles.automationValue}>{statistics.messagesSent}</p>
           <p className={styles.automationLabel}>A reclutadores automáticamente</p>
         </div>
       </div>
@@ -192,27 +215,32 @@ export default function DashboardPage() {
       <div className={styles.portalsCard}>
         <h2 className={styles.sectionTitle}>Portales Conectados ({connectedPortals})</h2>
         <div className={styles.portalsList}>
-          {mockUserData.portals
-            .filter((p) => p.connected)
-            .map((portal) => {
-              const percentage = totalApplications > 0 ? Math.round((portal.applications / totalApplications) * 100) : 0
-              return (
-                <div key={portal.name} className={styles.portalItem}>
-                  <div className={styles.portalInfo}>
-                    <div className={styles.portalNameWrapper}>
-                      {portalIcons[portal.name]}
-                      <span className={styles.portalName}>{portal.name}</span>
-                    </div>
-                    <span className={styles.portalApps}>
-                      {portal.applications} aplicaciones ({percentage}%)
-                    </span>
+          {statistics.portals.map((portal) => {
+            const isUpcoming = upcomingPortals.includes(portal.name)
+            const percentage = isUpcoming
+              ? 0
+              : totalApplications > 0
+                ? Math.round((portal.applications / totalApplications) * 100)
+                : 0
+            return (
+              <div key={portal.name} className={styles.portalItem}>
+                <div className={styles.portalInfo}>
+                  <div className={`${styles.portalNameWrapper} ${isUpcoming ? styles.portalInactive : ""}`}>
+                    {portalIcons[portal.name]}
+                    <span className={styles.portalName}>{portal.name}</span>
                   </div>
+                  <span className={styles.portalApps}>
+                    {isUpcoming ? "Próximamente" : `${portal.applications} aplicaciones (${percentage}%)`}
+                  </span>
+                </div>
+                {!isUpcoming && (
                   <div className={styles.portalBar}>
                     <div className={styles.portalBarFill} style={{ width: `${percentage}%` }} />
                   </div>
-                </div>
-              )
-            })}
+                )}
+              </div>
+            )
+          })}
         </div>
       </div>
 
@@ -230,7 +258,7 @@ export default function DashboardPage() {
             <div className={styles.statDivider}>vs</div>
             <div className={styles.statItem}>
               <span className={styles.statLabel}>Con worksfound.io</span>
-              <span className={styles.statValue}>{mockUserData.applicationsSubmitted}</span>
+              <span className={styles.statValue}>{statistics.totalApplications}</span>
             </div>
           </div>
           <p className={styles.extraApplications}>+{extraApplications} aplicaciones extra gracias a nosotros</p>

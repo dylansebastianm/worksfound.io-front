@@ -257,6 +257,11 @@
   transition: width 0.3s ease;
 }
 
+.portalInactive {
+  filter: grayscale(100%) opacity(0.5);
+  pointer-events: none;
+}
+
 @media (max-width: 768px) {
   .header {
     flex-direction: column;
