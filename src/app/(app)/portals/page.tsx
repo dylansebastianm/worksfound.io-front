@@ -27,6 +27,7 @@ export default function PortalsPage() {
   const [showLinkedInForm, setShowLinkedInForm] = useState(false)
   const [loginSessionId, setLoginSessionId] = useState<string | null>(null)
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const autoApplyPollingRef = useRef<NodeJS.Timeout | null>(null)
 
   // Obtener user_id del sessionStorage al cargar
   useEffect(() => {
@@ -46,8 +47,55 @@ export default function PortalsPage() {
       if (pollingIntervalRef.current) {
         clearInterval(pollingIntervalRef.current)
       }
+      if (autoApplyPollingRef.current) {
+        clearInterval(autoApplyPollingRef.current)
+      }
     }
   }, [])
+
+  // Polling automático del estado de auto-apply cuando está corriendo
+  useEffect(() => {
+    // Si el auto-apply está corriendo y tenemos userId, iniciar polling
+    if (isAutoApplyRunning && userId && isLinkedInConnected) {
+      // Limpiar polling anterior si existe
+      if (autoApplyPollingRef.current) {
+        clearInterval(autoApplyPollingRef.current)
+      }
+
+      // Iniciar polling cada 3 segundos
+      autoApplyPollingRef.current = setInterval(async () => {
+        try {
+          const status = await getAutoApplyStatus(userId)
+          // Si el estado cambió a no corriendo, actualizar el estado
+          if (!status.is_running && isAutoApplyRunning) {
+            setIsAutoApplyRunning(false)
+            // Detener el polling ya que el auto-apply se detuvo
+            if (autoApplyPollingRef.current) {
+              clearInterval(autoApplyPollingRef.current)
+              autoApplyPollingRef.current = null
+            }
+          }
+        } catch (err) {
+          console.error("Error en polling de auto-apply:", err)
+          // No detener el polling por errores temporales, solo loguear
+        }
+      }, 3000) // Polling cada 3 segundos
+    } else {
+      // Si el auto-apply no está corriendo, detener el polling
+      if (autoApplyPollingRef.current) {
+        clearInterval(autoApplyPollingRef.current)
+        autoApplyPollingRef.current = null
+      }
+    }
+
+    // Cleanup cuando cambia el estado
+    return () => {
+      if (autoApplyPollingRef.current) {
+        clearInterval(autoApplyPollingRef.current)
+        autoApplyPollingRef.current = null
+      }
+    }
+  }, [isAutoApplyRunning, userId, isLinkedInConnected])
 
   const checkConnectionStatus = async (uid: string) => {
     try {

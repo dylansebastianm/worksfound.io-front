@@ -54,6 +54,7 @@ export interface UserProfile {
   degreeTitle: string;
   preferredWorkModality: string[];
   jobChangeReason: string;
+  cvUrl?: string;
 }
 
 export interface UpdateUserProfileRequest {

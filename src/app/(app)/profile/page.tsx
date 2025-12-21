@@ -9,6 +9,7 @@ import { Button } from "@/components/UI/Button/Button"
 import { LoadingSpinner } from "@/components/UI/LoadingSpinner/LoadingSpinner"
 import { Alert } from "@/components/UI/Alert/Alert"
 import { getUserProfile, updateUserProfile, UserProfile } from "@/lib/users"
+import { uploadCV } from "@/lib/cv"
 import styles from "./profile.module.css"
 
 export default function ProfilePage() {
@@ -36,6 +37,8 @@ export default function ProfilePage() {
   })
 
   const [curriculum, setCurriculum] = useState<File | null>(null)
+  const [curriculumUrl, setCurriculumUrl] = useState<string | null>(null)
+  const [curriculumFileName, setCurriculumFileName] = useState<string | null>(null)
   const [coverLetter, setCoverLetter] = useState<File | null>(null)
 
   const [isLoading, setIsLoading] = useState(false)
@@ -64,6 +67,25 @@ export default function ProfilePage() {
             phone: profile.phone || "",
             jobChangeReason: profile.jobChangeReason || "",
           })
+          
+          // Cargar CV existente si hay URL
+          if (profile.cvUrl) {
+            setCurriculumUrl(profile.cvUrl)
+            // Extraer el nombre del archivo de la URL
+            try {
+              const urlObj = new URL(profile.cvUrl)
+              const pathParts = urlObj.pathname.split('/')
+              const fileName = pathParts[pathParts.length - 1] || 'CV.pdf'
+              // Decodificar el nombre del archivo si está codificado
+              const decodedFileName = decodeURIComponent(fileName)
+              setCurriculumFileName(decodedFileName)
+            } catch (e) {
+              // Fallback: extraer de la URL directamente
+              const urlParts = profile.cvUrl.split('/')
+              const fileName = urlParts[urlParts.length - 1] || 'CV.pdf'
+              setCurriculumFileName(fileName)
+            }
+          }
         } else {
           setAlert({
             status: "error",
@@ -98,6 +120,42 @@ export default function ProfilePage() {
     setAlert(null)
 
     try {
+      // Si hay un CV para subir, subirlo primero
+      console.log("🔍 Verificando CV:", curriculum)
+      if (curriculum) {
+        console.log("📤 Subiendo CV:", curriculum.name, curriculum.size, "bytes")
+        const cvResponse = await uploadCV(curriculum)
+        console.log("📥 Respuesta de uploadCV:", cvResponse)
+        if (!cvResponse.success) {
+          setAlert({
+            status: "error",
+            message: cvResponse.error || "Error al subir el CV",
+          })
+          setIsLoading(false)
+          return
+        }
+        console.log("✅ CV subido exitosamente:", cvResponse.cvUrl)
+        // Guardar la URL y el nombre del archivo
+        if (cvResponse.cvUrl) {
+          setCurriculumUrl(cvResponse.cvUrl)
+          // Extraer el nombre del archivo de la URL (puede estar sanitizado)
+          try {
+            const urlObj = new URL(cvResponse.cvUrl)
+            const pathParts = urlObj.pathname.split('/')
+            const fileName = pathParts[pathParts.length - 1] || curriculum.name
+            const decodedFileName = decodeURIComponent(fileName)
+            setCurriculumFileName(decodedFileName)
+          } catch (e) {
+            // Fallback: usar el nombre original del archivo
+            setCurriculumFileName(curriculum.name)
+          }
+        }
+        // NO limpiar el CV del estado - mantenerlo visible para que se muestre en el componente
+      } else {
+        console.log("ℹ️ No hay CV para subir")
+      }
+
+      // Actualizar el resto de los datos del perfil
       const response = await updateUserProfile({
         age: formData.age,
         gender: formData.gender,
@@ -356,10 +414,26 @@ export default function ProfilePage() {
               label="Curriculum Vitae (CV)"
               accept=".pdf,.doc,.docx"
               value={curriculum}
-              onChange={setCurriculum}
+              onChange={(file) => {
+                console.log("📁 Archivo seleccionado:", file?.name, file?.size)
+                setCurriculum(file)
+                // Si se elimina el archivo, también limpiar la URL
+                if (!file) {
+                  setCurriculumUrl(null)
+                  setCurriculumFileName(null)
+                }
+              }}
               placeholder="Sube tu CV en formato PDF o DOC"
               disabled={!editMode.documents}
             />
+            {curriculumUrl && curriculumFileName && !curriculum && (
+              <div className={styles.uploadedFileInfo}>
+                <span className={styles.uploadedFileName}>✓ {curriculumFileName}</span>
+                <a href={curriculumUrl} target="_blank" rel="noopener noreferrer" className={styles.viewFileLink}>
+                  Ver archivo
+                </a>
+              </div>
+            )}
 
             <FileUpload
               label="Carta de Presentación"

@@ -75,6 +75,36 @@
   gap: 20px;
 }
 
+.uploadedFileInfo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background-color: var(--success-light, #f0f9f4);
+  border: 1px solid var(--success-color, #10b981);
+  border-radius: 8px;
+  margin-top: 8px;
+}
+
+.uploadedFileName {
+  font-size: 14px;
+  color: var(--success-color, #10b981);
+  font-weight: 500;
+}
+
+.viewFileLink {
+  font-size: 14px;
+  color: var(--primary-color);
+  text-decoration: none;
+  font-weight: 500;
+  transition: opacity 0.2s;
+}
+
+.viewFileLink:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
 .actions {
   display: flex;
   justify-content: flex-end;
