@@ -39,7 +39,7 @@ const navItems: NavItem[] = [
     icon: <IoPersonOutline />,
   },
   {
-    label: "Configuración de Búsqueda",
+    label: "Búsqueda",
     href: "/job-search",
     icon: <IoSearchOutline />,
   },
@@ -83,7 +83,6 @@ const navItems: NavItem[] = [
     label: "Generador de CV",
     href: "/curriculum-generator",
     icon: <IoDocumentTextOutline />,
-    disabled: true,
   },
 ]
 

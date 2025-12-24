@@ -5,11 +5,12 @@ import { useState, useEffect } from "react"
 import { Input } from "@/components/UI/Input/Input"
 import { Select } from "@/components/UI/Select/Select"
 import { FileUpload } from "@/components/UI/FileUpload/FileUpload"
+import { FileCard } from "@/components/UI/FileCard/FileCard"
 import { Button } from "@/components/UI/Button/Button"
 import { LoadingSpinner } from "@/components/UI/LoadingSpinner/LoadingSpinner"
 import { Alert } from "@/components/UI/Alert/Alert"
 import { getUserProfile, updateUserProfile, UserProfile } from "@/lib/users"
-import { uploadCV } from "@/lib/cv"
+import { uploadCV, deleteCV } from "@/lib/cv"
 import styles from "./profile.module.css"
 
 export default function ProfilePage() {
@@ -150,7 +151,8 @@ export default function ProfilePage() {
             setCurriculumFileName(curriculum.name)
           }
         }
-        // NO limpiar el CV del estado - mantenerlo visible para que se muestre en el componente
+        // Limpiar el File object para que se muestre el FileCard con la URL
+        setCurriculum(null)
       } else {
         console.log("ℹ️ No hay CV para subir")
       }
@@ -427,12 +429,31 @@ export default function ProfilePage() {
               disabled={!editMode.documents}
             />
             {curriculumUrl && curriculumFileName && !curriculum && (
-              <div className={styles.uploadedFileInfo}>
-                <span className={styles.uploadedFileName}>✓ {curriculumFileName}</span>
-                <a href={curriculumUrl} target="_blank" rel="noopener noreferrer" className={styles.viewFileLink}>
-                  Ver archivo
-                </a>
-              </div>
+              <FileCard
+                fileName={curriculumFileName}
+                fileUrl={curriculumUrl}
+                showDownload={true}
+                onDelete={async () => {
+                  if (confirm('¿Estás seguro de que deseas eliminar tu CV?')) {
+                    setIsLoading(true)
+                    const response = await deleteCV()
+                    if (response.success) {
+                      setCurriculumUrl(null)
+                      setCurriculumFileName(null)
+                      setAlert({
+                        status: 'success',
+                        message: response.message || 'CV eliminado exitosamente',
+                      })
+                    } else {
+                      setAlert({
+                        status: 'error',
+                        message: response.error || 'Error al eliminar el CV',
+                      })
+                    }
+                    setIsLoading(false)
+                  }
+                }}
+              />
             )}
 
             <FileUpload

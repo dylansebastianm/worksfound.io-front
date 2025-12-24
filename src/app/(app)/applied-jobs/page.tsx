@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { FiSearch, FiX, FiCalendar, FiChevronDown } from "react-icons/fi"
 import { BsLinkedin } from "react-icons/bs"
 import { SiIndeed, SiGlassdoor } from "react-icons/si"
@@ -10,42 +10,260 @@ import { Select } from "@/components/UI/Select/Select"
 import { Pagination } from "@/components/UI/Pagination/Pagination"
 import { DateRangePicker } from "@/components/UI/DateRangePicker/DateRangePicker"
 import JobDetailModal from "@/components/UI/JobDetailModal/JobDetailModal"
+import { LoadingSpinner } from "@/components/UI/LoadingSpinner/LoadingSpinner"
+import { getAppliedJobs, getAppliedJobDetail } from "@/lib/jobs"
+import { getCurrentUser } from "@/lib/auth"
+import type { AppliedJobOffer } from "@/types/jobs"
 import styles from "./applied-jobs.module.css"
 
-interface JobApplication {
-  id: number
-  title: string
-  company: string
-  portal: "LinkedIn" | "Bumeran" | "Zonajobs" | "Glassdoor"
-  country: string
-  countryFlag: string
-  date: string
-  status: "Postulados" | "En revisión" | "Entrevista" | "Rechazado" | "Aceptado"
-  applicants?: number
-  workMode?: string
-  workType?: string
-  salary?: string
-  description?: string
-  jobUrl?: string
-  companyUrl?: string
-  companyFollowers?: number
-  companyCountry?: string
-  evaluationTime?: string
-  postedAgo?: string
-  applications?: number
-  recruiterTeam?: Array<{
-    name: string
-    position: string
-    profileUrl?: string
-  }>
-  industry?: string
-  companySize?: string
-  skills?: string[]
-  techStack?: string[]
-  englishRequired?: boolean
+// Función auxiliar para extraer el país de offer_location
+const extractCountryFromLocation = (location: string | null | undefined): string | null => {
+  if (!location) return null
+  
+  // Intentar extraer el país (último elemento después de la última coma)
+  const parts = location.split(',').map(p => p.trim())
+  if (parts.length > 1) {
+    // Tomar el último elemento como país
+    return parts[parts.length - 1]
+  } else if (parts.length === 1) {
+    // Si solo hay un elemento, puede ser el país directamente
+    return parts[0]
+  }
+  return null
 }
 
-const mockJobs: JobApplication[] = [
+// Función auxiliar para obtener el emoji de bandera del país
+// Genera el código de país tomando las primeras letras de cada palabra
+const getCountryFlag = (country: string | null): string => {
+  if (!country) return "🌍"
+  
+  // Limpiar y normalizar el texto
+  const cleanCountry = country.trim()
+  
+  // Si el país tiene 2 o 3 caracteres y son mayúsculas, probablemente ya es un código
+  if (cleanCountry.length <= 3 && /^[A-Z]+$/.test(cleanCountry)) {
+    return getFlagEmoji(cleanCountry)
+  }
+  
+  // Dividir en palabras y tomar la primera letra de cada palabra
+  const words = cleanCountry.split(/\s+/).filter(word => word.length > 0)
+  
+  if (words.length === 0) return "🌍"
+  
+  // Si es una sola palabra, tomar las primeras 2 letras
+  if (words.length === 1) {
+    const code = words[0].substring(0, 2).toUpperCase()
+    return getFlagEmoji(code)
+  }
+  
+  // Si son múltiples palabras, tomar la primera letra de cada palabra
+  const code = words.map(word => word[0]).join('').toUpperCase().substring(0, 2)
+  return getFlagEmoji(code)
+}
+
+// Función auxiliar para convertir código de país a emoji de bandera
+const getFlagEmoji = (countryCode: string): string => {
+  if (!countryCode || countryCode.length < 2) return "🌍"
+  
+  // Convertir código de país a emoji de bandera usando Regional Indicator Symbols
+  // Cada letra se convierte a su equivalente en Regional Indicator
+  const codePoints = countryCode
+    .toUpperCase()
+    .substring(0, 2)
+    .split('')
+    .map(char => 127397 + char.charCodeAt(0)) // Regional Indicator Symbol base
+  
+  if (codePoints.length === 2) {
+    return String.fromCodePoint(codePoints[0], codePoints[1])
+  }
+  
+  return "🌍"
+}
+
+// Función auxiliar para formatear fecha
+const formatDate = (dateString: string | null): string => {
+  if (!dateString) return "Fecha no disponible"
+  
+  try {
+    const date = new Date(dateString)
+    const day = String(date.getDate()).padStart(2, "0")
+    const month = String(date.getMonth() + 1).padStart(2, "0")
+    const year = date.getFullYear()
+    const hours = String(date.getHours()).padStart(2, "0")
+    const minutes = String(date.getMinutes()).padStart(2, "0")
+    return `${day}/${month}/${year} ${hours}:${minutes}`
+  } catch {
+    return dateString
+  }
+}
+
+// Función auxiliar para limpiar y sanitizar HTML básico
+// Mantiene el formato pero limpia etiquetas peligrosas
+const sanitizeHtml = (html: string | null | undefined): string => {
+  if (!html) return ""
+  
+  // Limpiar comentarios HTML
+  let cleaned = html.replace(/<!---->/g, "")
+  
+  // Limpiar atributos peligrosos pero mantener estructura básica
+  // Permitir: p, br, strong, b, em, i, ul, ol, li, h1-h6, span, div
+  // Remover: script, style, iframe, object, embed, form, input, etc.
+  const tmp = document.createElement("DIV")
+  tmp.innerHTML = cleaned
+  
+  // Remover elementos peligrosos
+  const dangerousTags = ['script', 'style', 'iframe', 'object', 'embed', 'form', 'input', 'button']
+  dangerousTags.forEach(tag => {
+    const elements = tmp.getElementsByTagName(tag)
+    while (elements.length > 0) {
+      elements[0].parentNode?.removeChild(elements[0])
+    }
+  })
+  
+  // Remover atributos peligrosos pero mantener href en links
+  const allElements = tmp.getElementsByTagName('*')
+  for (let i = 0; i < allElements.length; i++) {
+    const el = allElements[i]
+    const attrs = Array.from(el.attributes)
+    attrs.forEach(attr => {
+      // Mantener href, pero remover onclick, onerror, etc.
+      if (attr.name.startsWith('on') || 
+          (attr.name !== 'href' && attr.name !== 'target' && attr.name !== 'rel' && 
+           !['class', 'id', 'dir'].includes(attr.name))) {
+        el.removeAttribute(attr.name)
+      }
+    })
+  }
+  
+  return tmp.innerHTML
+}
+
+// Función auxiliar para capitalizar y limpiar modality/workMode
+const formatWorkMode = (mode: string | null | undefined): string => {
+  if (!mode) return "No disponible"
+  
+  // Limpiar y capitalizar
+  const cleaned = mode.trim()
+  if (cleaned.toLowerCase() === "remoto" || cleaned.toLowerCase().includes("remoto")) {
+    return "Remoto"
+  }
+  if (cleaned.toLowerCase() === "presencial" || cleaned.toLowerCase().includes("presencial")) {
+    return "Presencial"
+  }
+  if (cleaned.toLowerCase() === "híbrido" || cleaned.toLowerCase().includes("híbrido") || cleaned.toLowerCase().includes("hibrido")) {
+    return "Híbrido"
+  }
+  
+  // Capitalizar primera letra
+  return cleaned.charAt(0).toUpperCase() + cleaned.slice(1).toLowerCase()
+}
+
+// Función auxiliar para mapear status del backend al formato del frontend
+const mapStatus = (status: string): string => {
+  const statusMap: Record<string, string> = {
+    "applied": "Postulados",
+    "reviewing": "En revisión",
+    "interview": "Entrevista",
+    "rejected": "Rechazado",
+    "accepted": "Aceptado",
+  }
+  return statusMap[status] || status
+}
+
+// Función auxiliar para convertir AppliedJobOffer a formato compatible con JobDetailModal
+const convertToJobApplication = (job: AppliedJobOffer) => {
+  // Convertir hiring_team de JSONB a array si es necesario y mapear profile_url a profileUrl
+  let recruiterTeam: Array<{ name: string; position?: string; profileUrl?: string }> | undefined = undefined;
+  if (job.hiring_team) {
+    let rawTeam: any = null;
+    if (Array.isArray(job.hiring_team)) {
+      rawTeam = job.hiring_team;
+    } else if (typeof job.hiring_team === 'string') {
+      try {
+        rawTeam = JSON.parse(job.hiring_team);
+      } catch {
+        rawTeam = null;
+      }
+    }
+    
+    if (rawTeam && Array.isArray(rawTeam)) {
+      recruiterTeam = rawTeam.map((recruiter: any) => ({
+        name: recruiter.name || '',
+        position: recruiter.position,
+        profileUrl: recruiter.profile_url || recruiter.profileUrl, // Mapear profile_url a profileUrl
+      }));
+    }
+  } else if (job.recruiterTeam) {
+    recruiterTeam = job.recruiterTeam.map((recruiter: any) => ({
+      name: recruiter.name || '',
+      position: recruiter.position,
+      profileUrl: recruiter.profile_url || recruiter.profileUrl,
+    }));
+  }
+
+  // Convertir skills y tech_stack de JSONB a array si es necesario
+  let skillsArray: string[] | undefined = undefined;
+  if (job.skills) {
+    if (Array.isArray(job.skills)) {
+      skillsArray = job.skills;
+    } else if (typeof job.skills === 'string') {
+      try {
+        skillsArray = JSON.parse(job.skills);
+      } catch {
+        skillsArray = undefined;
+      }
+    }
+  }
+
+  let techStackArray: string[] | undefined = undefined;
+  if (job.tech_stack || job.techStack) {
+    const techStackData = job.tech_stack || job.techStack;
+    if (Array.isArray(techStackData)) {
+      techStackArray = techStackData;
+    } else if (typeof techStackData === 'string') {
+      try {
+        techStackArray = JSON.parse(techStackData);
+      } catch {
+        techStackArray = undefined;
+      }
+    }
+  }
+
+  // Extraer país de offer_location si no viene en country
+  const country = job.country || extractCountryFromLocation(job.offer_location) || ""
+  const countryFlag = getCountryFlag(country)
+  
+  return {
+    id: job.id,
+    title: job.title,
+    company: job.company_name || job.company || "",
+    portal: job.portal as "LinkedIn" | "Bumeran" | "Zonajobs" | "Glassdoor",
+    country: country,
+    countryFlag: countryFlag,
+    date: formatDate(job.applied_at || null),
+    status: mapStatus(job.status) as "Postulados" | "En revisión" | "Entrevista" | "Rechazado" | "Aceptado",
+    applicants: job.applicants_count || job.applicants,
+    workMode: formatWorkMode(job.modality || job.workMode),
+    workType: job.work_schedule_type || job.workType,
+    salary: job.salary || undefined,
+    description: sanitizeHtml(job.job_description || job.description),
+    jobUrl: job.offer_url || job.jobUrl,
+    companyUrl: job.company_url || undefined,
+    companyFollowers: job.company_followers || job.companyFollowers,
+    companyCountry: country, // Usar el país extraído de offer_location
+    evaluationTime: job.evaluation_time || job.evaluationTime,
+    postedAgo: job.posted_time_ago || job.postedAgo,
+    applications: job.applications_count || job.applications,
+    recruiterTeam: recruiterTeam,
+    industry: job.company_industry || job.industry,
+    companySize: job.company_employees_count || job.companySize,
+    skills: skillsArray,
+    techStack: techStackArray,
+    englishRequired: job.englishRequired,
+  }
+}
+
+const mockJobs: any[] = [ // Mantener para referencia, pero no se usará
   {
     id: 1,
     title: "Senior Developer Technology Engineer",
@@ -976,8 +1194,53 @@ export default function AppliedJobsPage() {
   const [startDate, setStartDate] = useState<Date | null>(null)
   const [endDate, setEndDate] = useState<Date | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
-  const [selectedJob, setSelectedJob] = useState<JobApplication | null>(null)
+  const [selectedJob, setSelectedJob] = useState<any | null>(null)
+  const [jobs, setJobs] = useState<AppliedJobOffer[]>([])
+  const [loading, setLoading] = useState(true)
+  const [loadingDetail, setLoadingDetail] = useState(false)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalJobs, setTotalJobs] = useState(0)
   const itemsPerPage = 20
+
+  // Cargar ofertas aplicadas al montar el componente
+  useEffect(() => {
+    const loadAppliedJobs = async () => {
+      setLoading(true)
+      try {
+        const user = getCurrentUser()
+        if (!user) {
+          console.error("Usuario no autenticado")
+          setLoading(false)
+          return
+        }
+
+        const response = await getAppliedJobs({
+          user_id: user.id,
+          page: currentPage,
+          limit: itemsPerPage,
+          portal: selectedPortal !== "all" ? selectedPortal : undefined,
+        })
+
+        if (response.success && response.applications) {
+          setJobs(response.applications)
+          if (response.pagination) {
+            setTotalPages(response.pagination.total_pages)
+            setTotalJobs(response.pagination.total)
+          }
+        } else {
+          console.error("Error cargando ofertas aplicadas:", response.error)
+          setJobs([])
+        }
+      } catch (error) {
+        console.error("Error en loadAppliedJobs:", error)
+        setJobs([])
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadAppliedJobs()
+  }, [currentPage, selectedPortal]) // Recargar cuando cambie la página o el portal
 
   const getPortalIcon = (portal: string) => {
     // The original code only had BsLinkedin, this is a placeholder for others.
@@ -1015,24 +1278,34 @@ export default function AppliedJobsPage() {
     }
   }
 
-  const filterJobs = (jobs: JobApplication[]) => {
-    return jobs.filter((job) => {
+  const filterJobs = (jobsToFilter: AppliedJobOffer[]) => {
+    return jobsToFilter.filter((job) => {
       const matchesSearch =
         searchTerm.toLowerCase() === "" ||
         job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        job.company.toLowerCase().includes(searchTerm.toLowerCase())
+        (job.company_name || job.company || "").toLowerCase().includes(searchTerm.toLowerCase())
       const matchesPortal = selectedPortal === "all" || job.portal.toLowerCase() === selectedPortal.toLowerCase()
       const matchesType = selectedType === "all" || job.workType?.toLowerCase() === selectedType.toLowerCase()
-      const matchesDateRange =
-        (!startDate || new Date(job.date) >= startDate) && (!endDate || new Date(job.date) <= endDate)
+      
+      // Filtrar por rango de fechas
+      let matchesDateRange = true
+      if (job.applied_at) {
+        try {
+          const jobDate = new Date(job.applied_at)
+          if (startDate && jobDate < startDate) matchesDateRange = false
+          if (endDate && jobDate > endDate) matchesDateRange = false
+        } catch {
+          // Si hay error parseando la fecha, no filtrar
+        }
+      }
+      
       return matchesSearch && matchesPortal && matchesType && matchesDateRange
     })
   }
 
-  const totalPages = Math.ceil(filterJobs(mockJobs).length / itemsPerPage)
-  const startIndex = (currentPage - 1) * itemsPerPage
-  const endIndex = startIndex + itemsPerPage
-  const currentJobs = filterJobs(mockJobs).slice(startIndex, endIndex)
+  // Aplicar filtros locales (búsqueda, tipo, fecha) a los datos del servidor
+  const filteredJobs = filterJobs(jobs)
+  const currentJobs = filteredJobs.map(convertToJobApplication)
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page)
@@ -1065,7 +1338,10 @@ export default function AppliedJobsPage() {
           <Select
             options={portalOptions}
             value={selectedPortal}
-            onChange={setSelectedPortal}
+            onChange={(value) => {
+              setSelectedPortal(value)
+              setCurrentPage(1) // Resetear a la primera página cuando cambie el filtro
+            }}
             placeholder="Portal de empleo"
           />
 
@@ -1103,8 +1379,38 @@ export default function AppliedJobsPage() {
         </div>
 
         <div className={styles.tableBody}>
-          {currentJobs.map((job) => (
-            <div key={job.id} className={styles.tableRow} onClick={() => setSelectedJob(job)}>
+          {loading ? (
+            <div className={styles.loadingContainer}>
+              <LoadingSpinner />
+            </div>
+          ) : currentJobs.length === 0 ? (
+            <div className={styles.emptyMessage}>No se encontraron ofertas aplicadas</div>
+          ) : (
+            currentJobs.map((job) => (
+            <div 
+              key={job.id} 
+              className={styles.tableRow} 
+              onClick={async () => {
+                setLoadingDetail(true)
+                try {
+                  const response = await getAppliedJobDetail(job.id)
+                  if (response.success && response.application) {
+                    const fullJob = convertToJobApplication(response.application)
+                    setSelectedJob(fullJob)
+                  } else {
+                    console.error("Error cargando detalle:", response.error)
+                    // Fallback: usar los datos que ya tenemos
+                    setSelectedJob(job)
+                  }
+                } catch (error) {
+                  console.error("Error cargando detalle:", error)
+                  // Fallback: usar los datos que ya tenemos
+                  setSelectedJob(job)
+                } finally {
+                  setLoadingDetail(false)
+                }
+              }}
+            >
               <div className={styles.columnCompany}>
                 <div className={styles.companyInfo}>
                   <div className={styles.companyIcon}>
@@ -1135,13 +1441,22 @@ export default function AppliedJobsPage() {
                 </div>
               </div>
             </div>
-          ))}
+            ))
+          )}
         </div>
 
-        <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
+        <Pagination 
+          currentPage={currentPage} 
+          totalPages={totalPages} 
+          onPageChange={(page) => {
+            setCurrentPage(page)
+            window.scrollTo({ top: 0, behavior: 'smooth' })
+          }} 
+        />
       </div>
 
-      {selectedJob && <JobDetailModal job={selectedJob} onClose={() => setSelectedJob(null)} />}
+      {loadingDetail && <LoadingSpinner />}
+      {selectedJob && !loadingDetail && <JobDetailModal job={selectedJob} onClose={() => setSelectedJob(null)} />}
     </div>
   )
 }

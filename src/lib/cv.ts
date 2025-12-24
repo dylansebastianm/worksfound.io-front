@@ -9,6 +9,12 @@ export interface UploadCVResponse {
   error?: string;
 }
 
+export interface DeleteCVResponse {
+  success: boolean;
+  message?: string;
+  error?: string;
+}
+
 /**
  * Sube el CV del usuario a Google Cloud Storage
  * @param file Archivo del CV a subir
@@ -68,6 +74,43 @@ export async function uploadCV(file: File): Promise<UploadCVResponse> {
     return data;
   } catch (error) {
     console.error('Error subiendo CV:', error);
+    return {
+      success: false,
+      error: 'Error conectando con el servidor',
+    };
+  }
+}
+
+/**
+ * Elimina el CV del usuario de Google Cloud Storage
+ * @returns Respuesta con el resultado de la eliminación
+ */
+export async function deleteCV(): Promise<DeleteCVResponse> {
+  try {
+    const token = getToken();
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${API_URL}/api/user/profile/cv`, {
+      method: 'DELETE',
+      headers: headers,
+    });
+
+    if (response.status === 401) {
+      return {
+        success: false,
+        error: 'Token inválido o expirado. Por favor, inicia sesión nuevamente.',
+      };
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error eliminando CV:', error);
     return {
       success: false,
       error: 'Error conectando con el servidor',

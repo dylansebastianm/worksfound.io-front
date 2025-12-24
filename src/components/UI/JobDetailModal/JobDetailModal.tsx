@@ -200,7 +200,7 @@ export default function JobDetailModal({ job, onClose }: JobDetailModalProps) {
                     </span>
                   ) : (
                     <span className={styles.matchWarning}>
-                      {job.companyCountry || job.country} no está en tu lista de preferencias
+                      {job.companyCountry || job.country} No está en tu lista de preferencias
                     </span>
                   )}
                 </div>
@@ -384,7 +384,10 @@ export default function JobDetailModal({ job, onClose }: JobDetailModalProps) {
             {job.description && (
               <div className={styles.descriptionBlock}>
                 <div className={styles.detailLabel}>Descripción del Puesto</div>
-                <div className={styles.description}>{job.description}</div>
+                <div 
+                  className={styles.description} 
+                  dangerouslySetInnerHTML={{ __html: job.description }}
+                />
               </div>
             )}
 
