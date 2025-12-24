@@ -10,7 +10,7 @@ import { Button } from "@/components/UI/Button/Button"
 import { LoadingSpinner } from "@/components/UI/LoadingSpinner/LoadingSpinner"
 import { Alert } from "@/components/UI/Alert/Alert"
 import { getUserProfile, updateUserProfile, UserProfile } from "@/lib/users"
-import { uploadCV, deleteCV } from "@/lib/cv"
+import { getUserCVs, createUserCV, deleteUserCV, UserCV } from "@/lib/cv"
 import styles from "./profile.module.css"
 
 export default function ProfilePage() {
@@ -37,9 +37,10 @@ export default function ProfilePage() {
     documents: false,
   })
 
-  const [curriculum, setCurriculum] = useState<File | null>(null)
-  const [curriculumUrl, setCurriculumUrl] = useState<string | null>(null)
-  const [curriculumFileName, setCurriculumFileName] = useState<string | null>(null)
+  const [cvs, setCvs] = useState<UserCV[]>([])
+  const [newCVFile, setNewCVFile] = useState<File | null>(null)
+  const [newCVName, setNewCVName] = useState("")
+  const [uploadingCV, setUploadingCV] = useState(false)
   const [coverLetter, setCoverLetter] = useState<File | null>(null)
 
   const [isLoading, setIsLoading] = useState(false)
@@ -69,23 +70,10 @@ export default function ProfilePage() {
             jobChangeReason: profile.jobChangeReason || "",
           })
           
-          // Cargar CV existente si hay URL
-          if (profile.cvUrl) {
-            setCurriculumUrl(profile.cvUrl)
-            // Extraer el nombre del archivo de la URL
-            try {
-              const urlObj = new URL(profile.cvUrl)
-              const pathParts = urlObj.pathname.split('/')
-              const fileName = pathParts[pathParts.length - 1] || 'CV.pdf'
-              // Decodificar el nombre del archivo si está codificado
-              const decodedFileName = decodeURIComponent(fileName)
-              setCurriculumFileName(decodedFileName)
-            } catch (e) {
-              // Fallback: extraer de la URL directamente
-              const urlParts = profile.cvUrl.split('/')
-              const fileName = urlParts[urlParts.length - 1] || 'CV.pdf'
-              setCurriculumFileName(fileName)
-            }
+          // Cargar CVs del usuario
+          const cvsResponse = await getUserCVs()
+          if (cvsResponse.success && cvsResponse.cvs) {
+            setCvs(cvsResponse.cvs)
           }
         } else {
           setAlert({
@@ -121,43 +109,7 @@ export default function ProfilePage() {
     setAlert(null)
 
     try {
-      // Si hay un CV para subir, subirlo primero
-      console.log("🔍 Verificando CV:", curriculum)
-      if (curriculum) {
-        console.log("📤 Subiendo CV:", curriculum.name, curriculum.size, "bytes")
-        const cvResponse = await uploadCV(curriculum)
-        console.log("📥 Respuesta de uploadCV:", cvResponse)
-        if (!cvResponse.success) {
-          setAlert({
-            status: "error",
-            message: cvResponse.error || "Error al subir el CV",
-          })
-          setIsLoading(false)
-          return
-        }
-        console.log("✅ CV subido exitosamente:", cvResponse.cvUrl)
-        // Guardar la URL y el nombre del archivo
-        if (cvResponse.cvUrl) {
-          setCurriculumUrl(cvResponse.cvUrl)
-          // Extraer el nombre del archivo de la URL (puede estar sanitizado)
-          try {
-            const urlObj = new URL(cvResponse.cvUrl)
-            const pathParts = urlObj.pathname.split('/')
-            const fileName = pathParts[pathParts.length - 1] || curriculum.name
-            const decodedFileName = decodeURIComponent(fileName)
-            setCurriculumFileName(decodedFileName)
-          } catch (e) {
-            // Fallback: usar el nombre original del archivo
-            setCurriculumFileName(curriculum.name)
-          }
-        }
-        // Limpiar el File object para que se muestre el FileCard con la URL
-        setCurriculum(null)
-      } else {
-        console.log("ℹ️ No hay CV para subir")
-      }
-
-      // Actualizar el resto de los datos del perfil
+      // Actualizar los datos del perfil
       const response = await updateUserProfile({
         age: formData.age,
         gender: formData.gender,
@@ -198,6 +150,76 @@ export default function ProfilePage() {
       setAlert({
         status: "error",
         message: "Error al actualizar el perfil",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleUploadCV = async () => {
+    if (!newCVFile) {
+      setAlert({
+        status: "error",
+        message: "Por favor selecciona un archivo",
+      })
+      return
+    }
+
+    setUploadingCV(true)
+    setAlert(null)
+
+    try {
+      const response = await createUserCV(newCVFile, newCVName || undefined)
+      if (response.success && response.cv) {
+        setCvs([...cvs, response.cv])
+        setNewCVFile(null)
+        setNewCVName("")
+        setAlert({
+          status: "success",
+          message: "CV subido exitosamente",
+        })
+      } else {
+        setAlert({
+          status: "error",
+          message: response.error || "Error al subir el CV",
+        })
+      }
+    } catch (error) {
+      console.error("Error uploading CV:", error)
+      setAlert({
+        status: "error",
+        message: "Error al subir el CV",
+      })
+    } finally {
+      setUploadingCV(false)
+    }
+  }
+
+  const handleDeleteCV = async (cvId: number) => {
+    if (!confirm("¿Estás seguro de que deseas eliminar este CV?")) {
+      return
+    }
+
+    setIsLoading(true)
+    try {
+      const response = await deleteUserCV(cvId)
+      if (response.success) {
+        setCvs(cvs.filter((cv) => cv.id !== cvId))
+        setAlert({
+          status: "success",
+          message: "CV eliminado exitosamente",
+        })
+      } else {
+        setAlert({
+          status: "error",
+          message: response.error || "Error al eliminar el CV",
+        })
+      }
+    } catch (error) {
+      console.error("Error deleting CV:", error)
+      setAlert({
+        status: "error",
+        message: "Error al eliminar el CV",
       })
     } finally {
       setIsLoading(false)
@@ -412,48 +434,70 @@ export default function ProfilePage() {
             </button>
           </div>
           <div className={styles.uploads}>
-            <FileUpload
-              label="Curriculum Vitae (CV)"
-              accept=".pdf,.doc,.docx"
-              value={curriculum}
-              onChange={(file) => {
-                console.log("📁 Archivo seleccionado:", file?.name, file?.size)
-                setCurriculum(file)
-                // Si se elimina el archivo, también limpiar la URL
-                if (!file) {
-                  setCurriculumUrl(null)
-                  setCurriculumFileName(null)
-                }
-              }}
-              placeholder="Sube tu CV en formato PDF o DOC"
-              disabled={!editMode.documents}
-            />
-            {curriculumUrl && curriculumFileName && !curriculum && (
-              <FileCard
-                fileName={curriculumFileName}
-                fileUrl={curriculumUrl}
-                showDownload={true}
-                onDelete={async () => {
-                  if (confirm('¿Estás seguro de que deseas eliminar tu CV?')) {
-                    setIsLoading(true)
-                    const response = await deleteCV()
-                    if (response.success) {
-                      setCurriculumUrl(null)
-                      setCurriculumFileName(null)
-                      setAlert({
-                        status: 'success',
-                        message: response.message || 'CV eliminado exitosamente',
-                      })
-                    } else {
-                      setAlert({
-                        status: 'error',
-                        message: response.error || 'Error al eliminar el CV',
-                      })
+            {/* Lista de CVs existentes */}
+            {cvs.length > 0 && (
+              <div className={styles.cvsList}>
+                <h3 className={styles.cvsListTitle}>CVs subidos</h3>
+                {cvs.map((cv) => {
+                  // Extraer nombre del archivo de la URL si file_name es null
+                  let fileName = cv.file_name;
+                  if (!fileName && cv.cv_url) {
+                    try {
+                      const urlObj = new URL(cv.cv_url);
+                      const pathParts = urlObj.pathname.split('/');
+                      fileName = decodeURIComponent(pathParts[pathParts.length - 1]) || cv.cv_name;
+                    } catch (e) {
+                      fileName = cv.cv_name;
                     }
-                    setIsLoading(false)
+                  } else if (!fileName) {
+                    fileName = cv.cv_name;
                   }
-                }}
-              />
+                  
+                  return (
+                    <FileCard
+                      key={cv.id}
+                      fileName={fileName}
+                      fileUrl={cv.cv_url}
+                      showDownload={true}
+                      onDelete={editMode.documents ? () => handleDeleteCV(cv.id) : undefined}
+                    />
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Formulario para subir nuevo CV */}
+            {editMode.documents && (
+              <div className={styles.uploadNewCV}>
+                <h3 className={styles.uploadTitle}>Subir nuevo CV</h3>
+                <FileUpload
+                  label="Seleccionar archivo"
+                  accept=".pdf,.doc,.docx,.rtf,.txt"
+                  value={newCVFile}
+                  onChange={(file) => setNewCVFile(file)}
+                  placeholder="Sube tu CV en formato PDF o DOC"
+                  disabled={uploadingCV}
+                />
+                <Input
+                  label="Nombre del CV (opcional)"
+                  type="text"
+                  placeholder="Ej: CV Frontend Developer, CV Inglés..."
+                  value={newCVName}
+                  onChange={(e) => setNewCVName(e.target.value)}
+                  disabled={uploadingCV}
+                />
+                <p className={styles.uploadHint}>
+                  Si no especificas un nombre, se usará el nombre del archivo
+                </p>
+                <Button
+                  onClick={handleUploadCV}
+                  variant="primary"
+                  disabled={!newCVFile || uploadingCV}
+                  fullWidth
+                >
+                  {uploadingCV ? "Subiendo..." : "Subir CV"}
+                </Button>
+              </div>
             )}
 
             <FileUpload

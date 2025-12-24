@@ -16,7 +16,9 @@ export interface GlobalSearchConfig {
 export interface JobSearchGroup {
   id: number;
   jobTitle: string;
-  cvFile: string;
+  cvId: number | null; // ID del CV (número) o null si no hay CV asignado
+  cvUrl?: string; // URL del CV (opcional, viene del backend)
+  cvName?: string; // Nombre del CV (opcional, viene del backend)
   positiveKeywords: string[];
   negativeKeywords: string[];
   priority: number;
@@ -33,7 +35,7 @@ export interface UpdateGlobalSearchRequest {
 
 export interface CreateSearchGroupRequest {
   jobTitle: string;
-  cvFile?: string;
+  cvId?: number; // ID del CV (número) o undefined si no hay CV asignado
   positiveKeywords?: string[];
   negativeKeywords?: string[];
   priority?: number;
@@ -42,7 +44,7 @@ export interface CreateSearchGroupRequest {
 
 export interface UpdateSearchGroupRequest {
   jobTitle?: string;
-  cvFile?: string;
+  cvId?: number; // ID del CV (número) o undefined si no hay CV asignado
   positiveKeywords?: string[];
   negativeKeywords?: string[];
   priority?: number;

@@ -16,6 +16,7 @@ import {
   deleteSearchGroup,
   JobSearchGroup as ApiJobSearchGroup,
 } from "@/lib/searchConfig"
+import { getUserCVs, UserCV } from "@/lib/cv"
 import { IoAdd, IoTrash } from "react-icons/io5"
 import styles from "./job-search.module.css"
 
@@ -24,7 +25,7 @@ interface JobSearchGroup {
   jobTitle: string
   positiveKeywords: string[]
   negativeKeywords: string[]
-  cvFile: string
+  cvId: number | null // ID del CV (número) o null si no hay CV asignado
   sector: "IT" | "Sales" | "Customer Experience" | null
 }
 
@@ -50,6 +51,7 @@ export default function JobSearchPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [alert, setAlert] = useState<{ status: "success" | "error"; message: string } | null>(null)
+  const [userCVs, setUserCVs] = useState<UserCV[]>([])
 
   // Cargar configuración al montar el componente
   useEffect(() => {
@@ -67,6 +69,12 @@ export default function JobSearchPage() {
           setAcceptUnpaidInternships(config.acceptUnpaidInternships)
         }
 
+        // Cargar CVs del usuario
+        const cvsResponse = await getUserCVs()
+        if (cvsResponse.success && cvsResponse.cvs) {
+          setUserCVs(cvsResponse.cvs)
+        }
+
         // Cargar grupos de búsqueda
         const groupsResponse = await getSearchGroups()
         if (groupsResponse.success && groupsResponse.searchGroups && groupsResponse.searchGroups.length > 0) {
@@ -75,7 +83,7 @@ export default function JobSearchPage() {
             jobTitle: group.jobTitle,
             positiveKeywords: group.positiveKeywords,
             negativeKeywords: group.negativeKeywords,
-            cvFile: group.cvFile || "",
+            cvId: group.cvId || null,
             sector: group.sector || null,
           }))
           setSearchGroups(groups)
@@ -87,7 +95,7 @@ export default function JobSearchPage() {
               jobTitle: "",
               positiveKeywords: [],
               negativeKeywords: [],
-              cvFile: "",
+              cvId: null,
               sector: null,
             },
           ])
@@ -105,7 +113,7 @@ export default function JobSearchPage() {
             jobTitle: "",
             positiveKeywords: [],
             negativeKeywords: [],
-            cvFile: "",
+            cvId: null,
             sector: null,
           },
         ])
@@ -117,11 +125,13 @@ export default function JobSearchPage() {
     loadConfiguration()
   }, [])
 
+  // Generar opciones de CV dinámicamente desde los CVs del usuario
   const cvOptions = [
     { value: "", label: "Seleccionar CV" },
-    { value: "cv1", label: "CV Principal" },
-    { value: "cv2", label: "CV Desarrollador" },
-    { value: "cv3", label: "CV Internacional" },
+    ...userCVs.map((cv) => ({
+      value: cv.id.toString(),
+      label: cv.cv_name,
+    })),
   ]
 
   const techStackOptions = [
@@ -156,7 +166,7 @@ export default function JobSearchPage() {
         jobTitle: "",
         positiveKeywords: [],
         negativeKeywords: [],
-        cvFile: "",
+        cvId: null,
         sector: null,
       },
     ])
@@ -241,7 +251,7 @@ export default function JobSearchPage() {
         if (typeof group.id === "string" && group.id.startsWith("temp-")) {
           const response = await createSearchGroup({
             jobTitle: group.jobTitle,
-            cvFile: group.cvFile || undefined,
+            cvId: group.cvId || undefined,
             positiveKeywords: group.positiveKeywords,
             negativeKeywords: group.negativeKeywords,
             sector: group.sector || null,
@@ -251,7 +261,7 @@ export default function JobSearchPage() {
           // Si es un grupo existente (number), actualizarlo
           const response = await updateSearchGroupAPI(group.id as number, {
             jobTitle: group.jobTitle,
-            cvFile: group.cvFile || undefined,
+            cvId: group.cvId || undefined,
             positiveKeywords: group.positiveKeywords,
             negativeKeywords: group.negativeKeywords,
             sector: group.sector || null,
@@ -283,7 +293,7 @@ export default function JobSearchPage() {
             jobTitle: group.jobTitle,
             positiveKeywords: group.positiveKeywords,
             negativeKeywords: group.negativeKeywords,
-            cvFile: group.cvFile || "",
+            cvId: group.cvId || null,
             sector: group.sector || null,
           }))
           setSearchGroups(groups)
@@ -387,8 +397,8 @@ export default function JobSearchPage() {
                   <Select
                     label="CV a utilizar"
                     options={cvOptions}
-                    value={group.cvFile}
-                    onChange={(value) => updateSearchGroup(group.id, "cvFile", value)}
+                    value={group.cvId ? group.cvId.toString() : ""}
+                    onChange={(value) => updateSearchGroup(group.id, "cvId", value ? parseInt(value, 10) : null)}
                     fullWidth
                   />
                 </div>

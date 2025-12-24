@@ -161,7 +161,7 @@ const formatWorkMode = (mode: string | null | undefined): string => {
 // Función auxiliar para mapear status del backend al formato del frontend
 const mapStatus = (status: string): string => {
   const statusMap: Record<string, string> = {
-    "applied": "Postulados",
+    "applied": "Postulado",
     "reviewing": "En revisión",
     "interview": "Entrevista",
     "rejected": "Rechazado",
@@ -241,7 +241,7 @@ const convertToJobApplication = (job: AppliedJobOffer) => {
     country: country,
     countryFlag: countryFlag,
     date: formatDate(job.applied_at || null),
-    status: mapStatus(job.status) as "Postulados" | "En revisión" | "Entrevista" | "Rechazado" | "Aceptado",
+    status: mapStatus(job.status) as "Postulado" | "En revisión" | "Entrevista" | "Rechazado" | "Aceptado",
     applicants: job.applicants_count || job.applicants,
     workMode: formatWorkMode(job.modality || job.workMode),
     workType: job.work_schedule_type || job.workType,
@@ -272,7 +272,7 @@ const mockJobs: any[] = [ // Mantener para referencia, pero no se usará
     country: "USA",
     countryFlag: "🇺🇸",
     date: "02/10/2025 12:39",
-    status: "Postulados",
+    status: "Postulado",
     applicants: 247,
     workMode: "Remoto",
     workType: "Full-Time",
@@ -304,7 +304,7 @@ const mockJobs: any[] = [ // Mantener para referencia, pero no se usará
     country: "España",
     countryFlag: "🇪🇸",
     date: "02/10/2025 12:13",
-    status: "Postulados",
+    status: "Postulado",
     applicants: 189,
     workMode: "Híbrido",
     workType: "Full-Time",
@@ -330,7 +330,7 @@ const mockJobs: any[] = [ // Mantener para referencia, pero no se usará
     country: "Colombia",
     countryFlag: "🇨🇴",
     date: "02/10/2025 11:56",
-    status: "Postulados",
+    status: "Postulado",
     applicants: 120,
     workMode: "Presencial",
     workType: "Full-Time",
@@ -389,7 +389,7 @@ const mockJobs: any[] = [ // Mantener para referencia, pero no se usará
     country: "Uruguay",
     countryFlag: "🇺🇾",
     date: "02/10/2025 09:15",
-    status: "Postulados",
+    status: "Postulado",
     applicants: 150,
     workMode: "Presencial",
     workType: "Full-Time",
@@ -454,7 +454,7 @@ const mockJobs: any[] = [ // Mantener para referencia, pero no se usará
     country: "USA",
     countryFlag: "🇺🇸",
     date: "01/10/2025 17:30",
-    status: "Postulados",
+    status: "Postulado",
     applicants: 350,
     workMode: "Presencial",
     workType: "Full-Time",
@@ -512,7 +512,7 @@ const mockJobs: any[] = [ // Mantener para referencia, pero no se usará
     country: "México",
     countryFlag: "🇲🇽",
     date: "01/10/2025 15:10",
-    status: "Postulados",
+    status: "Postulado",
     applicants: 280,
     workMode: "Híbrido",
     workType: "Full-Time",
@@ -572,7 +572,7 @@ const mockJobs: any[] = [ // Mantener para referencia, pero no se usará
     country: "Chile",
     countryFlag: "🇨🇱",
     date: "01/10/2025 13:00",
-    status: "Postulados",
+    status: "Postulado",
     applicants: 260,
     workMode: "Remoto",
     workType: "Full-Time",
@@ -632,7 +632,7 @@ const mockJobs: any[] = [ // Mantener para referencia, pero no se usará
     country: "España",
     countryFlag: "🇪🇸",
     date: "01/10/2025 10:40",
-    status: "Postulados",
+    status: "Postulado",
     applicants: 220,
     workMode: "Híbrido",
     workType: "Full-Time",
@@ -692,7 +692,7 @@ const mockJobs: any[] = [ // Mantener para referencia, pero no se usará
     country: "USA",
     countryFlag: "🇺🇸",
     date: "30/09/2025 18:20",
-    status: "Postulados",
+    status: "Postulado",
     applicants: 300,
     workMode: "Presencial",
     workType: "Full-Time",
@@ -750,7 +750,7 @@ const mockJobs: any[] = [ // Mantener para referencia, pero no se usará
     country: "Brasil",
     countryFlag: "🇧🇷",
     date: "30/09/2025 16:10",
-    status: "Postulados",
+    status: "Postulado",
     applicants: 230,
     workMode: "Híbrido",
     workType: "Full-Time",
@@ -808,7 +808,7 @@ const mockJobs: any[] = [ // Mantener para referencia, pero no se usará
     country: "México",
     countryFlag: "🇲🇽",
     date: "30/09/2025 14:00",
-    status: "Postulados",
+    status: "Postulado",
     applicants: 240,
     workMode: "Híbrido",
     workType: "Full-Time",
@@ -868,7 +868,7 @@ const mockJobs: any[] = [ // Mantener para referencia, pero no se usará
     country: "USA",
     countryFlag: "🇺🇸",
     date: "30/09/2025 11:50",
-    status: "Postulados",
+    status: "Postulado",
     applicants: 260,
     workMode: "Remoto",
     workType: "Full-Time",
@@ -898,7 +898,7 @@ const mockJobs: any[] = [ // Mantener para referencia, pero no se usará
     country: "España",
     countryFlag: "🇪🇸",
     date: "30/09/2025 10:45",
-    status: "Postulados",
+    status: "Postulado",
     applicants: 270,
     workMode: "Presencial",
     workType: "Full-Time",
@@ -956,7 +956,7 @@ const mockJobs: any[] = [ // Mantener para referencia, pero no se usará
     country: "USA",
     countryFlag: "🇺🇸",
     date: "29/09/2025 18:35",
-    status: "Postulados",
+    status: "Postulado",
     applicants: 290,
     workMode: "Remoto",
     workType: "Full-Time",
@@ -1016,7 +1016,7 @@ const mockJobs: any[] = [ // Mantener para referencia, pero no se usará
     country: "USA",
     countryFlag: "🇺🇸",
     date: "29/09/2025 16:25",
-    status: "Postulados",
+    status: "Postulado",
     applicants: 240,
     workMode: "Presencial",
     workType: "Full-Time",
@@ -1080,7 +1080,7 @@ const mockJobs: any[] = [ // Mantener para referencia, pero no se usará
     country: "Uruguay",
     countryFlag: "🇺🇾",
     date: "29/09/2025 14:15",
-    status: "Postulados",
+    status: "Postulado",
     applicants: 220,
     workMode: "Presencial",
     workType: "Full-Time",
@@ -1110,7 +1110,7 @@ const mockJobs: any[] = [ // Mantener para referencia, pero no se usará
     country: "Chile",
     countryFlag: "🇨🇱",
     date: "29/09/2025 12:05",
-    status: "Postulados",
+    status: "Postulado",
     applicants: 210,
     workMode: "Híbrido",
     workType: "Full-Time",
@@ -1140,7 +1140,7 @@ const mockJobs: any[] = [ // Mantener para referencia, pero no se usará
     country: "Chile",
     countryFlag: "🇨🇱",
     date: "29/09/2025 11:00",
-    status: "Postulados",
+    status: "Postulado",
     applicants: 200,
     workMode: "Presencial",
     workType: "Full-Time",
@@ -1180,7 +1180,7 @@ const employmentTypeOptions = [
 ]
 
 const statusOptions = [
-  { value: "Postulados", label: "Postulados" },
+  { value: "Postulado", label: "Postulado" },
   { value: "En revisión", label: "En revisión" },
   { value: "Entrevista", label: "Entrevista" },
   { value: "Rechazado", label: "Rechazado" },
@@ -1263,7 +1263,7 @@ export default function AppliedJobsPage() {
 
   const getStatusClass = (status: string) => {
     switch (status) {
-      case "Postulados":
+      case "Postulado":
         return styles.statusPosted
       case "En revisión":
         return styles.statusReview
@@ -1389,27 +1389,7 @@ export default function AppliedJobsPage() {
             currentJobs.map((job) => (
             <div 
               key={job.id} 
-              className={styles.tableRow} 
-              onClick={async () => {
-                setLoadingDetail(true)
-                try {
-                  const response = await getAppliedJobDetail(job.id)
-                  if (response.success && response.application) {
-                    const fullJob = convertToJobApplication(response.application)
-                    setSelectedJob(fullJob)
-                  } else {
-                    console.error("Error cargando detalle:", response.error)
-                    // Fallback: usar los datos que ya tenemos
-                    setSelectedJob(job)
-                  }
-                } catch (error) {
-                  console.error("Error cargando detalle:", error)
-                  // Fallback: usar los datos que ya tenemos
-                  setSelectedJob(job)
-                } finally {
-                  setLoadingDetail(false)
-                }
-              }}
+              className={styles.tableRow}
             >
               <div className={styles.columnCompany}>
                 <div className={styles.companyInfo}>
@@ -1417,7 +1397,32 @@ export default function AppliedJobsPage() {
                     <FiSearch size={20} />
                   </div>
                   <div>
-                    <div className={styles.jobTitle}>{job.title}</div>
+                    <div 
+                      className={styles.jobTitle}
+                      onClick={async () => {
+                        setLoadingDetail(true)
+                        try {
+                          const response = await getAppliedJobDetail(job.id)
+                          if (response.success && response.application) {
+                            const fullJob = convertToJobApplication(response.application)
+                            setSelectedJob(fullJob)
+                          } else {
+                            console.error("Error cargando detalle:", response.error)
+                            // Fallback: usar los datos que ya tenemos
+                            setSelectedJob(job)
+                          }
+                        } catch (error) {
+                          console.error("Error cargando detalle:", error)
+                          // Fallback: usar los datos que ya tenemos
+                          setSelectedJob(job)
+                        } finally {
+                          setLoadingDetail(false)
+                        }
+                      }}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      {job.title}
+                    </div>
                     <div className={styles.companyName}>{job.company}</div>
                   </div>
                 </div>
@@ -1437,7 +1442,7 @@ export default function AppliedJobsPage() {
               <div className={styles.columnStatus}>
                 <div className={`${styles.statusBadge} ${getStatusClass(job.status)}`}>
                   {job.status}
-                  <FiChevronDown size={16} />
+                  {/* <FiChevronDown size={16} /> */}
                 </div>
               </div>
             </div>
