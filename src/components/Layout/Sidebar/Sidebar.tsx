@@ -59,6 +59,11 @@ const navItems: NavItem[] = [
     icon: <IoChatbubblesOutline />,
   },
   {
+    label: "Reclutamiento",
+    href: "/recruitment",
+    icon: <IoPersonOutline />,
+  },
+  {
     label: "Admin",
     icon: <IoSettingsOutline />,
     submenu: [

@@ -11,6 +11,7 @@ import { LoadingSpinner } from "@/components/UI/LoadingSpinner/LoadingSpinner"
 import { Alert } from "@/components/UI/Alert/Alert"
 import { getUserProfile, updateUserProfile, UserProfile } from "@/lib/users"
 import { getUserCVs, createUserCV, deleteUserCV, UserCV } from "@/lib/cv"
+import { FiTrash2, FiPlus } from "react-icons/fi"
 import styles from "./profile.module.css"
 
 export default function ProfilePage() {
@@ -35,7 +36,16 @@ export default function ProfilePage() {
     experience: false,
     salary: false,
     documents: false,
+    skills: false,
   })
+
+  interface Skill {
+    id: number
+    name: string
+    years: string
+  }
+
+  const [skills, setSkills] = useState<Skill[]>([])
 
   const [cvs, setCvs] = useState<UserCV[]>([])
   const [newCVFile, setNewCVFile] = useState<File | null>(null)
@@ -131,13 +141,14 @@ export default function ProfilePage() {
           message: response.message || "Los datos han sido actualizados correctamente",
         })
 
-        // Reset all edit modes
+        // Reset all edit modes, including 'skills'
         setEditMode({
           personal: false,
           additional: false,
           experience: false,
           salary: false,
           documents: false,
+          skills: false,
         })
       } else {
         setAlert({
@@ -224,6 +235,21 @@ export default function ProfilePage() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const addSkill = () => {
+    const newId = skills.length > 0 ? Math.max(...skills.map(s => s.id)) + 1 : 1
+    setSkills([...skills, { id: newId, name: "", years: "" }])
+  }
+
+  const updateSkill = (id: number, field: "name" | "years", value: string) => {
+    setSkills(skills.map(skill => 
+      skill.id === id ? { ...skill, [field]: value } : skill
+    ))
+  }
+
+  const removeSkill = (id: number) => {
+    setSkills(skills.filter(skill => skill.id !== id))
   }
 
   const genderOptions = [
@@ -395,6 +421,52 @@ export default function ProfilePage() {
               placeholder="Selecciona tu nivel"
               disabled={!editMode.experience}
             />
+          </div>
+        </div>
+
+        <div className={styles.section}>
+          <div className={styles.sectionHeader}>
+            <h2 className={styles.sectionTitle}>Habilidades Técnicas</h2>
+            <button type="button" className={styles.editButton} onClick={() => toggleEditMode("skills")}>
+              {editMode.skills ? "Cancelar" : "Editar"}
+            </button>
+          </div>
+          <div className={styles.skillsList}>
+            {skills.map((skill) => (
+              <div key={skill.id} className={styles.skillItem}>
+                <Input
+                  label="Nombre de la Habilidad"
+                  type="text"
+                  value={skill.name}
+                  onChange={(e) => updateSkill(skill.id, "name", e.target.value)}
+                  placeholder="Ej: React, Python, SQL"
+                  disabled={!editMode.skills}
+                />
+                <Input
+                  label="Años de Experiencia"
+                  type="number"
+                  value={skill.years}
+                  onChange={(e) => updateSkill(skill.id, "years", e.target.value)}
+                  placeholder="Ej: 3"
+                  disabled={!editMode.skills}
+                />
+                {editMode.skills && (
+                  <button
+                    type="button"
+                    className={styles.removeSkillButton}
+                    onClick={() => removeSkill(skill.id)}
+                    aria-label="Eliminar habilidad"
+                  >
+                    <FiTrash2 />
+                  </button>
+                )}
+              </div>
+            ))}
+            {editMode.skills && (
+              <button type="button" className={styles.addSkillButton} onClick={addSkill}>
+                <FiPlus /> Agregar Habilidad
+              </button>
+            )}
           </div>
         </div>
 

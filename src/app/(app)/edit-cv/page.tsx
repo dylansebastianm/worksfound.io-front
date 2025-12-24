@@ -1,15 +1,9 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import styles from "./edit-cv.module.css"
-import { FiEdit2, FiDownload, FiGlobe, FiSave, FiTrash2, FiUpload } from "react-icons/fi"
+import { FiEdit2, FiDownload, FiGlobe, FiSave } from "react-icons/fi"
 import { Button } from "@/components/UI/Button/Button"
-import { FileUpload } from "@/components/UI/FileUpload/FileUpload"
-import { FileCard } from "@/components/UI/FileCard/FileCard"
-import { Input } from "@/components/UI/Input/Input"
-import { LoadingSpinner } from "@/components/UI/LoadingSpinner/LoadingSpinner"
-import { Alert } from "@/components/UI/Alert/Alert"
-import { getUserCVs, createUserCV, deleteUserCV, UserCV } from "@/lib/cv"
 
 interface CVData {
   header: {
@@ -52,12 +46,6 @@ interface CVData {
 
 export default function EditCvPage() {
   const [isEditing, setIsEditing] = useState(false)
-  const [cvs, setCvs] = useState<UserCV[]>([])
-  const [isLoadingCVs, setIsLoadingCVs] = useState(true)
-  const [uploadingCV, setUploadingCV] = useState(false)
-  const [newCVFile, setNewCVFile] = useState<File | null>(null)
-  const [newCVName, setNewCVName] = useState("")
-  const [alert, setAlert] = useState<{ status: "success" | "error"; message: string } | null>(null)
 
   const [cvData, setCvData] = useState<CVData>({
     header: {
@@ -216,104 +204,8 @@ export default function EditCvPage() {
     })
   }
 
-  // Cargar CVs al montar el componente
-  useEffect(() => {
-    const loadCVs = async () => {
-      setIsLoadingCVs(true)
-      try {
-        const response = await getUserCVs()
-        if (response.success && response.cvs) {
-          setCvs(response.cvs)
-        } else {
-          setAlert({
-            status: "error",
-            message: response.error || "Error al cargar los CVs",
-          })
-        }
-      } catch (error) {
-        console.error("Error loading CVs:", error)
-        setAlert({
-          status: "error",
-          message: "Error al cargar los CVs",
-        })
-      } finally {
-        setIsLoadingCVs(false)
-      }
-    }
-
-    loadCVs()
-  }, [])
-
-  const handleUploadCV = async () => {
-    if (!newCVFile) {
-      setAlert({
-        status: "error",
-        message: "Por favor selecciona un archivo",
-      })
-      return
-    }
-
-    setUploadingCV(true)
-    setAlert(null)
-
-    try {
-      const response = await createUserCV(newCVFile, newCVName || undefined)
-      if (response.success && response.cv) {
-        setCvs([...cvs, response.cv])
-        setNewCVFile(null)
-        setNewCVName("")
-        setAlert({
-          status: "success",
-          message: "CV subido exitosamente",
-        })
-      } else {
-        setAlert({
-          status: "error",
-          message: response.error || "Error al subir el CV",
-        })
-      }
-    } catch (error) {
-      console.error("Error uploading CV:", error)
-      setAlert({
-        status: "error",
-        message: "Error al subir el CV",
-      })
-    } finally {
-      setUploadingCV(false)
-    }
-  }
-
-  const handleDeleteCV = async (cvId: number) => {
-    if (!confirm("¿Estás seguro de que deseas eliminar este CV?")) {
-      return
-    }
-
-    try {
-      const response = await deleteUserCV(cvId)
-      if (response.success) {
-        setCvs(cvs.filter((cv) => cv.id !== cvId))
-        setAlert({
-          status: "success",
-          message: "CV eliminado exitosamente",
-        })
-      } else {
-        setAlert({
-          status: "error",
-          message: response.error || "Error al eliminar el CV",
-        })
-      }
-    } catch (error) {
-      console.error("Error deleting CV:", error)
-      setAlert({
-        status: "error",
-        message: "Error al eliminar el CV",
-      })
-    }
-  }
-
   return (
     <div className={styles.pageContainer}>
-      {alert && <Alert status={alert.status} message={alert.message} onClose={() => setAlert(null)} />}
       <div className={styles.toolbar}>
         <div className={styles.toolbarLeft}>
           <h1 className={styles.toolbarTitle}>Editor de CV</h1>
@@ -337,91 +229,6 @@ export default function EditCvPage() {
             <FiDownload /> Descargar PDF
           </Button>
         </div>
-      </div>
-
-      {/* Sección de Documentos */}
-      <div className={styles.documentsSection}>
-        <div className={styles.documentsHeader}>
-          <h2 className={styles.documentsTitle}>Documentos</h2>
-          <p className={styles.documentsSubtitle}>Gestiona tus CVs. Puedes tener múltiples CVs y asociarlos a diferentes grupos de búsqueda.</p>
-        </div>
-
-        {isLoadingCVs ? (
-          <LoadingSpinner />
-        ) : (
-          <>
-            {/* Lista de CVs existentes */}
-            <div className={styles.cvsList}>
-              {cvs.length > 0 ? (
-                cvs.map((cv) => (
-                  <div key={cv.id} className={styles.cvItem}>
-                    <FileCard
-                      fileName={cv.file_name || cv.cv_name}
-                      fileUrl={cv.cv_url}
-                      showDownload={true}
-                      onDelete={() => handleDeleteCV(cv.id)}
-                    />
-                    <div className={styles.cvName}>{cv.cv_name}</div>
-                    {cv.file_size && (
-                      <div className={styles.cvSize}>
-                        {(cv.file_size / 1024).toFixed(2)} KB
-                      </div>
-                    )}
-                  </div>
-                ))
-              ) : (
-                <div className={styles.emptyState}>
-                  <p>No tienes CVs subidos aún. Sube tu primer CV para comenzar.</p>
-                </div>
-              )}
-            </div>
-
-            {/* Formulario para subir nuevo CV */}
-            <div className={styles.uploadSection}>
-              <h3 className={styles.uploadTitle}>Subir nuevo CV</h3>
-              <div className={styles.uploadForm}>
-                <div className={styles.uploadFileInput}>
-                  <FileUpload
-                    label="Seleccionar archivo"
-                    accept=".pdf,.doc,.docx,.rtf,.txt"
-                    value={newCVFile}
-                    onChange={(file) => setNewCVFile(file)}
-                    disabled={uploadingCV}
-                  />
-                </div>
-                <div className={styles.uploadNameInput}>
-                  <Input
-                    label="Nombre del CV (opcional)"
-                    type="text"
-                    placeholder="Ej: CV Frontend Developer, CV Inglés..."
-                    value={newCVName}
-                    onChange={(e) => setNewCVName(e.target.value)}
-                    disabled={uploadingCV}
-                  />
-                  <p className={styles.uploadHint}>
-                    Si no especificas un nombre, se usará el nombre del archivo
-                  </p>
-                </div>
-                <Button
-                  onClick={handleUploadCV}
-                  variant="primary"
-                  disabled={!newCVFile || uploadingCV}
-                  fullWidth
-                >
-                  {uploadingCV ? (
-                    <>
-                      <LoadingSpinner /> Subiendo...
-                    </>
-                  ) : (
-                    <>
-                      <FiUpload /> Subir CV
-                    </>
-                  )}
-                </Button>
-              </div>
-            </div>
-          </>
-        )}
       </div>
 
       <div className={styles.cvContainer}>
