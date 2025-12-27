@@ -13,6 +13,9 @@ import { SiOpenai } from "react-icons/si"
 import { Input } from "@/components/UI/Input/Input"
 import { Switch } from "@/components/UI/Switch/Switch"
 import { Button } from "@/components/UI/Button/Button"
+import TagInputWithSearch from "@/components/UI/TagInputWithSearch/TagInputWithSearch"
+import { Checkbox } from "@/components/UI/Checkbox/Checkbox"
+import { useSkillsStore } from "@/store/skillsStore"
 import styles from "./recruitment.module.css"
 
 interface Skill {
@@ -140,10 +143,20 @@ export default function RecruitmentPage() {
   const [selectedCandidate, setSelectedCandidate] = useState<string | null>(null)
   const [filteredCandidates, setFilteredCandidates] = useState<Candidate[]>(mockCandidates)
 
+  const catalogSkills = useSkillsStore((s) => s.skills)
+  const loadSkills = useSkillsStore((s) => s.loadSkills)
+  // Carga lazy (si no se hidrató en SSR) - no hace nada si ya está loaded
+  // Nota: no usamos useEffect para evitar import extra; el store ya previene doble carga
+  if (catalogSkills.length === 0) {
+    // fire-and-forget
+    void loadSkills()
+  }
+
+  const skillOptions = catalogSkills.map((s) => ({ value: s.skill_key, label: s.name }))
+
   // Filter states
   const [roleFilter, setRoleFilter] = useState("")
   const [skillsFilter, setSkillsFilter] = useState<string[]>([])
-  const [currentSkillInput, setCurrentSkillInput] = useState("")
   const [englishRequired, setEnglishRequired] = useState(false)
   const [minSalary, setMinSalary] = useState("")
   const [maxSalary, setMaxSalary] = useState("")
@@ -158,8 +171,23 @@ export default function RecruitmentPage() {
     }
 
     if (skillsFilter.length > 0) {
+      const byKey = new Map(catalogSkills.map((s) => [s.skill_key.toLowerCase(), s]))
+      const byName = new Map(catalogSkills.map((s) => [s.name.toLowerCase(), s]))
+
       filtered = filtered.filter((c) =>
-        skillsFilter.some((skill) => c.skills.some((s) => s.name.toLowerCase().includes(skill.toLowerCase()))),
+        skillsFilter.some((skillKeyOrLabel) => {
+          const needle = (skillKeyOrLabel || "").toLowerCase()
+          const resolved = byKey.get(needle) || byName.get(needle)
+          const candidateSkillNames = c.skills.map((s) => s.name.toLowerCase())
+
+          if (resolved) {
+            const n1 = resolved.name.toLowerCase()
+            const n2 = resolved.skill_key.toLowerCase()
+            return candidateSkillNames.some((cs) => cs.includes(n1) || cs.includes(n2))
+          }
+
+          return candidateSkillNames.some((cs) => cs.includes(needle))
+        }),
       )
     }
 
@@ -186,23 +214,11 @@ export default function RecruitmentPage() {
   const handleResetFilters = () => {
     setRoleFilter("")
     setSkillsFilter([])
-    setCurrentSkillInput("")
     setEnglishRequired(false)
     setMinSalary("")
     setMaxSalary("")
     setModalities([])
     setFilteredCandidates(mockCandidates)
-  }
-
-  const addSkill = () => {
-    if (currentSkillInput.trim() && !skillsFilter.includes(currentSkillInput.trim())) {
-      setSkillsFilter([...skillsFilter, currentSkillInput.trim()])
-      setCurrentSkillInput("")
-    }
-  }
-
-  const removeSkill = (skill: string) => {
-    setSkillsFilter(skillsFilter.filter((s) => s !== skill))
   }
 
   const toggleModality = (modality: string) => {
@@ -347,39 +363,21 @@ export default function RecruitmentPage() {
               </div>
 
               <div className={styles.filterSection}>
-                <label className={styles.filterLabel}>Habilidades</label>
-                <div className={styles.skillsInputWrapper}>
-                  {skillsFilter.length > 0 && (
-                    <div className={styles.selectedSkills}>
-                      {skillsFilter.map((skill, idx) => (
-                        <div key={idx} className={styles.skillTag}>
-                          <span>{skill}</span>
-                          <button className={styles.removeSkillButton} onClick={() => removeSkill(skill)}>
-                            <IoCloseOutline />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  <div className={styles.skillInputGroup}>
-                    <input
-                      type="text"
-                      className={styles.filterInput}
-                      placeholder="Agregar habilidad"
-                      value={currentSkillInput}
-                      onChange={(e) => setCurrentSkillInput(e.target.value)}
-                      onKeyPress={(e) => e.key === "Enter" && addSkill()}
-                    />
-                  </div>
-                </div>
+                <TagInputWithSearch
+                  label="Habilidades"
+                  options={skillOptions}
+                  selectedValues={skillsFilter}
+                  onChange={setSkillsFilter}
+                  placeholder="Buscar y agregar..."
+                />
               </div>
 
               <div className={styles.filterSection}>
                 <div className={styles.switchItem}>
                   <Switch
                     id="englishRequired"
-                    label="Incluir ofertas que requieran inglés"
-                    description="Se aplicará a ofertas que requieran ingles conversacional|"
+                    label="El candidato debe tener inglés conversacional"
+                    description="Se buscaran candidatos que tengan un nivel de ingles conversacional o superior|"
                     checked={englishRequired}
                     onChange={(e) => setEnglishRequired(e.target.checked)}
                   />
@@ -412,15 +410,13 @@ export default function RecruitmentPage() {
                 <label className={styles.filterLabel}>Modalidad</label>
                 <div className={styles.checkboxGroup}>
                   {["Remoto Global", "Remoto local", "Presencial", "Híbrido"].map((mod) => (
-                    <label key={mod} className={styles.checkboxLabel}>
-                      <input
-                        type="checkbox"
-                        checked={modalities.includes(mod)}
-                        onChange={() => toggleModality(mod)}
-                        className={styles.checkbox}
-                      />
-                      <span>{mod}</span>
-                    </label>
+                    <Checkbox
+                      key={mod}
+                      id={`modality-${mod.toLowerCase().replace(/\s+/g, "-")}`}
+                      label={mod}
+                      checked={modalities.includes(mod)}
+                      onChange={() => toggleModality(mod)}
+                    />
                   ))}
                 </div>
               </div>

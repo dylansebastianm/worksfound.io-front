@@ -21,7 +21,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           </label>
         )}
         <input ref={ref} className={inputClasses} {...props} />
-        {error && <span className={styles.errorText}>{error}</span>}
+        {/* Reservar espacio para evitar que el layout “salte” al mostrar errores */}
+        <span className={styles.errorText} style={{ visibility: error ? "visible" : "hidden" }}>
+          {error || " "}
+        </span>
       </div>
     )
   },

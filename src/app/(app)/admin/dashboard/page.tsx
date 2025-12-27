@@ -61,6 +61,14 @@ export default function AdminDashboardPage() {
       setUser(currentUser)
       // Cargar configuración de ingesta al montar el componente
       loadIngestionConfig()
+      
+      // Verificar si hay una ingesta en curso desde sessionStorage
+      if (typeof window !== "undefined") {
+        const ingestingState = sessionStorage.getItem("ingesting_state")
+        if (ingestingState === "true") {
+          setIsIngesting(true)
+        }
+      }
     }
   }, [router])
 
@@ -87,6 +95,11 @@ export default function AdminDashboardPage() {
     if (!user) return
 
     setIsIngesting(true)
+    // Guardar estado en sessionStorage
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("ingesting_state", "true")
+    }
+    
     try {
       // Usar la configuración guardada
       const response = await scrapeJobs(
@@ -106,6 +119,10 @@ export default function AdminDashboardPage() {
       alert("Error al realizar la ingesta. Por favor, intenta nuevamente.")
     } finally {
       setIsIngesting(false)
+      // Eliminar estado de sessionStorage al terminar
+      if (typeof window !== "undefined") {
+        sessionStorage.removeItem("ingesting_state")
+      }
     }
   }
 
@@ -151,7 +168,7 @@ export default function AdminDashboardPage() {
             disabled={isIngesting}
           >
             <FaPlay />
-            {isIngesting ? "Ingiriendo ofertas..." : "Realizar Ingesta"}
+            {isIngesting ? "Realizando Ingesta..." : "Realizar Ingesta"}
           </button>
           <button className={styles.configButton} onClick={() => setShowConfigModal(true)} title="Configurar ingesta">
             <FaCog />

@@ -53,6 +53,9 @@
 }
 
 .errorText {
+  display: block;
+  min-height: 18px; /* reserva 1 línea para evitar layout shift */
+  line-height: 18px;
   font-size: 14px;
   color: var(--error);
 }

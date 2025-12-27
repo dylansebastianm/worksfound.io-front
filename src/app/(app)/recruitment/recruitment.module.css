@@ -395,24 +395,6 @@
   gap: 12px;
 }
 
-.checkboxLabel {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
-  font-size: 14px;
-  color: #1a1a1a;
-}
-
-.checkbox {
-  width: 20px;
-  height: 20px;
-  border: 2px solid var(--primary-color);
-  border-radius: 4px;
-  cursor: pointer;
-  accent-color: var(--primary-color);
-}
-
 .modalActions {
   display: flex;
   flex-direction: column;

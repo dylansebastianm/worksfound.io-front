@@ -7,6 +7,7 @@ import { FaLinkedin, FaBriefcase } from "react-icons/fa"
 import { IoPlay, IoPause } from "react-icons/io5"
 import { Button } from "@/components/UI/Button/Button"
 import { PortalConnectionModal } from "@/components/UI/PortalConnectionModal/PortalConnectionModal"
+import { LoadingSpinner } from "@/components/UI/LoadingSpinner/LoadingSpinner"
 import {
   checkLinkedInConnection,
   startLinkedInLogin,
@@ -23,6 +24,7 @@ export default function PortalsPage() {
   const [isAutoApplyRunning, setIsAutoApplyRunning] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [isAutoApplyLoading, setIsAutoApplyLoading] = useState(false)
+  const [isLoadingConnectionStatus, setIsLoadingConnectionStatus] = useState(true)
   const [error, setError] = useState("")
   const [showLinkedInForm, setShowLinkedInForm] = useState(false)
   const [loginSessionId, setLoginSessionId] = useState<string | null>(null)
@@ -37,6 +39,8 @@ export default function PortalsPage() {
         setUserId(storedUserId)
         checkConnectionStatus(storedUserId)
         checkAutoApplyStatus(storedUserId)
+      } else {
+        setIsLoadingConnectionStatus(false)
       }
     }
   }, [])
@@ -98,11 +102,14 @@ export default function PortalsPage() {
   }, [isAutoApplyRunning, userId, isLinkedInConnected])
 
   const checkConnectionStatus = async (uid: string) => {
+    setIsLoadingConnectionStatus(true)
     try {
       const status = await checkLinkedInConnection(uid)
       setIsLinkedInConnected(status.is_connected || false)
     } catch (err) {
       console.error("Error verificando conexión:", err)
+    } finally {
+      setIsLoadingConnectionStatus(false)
     }
   }
 
@@ -330,6 +337,14 @@ export default function PortalsPage() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  if (isLoadingConnectionStatus) {
+    return (
+      <div className={styles.container}>
+        <LoadingSpinner />
+      </div>
+    )
   }
 
   return (

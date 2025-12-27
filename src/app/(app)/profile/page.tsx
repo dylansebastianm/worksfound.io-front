@@ -4,13 +4,15 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import { Input } from "@/components/UI/Input/Input"
 import { Select } from "@/components/UI/Select/Select"
+import SelectWithSearch from "@/components/UI/SelectWithSearch/SelectWithSearch"
 import { FileUpload } from "@/components/UI/FileUpload/FileUpload"
 import { FileCard } from "@/components/UI/FileCard/FileCard"
 import { Button } from "@/components/UI/Button/Button"
 import { LoadingSpinner } from "@/components/UI/LoadingSpinner/LoadingSpinner"
 import { Alert } from "@/components/UI/Alert/Alert"
-import { getUserProfile, updateUserProfile, UserProfile } from "@/lib/users"
+import { getUserProfile, updateUserProfile, updateUserSkills, UserProfile } from "@/lib/users"
 import { getUserCVs, createUserCV, deleteUserCV, UserCV } from "@/lib/cv"
+import { useSkillsStore } from "@/store/skillsStore"
 import { FiTrash2, FiPlus } from "react-icons/fi"
 import styles from "./profile.module.css"
 
@@ -41,11 +43,20 @@ export default function ProfilePage() {
 
   interface Skill {
     id: number
-    name: string
+    skill_key: string
     years: string
   }
 
   const [skills, setSkills] = useState<Skill[]>([])
+  const [skillsErrors, setSkillsErrors] = useState<Record<number, { skill_key?: string; years?: string }>>({})
+
+  const catalogSkills = useSkillsStore((s) => s.skills)
+  const loadSkills = useSkillsStore((s) => s.loadSkills)
+
+  const skillOptions = catalogSkills.map((s) => ({
+    value: s.skill_key,
+    label: s.name,
+  }))
 
   const [cvs, setCvs] = useState<UserCV[]>([])
   const [newCVFile, setNewCVFile] = useState<File | null>(null)
@@ -59,6 +70,9 @@ export default function ProfilePage() {
 
   // Cargar perfil al montar el componente
   useEffect(() => {
+    // Asegurar catálogo global de skills (si no fue hidratado por SSR)
+    loadSkills()
+
     const loadProfile = async () => {
       setIsLoadingProfile(true)
       try {
@@ -79,6 +93,19 @@ export default function ProfilePage() {
             phone: profile.phone || "",
             jobChangeReason: profile.jobChangeReason || "",
           })
+
+          // Cargar skills del usuario (si vienen del backend)
+          if (Array.isArray(profile.skills)) {
+            setSkills(
+              profile.skills.map((s, idx) => ({
+                id: idx + 1,
+                skill_key: s.skill_key || "",
+                years: s.years || "",
+              }))
+            )
+          } else {
+            setSkills([])
+          }
           
           // Cargar CVs del usuario
           const cvsResponse = await getUserCVs()
@@ -119,6 +146,45 @@ export default function ProfilePage() {
     setAlert(null)
 
     try {
+      const wasSkillsEditing = editMode.skills
+
+      if (wasSkillsEditing) {
+        // Validación: si hay una skill, years es requerido y viceversa.
+        const nextErrors: Record<number, { skill_key?: string; years?: string }> = {}
+
+        for (const s of skills) {
+          const key = (s.skill_key || "").trim()
+          const years = (s.years || "").trim()
+
+          // Si la fila está vacía, ignorar
+          if (!key && !years) continue
+
+          if (!key) {
+            nextErrors[s.id] = { ...(nextErrors[s.id] || {}), skill_key: "Requerido" }
+          }
+
+          if (!years) {
+            nextErrors[s.id] = { ...(nextErrors[s.id] || {}), years: "Requerido" }
+          } else {
+            const n = Number(years)
+            if (!Number.isInteger(n) || n < 0) {
+              nextErrors[s.id] = { ...(nextErrors[s.id] || {}), years: "Debe ser un entero (0 o más)" }
+            }
+          }
+        }
+
+        setSkillsErrors(nextErrors)
+
+        if (Object.keys(nextErrors).length > 0) {
+          setIsLoading(false)
+          setAlert({
+            status: "error",
+            message: "Completa todos los campos de Habilidades Técnicas (tecnología y años).",
+          })
+          return
+        }
+      }
+
       // Actualizar los datos del perfil
       const response = await updateUserProfile({
         age: formData.age,
@@ -135,7 +201,22 @@ export default function ProfilePage() {
         jobChangeReason: formData.jobChangeReason,
       })
 
-      if (response.success) {
+      // Si se están editando skills, persistirlas en user_skills
+      let skillsSaveOk = true
+      let skillsSaveError: string | null = null
+      if (response.success && wasSkillsEditing) {
+        const payloadSkills = skills
+          .map((s) => ({ skill_key: (s.skill_key || "").trim(), years: (s.years || "").trim() }))
+          .filter((s) => s.skill_key !== "")
+
+        const skillsResp = await updateUserSkills(payloadSkills)
+        if (!skillsResp.success) {
+          skillsSaveOk = false
+          skillsSaveError = skillsResp.error || "Error al actualizar skills"
+        }
+      }
+
+      if (response.success && skillsSaveOk) {
         setAlert({
           status: "success",
           message: response.message || "Los datos han sido actualizados correctamente",
@@ -149,6 +230,11 @@ export default function ProfilePage() {
           salary: false,
           documents: false,
           skills: false,
+        })
+      } else if (response.success && !skillsSaveOk) {
+        setAlert({
+          status: "error",
+          message: skillsSaveError || "Error al actualizar skills",
         })
       } else {
         setAlert({
@@ -239,13 +325,21 @@ export default function ProfilePage() {
 
   const addSkill = () => {
     const newId = skills.length > 0 ? Math.max(...skills.map(s => s.id)) + 1 : 1
-    setSkills([...skills, { id: newId, name: "", years: "" }])
+    setSkills([...skills, { id: newId, skill_key: "", years: "" }])
   }
 
-  const updateSkill = (id: number, field: "name" | "years", value: string) => {
+  const updateSkill = (id: number, field: "skill_key" | "years", value: string) => {
     setSkills(skills.map(skill => 
       skill.id === id ? { ...skill, [field]: value } : skill
     ))
+    setSkillsErrors((prev) => {
+      if (!prev[id]) return prev
+      const next = { ...prev }
+      next[id] = { ...next[id] }
+      delete next[id][field]
+      if (!next[id].skill_key && !next[id].years) delete next[id]
+      return next
+    })
   }
 
   const removeSkill = (id: number) => {
@@ -434,13 +528,15 @@ export default function ProfilePage() {
           <div className={styles.skillsList}>
             {skills.map((skill) => (
               <div key={skill.id} className={styles.skillItem}>
-                <Input
-                  label="Nombre de la Habilidad"
-                  type="text"
-                  value={skill.name}
-                  onChange={(e) => updateSkill(skill.id, "name", e.target.value)}
-                  placeholder="Ej: React, Python, SQL"
+                <SelectWithSearch
+                  label="Stack / Tecnología"
+                  options={skillOptions}
+                  value={skill.skill_key}
+                  onChange={(value) => updateSkill(skill.id, "skill_key", value)}
+                  placeholder="Buscar tecnología..."
                   disabled={!editMode.skills}
+                  error={skillsErrors[skill.id]?.skill_key}
+                  fullWidth
                 />
                 <Input
                   label="Años de Experiencia"
@@ -448,7 +544,10 @@ export default function ProfilePage() {
                   value={skill.years}
                   onChange={(e) => updateSkill(skill.id, "years", e.target.value)}
                   placeholder="Ej: 3"
+                  min={0}
+                  step={1}
                   disabled={!editMode.skills}
+                  error={skillsErrors[skill.id]?.years}
                 />
                 {editMode.skills && (
                   <button

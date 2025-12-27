@@ -23,6 +23,7 @@ import { SiIndeed, SiGlassdoor, SiOpenai } from "react-icons/si"
 import { FcGoogle } from "react-icons/fc"
 import { getUserStatistics, type UserStatistics } from "@/lib/users"
 import { LoadingSpinner } from "@/components/UI/LoadingSpinner/LoadingSpinner"
+import { InfoIcon } from "@/components/UI/InfoIcon/InfoIcon"
 import styles from "./dashboard.module.css"
 
 // Datos mockeados que se mantienen
@@ -88,9 +89,9 @@ export default function DashboardPage() {
   // Cálculos mockeados (no tocar)
   const manualApplications = daysSubscribed * mockData.manualApplicationsRate
   const extraApplications = statistics.totalApplications - manualApplications
-  const hoursPerApplication = 0.5
-  const hoursSaved = Math.floor(statistics.totalApplications * hoursPerApplication)
-  const moneyLost = daysSubscribed * mockData.avgSalaryPerDay
+  // Usar métricas reales del backend
+  const hoursSaved = statistics.hoursSaved || 0
+  const moneyLost = statistics.opportunityCost || 0
 
   // Portales conectados (solo los que tienen aplicaciones > 0 o están en la lista)
   const upcomingPortals = ["Indeed", "Google Jobs"]
@@ -246,6 +247,7 @@ export default function DashboardPage() {
 
       <div className={styles.comparisonGrid}>
         <div className={styles.comparisonCard}>
+          <InfoIcon tooltip="Los usuarios en promedio mandan 10 aplicaciones por día de manera manual" />
           <div className={styles.comparisonHeader}>
             <FaChartLine className={styles.metricIcon} />
             <h3 className={styles.comparisonTitle}>vs Aplicación Manual</h3>
@@ -266,16 +268,18 @@ export default function DashboardPage() {
 
         <div className={styles.savingsCard}>
           <div className={styles.savingItem}>
+            <InfoIcon tooltip="En promedio una persona demora 10 minutos en una aplicación sencilla y este tiempo se puede elevar si es redireccionado a otro sitio para concluir la misma" />
             <FaClock className={styles.metricIcon} style={{ marginBottom: "8px" }} />
             <h3 className={styles.savingTitle}>Horas Ahorradas</h3>
-            <p className={styles.savingValue}>{hoursSaved}h</p>
+            <p className={styles.savingValue}>{hoursSaved.toFixed(1)}h</p>
             <p className={styles.savingLabel}>En búsqueda y postulación</p>
           </div>
           <div className={styles.savingDivider} />
           <div className={styles.savingItem}>
+            <InfoIcon tooltip="Costo de oportunidad monetario por día teniendo en cuenta la diferencia entre tu salario actual y el pretendido, por 22 días laborales desde que te diste de alta en worksfound.io" />
             <FaDollarSign className={styles.metricIcon} style={{ marginBottom: "8px" }} />
             <h3 className={styles.savingTitle}>Dinero en Riesgo</h3>
-            <p className={styles.savingValue}>${moneyLost.toLocaleString()}</p>
+            <p className={styles.savingValue}>${Math.round(moneyLost).toLocaleString()}</p>
             <p className={styles.savingLabel}>Perdido por {daysSubscribed} días sin trabajo</p>
           </div>
         </div>

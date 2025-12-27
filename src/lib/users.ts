@@ -55,6 +55,11 @@ export interface UserProfile {
   preferredWorkModality: string[];
   jobChangeReason: string;
   cvUrl?: string;
+  skills?: Array<{
+    skill_key: string;
+    label: string;
+    years: string;
+  }>;
 }
 
 export interface UpdateUserProfileRequest {
@@ -180,6 +185,40 @@ export async function updateUserProfile(profileData: UpdateUserProfileRequest): 
   }
 }
 
+export interface UpdateUserSkillsRequestItem {
+  skill_key: string;
+  years?: string;
+}
+
+export async function updateUserSkills(skills: UpdateUserSkillsRequestItem[]): Promise<{ success: boolean; skills?: Array<{ skill_key: string; label: string; years: string }>; error?: string }> {
+  try {
+    const response = await fetch(`${API_URL}/api/user/skills`, {
+      method: 'PUT',
+      headers: {
+        ...getAuthHeaders(),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ skills }),
+    });
+
+    if (response.status === 401) {
+      return {
+        success: false,
+        error: 'Token inválido o expirado. Por favor, inicia sesión nuevamente.',
+      };
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error actualizando skills:', error);
+    return {
+      success: false,
+      error: 'Error conectando con el servidor',
+    };
+  }
+}
+
 export interface PortalStatistics {
   name: string;
   applications: number;
@@ -196,6 +235,8 @@ export interface UserStatistics {
   directMessages: number;
   aiResponsesGenerated: number;
   joinDate: string | null;
+  hoursSaved: number;
+  opportunityCost: number;
 }
 
 export interface GetUserStatisticsResponse {
