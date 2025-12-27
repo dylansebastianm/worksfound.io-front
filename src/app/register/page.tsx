@@ -4,17 +4,22 @@ import type React from "react"
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/Button/Button"
-import { Input } from "@/components/ui/Input/Input"
+import { Button } from "@/components/UI/Button/Button"
+import { Input } from "@/components/UI/Input/Input"
+import { Select } from "@/components/UI/Select/Select"
 import { register } from "@/lib/auth"
 import styles from "./register.module.css"
 
+type RegisterType = "candidate" | "recruiter"
+
 export default function RegisterPage() {
   const router = useRouter()
+  const [registerType, setRegisterType] = useState<RegisterType>("candidate")
   const [formData, setFormData] = useState({
     name: "",
     last_name: "",
     email: "",
+    recruiter_role: "",
     password: "",
     confirmPassword: "",
   })
@@ -49,6 +54,9 @@ export default function RegisterPage() {
     if (!formData.name) newErrors.name = "El nombre es requerido"
     if (!formData.last_name) newErrors.last_name = "El apellido es requerido"
     if (!formData.email) newErrors.email = "El email es requerido"
+    if (registerType === "recruiter" && !formData.recruiter_role) {
+      newErrors.recruiter_role = "El rol es requerido"
+    }
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
@@ -84,6 +92,27 @@ export default function RegisterPage() {
           <p className={styles.subtitle}>Crea tu cuenta</p>
         </div>
 
+        <div className={styles.registerTypeToggle} role="tablist" aria-label="Tipo de registro">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={registerType === "candidate"}
+            className={`${styles.registerTypeButton} ${registerType === "candidate" ? styles.active : ""}`}
+            onClick={() => setRegisterType("candidate")}
+          >
+            Candidato
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={registerType === "recruiter"}
+            className={`${styles.registerTypeButton} ${registerType === "recruiter" ? styles.active : ""}`}
+            onClick={() => setRegisterType("recruiter")}
+          >
+            Reclutador
+          </button>
+        </div>
+
         <form className={styles.form} onSubmit={handleSubmit}>
           {errors.general && (
             <div style={{ color: "red", fontSize: "14px", marginBottom: "16px" }}>
@@ -91,7 +120,7 @@ export default function RegisterPage() {
             </div>
           )}
 
-          <div className={styles.nameRow}>
+          <div className={`${styles.nameRow} ${registerType === "recruiter" ? styles.nameRowTwoCols : ""}`}>
             <Input
               type="text"
               label="Nombre"
@@ -125,6 +154,27 @@ export default function RegisterPage() {
             required
           />
 
+          {registerType === "recruiter" && (
+            <Select
+              label="Rol"
+              value={formData.recruiter_role}
+              onChange={(value: string) => handleChange("recruiter_role", value)}
+              error={errors.recruiter_role}
+              fullWidth
+              placeholder="Selecciona tu rol"
+              options={[
+                { value: "hr_generalist", label: "HR Generalist" },
+                { value: "hr_manager", label: "HR Manager" },
+                { value: "hrbp", label: "HRBP" },
+                { value: "talent_acquisition", label: "Talent Acquisition" },
+                { value: "recruiter", label: "Recruiter" },
+                { value: "head_of_people", label: "Head of People" },
+                { value: "ceo", label: "CEO" },
+              ]}
+              disabled={isLoading}
+            />
+          )}
+
           <Input
             type="password"
             label="Contraseña"
@@ -148,7 +198,7 @@ export default function RegisterPage() {
           />
 
           <Button type="submit" fullWidth loading={isLoading} disabled={isLoading}>
-            Crear cuenta
+            {registerType === "recruiter" ? "Crear cuenta de reclutador" : "Crear cuenta"}
           </Button>
         </form>
 

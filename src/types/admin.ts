@@ -24,6 +24,9 @@ export interface AdminStatistics {
     total: number;
     byPortal: PortalStatistics[];
   };
+  ai?: {
+    responsesTotal: number;
+  };
 }
 
 export interface GetAdminStatisticsResponse {

@@ -2,6 +2,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--spacing-xs);
+  position: relative; /* para posicionar el errorText en absolute */
 }
 
 .fullWidth {
@@ -15,6 +16,7 @@
 }
 
 .input {
+  width: 100%;
   padding: 10px 14px;
   font-size: 16px;
   /* Using neutral gray border, orange only on focus */
@@ -53,11 +55,17 @@
 }
 
 .errorText {
-  display: block;
-  min-height: 18px; /* reserva 1 línea para evitar layout shift */
-  line-height: 18px;
-  font-size: 14px;
+  position: absolute;
+  left: 0;
+  top: calc(100% + 2px);
+  font-size: 12px;
+  line-height: 14px;
   color: var(--error);
+  pointer-events: none;
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Responsive */
