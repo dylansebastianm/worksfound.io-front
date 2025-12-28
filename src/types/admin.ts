@@ -19,6 +19,7 @@ export interface AdminStatistics {
   offers: {
     total: number;
     byPortal: PortalStatistics[];
+    redirectsOffers?: PortalStatistics[];
   };
   applications: {
     total: number;

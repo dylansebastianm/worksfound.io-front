@@ -23,6 +23,7 @@ import IngestionConfigModal, { type IngestionConfig } from "@/components/UI/Inge
 import { getIngestionConfig, updateIngestionConfig } from "@/lib/ingestion"
 import { scrapeJobs } from "@/lib/jobs"
 import { LoadingSpinner } from "@/components/UI/LoadingSpinner/LoadingSpinner"
+import DistributionCard from "@/components/UI/DistributionCard/DistributionCard"
 import styles from "./admin-dashboard.module.css"
 
 export default function AdminDashboardPage() {
@@ -195,6 +196,10 @@ export default function AdminDashboardPage() {
     applications: portalCountsMap.get(name) || 0,
   }))
 
+  const redirectsOffersRaw = statistics.offers?.redirectsOffers || []
+  const redirectsOffersSorted = [...redirectsOffersRaw].sort((a: any, b: any) => (b?.count || 0) - (a?.count || 0))
+  const totalRedirectOffers = redirectsOffersSorted.reduce((acc: number, p: any) => acc + (p?.count || 0), 0)
+
   return (
     <div className={styles.container}>
       <div className={styles.header}>
@@ -304,38 +309,30 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
-      <div className={styles.portalsCard}>
-        <h2 className={styles.sectionTitle}>Distribución por Portal</h2>
-        <div className={styles.portalsList}>
-          {portalsToShow.map((portal) => {
-            const isUpcoming = upcomingPortals.includes(portal.name)
-            const percentage = isUpcoming
-              ? 0
-              : totalApplications > 0
-                ? Math.round((portal.applications / totalApplications) * 100)
-                : 0
+      <DistributionCard
+        title="Distribución por Portal"
+        unitLabelPlural="aplicaciones"
+        totalOverride={totalApplications}
+        items={portalsToShow.map((p) => ({
+          name: p.name,
+          count: p.applications,
+          icon: portalIcons[p.name],
+          inactive: upcomingPortals.includes(p.name),
+          inactiveLabel: "Próximamente",
+        }))}
+      />
 
-            return (
-              <div key={portal.name} className={styles.portalItem}>
-                <div className={styles.portalInfo}>
-                  <div className={`${styles.portalNameWrapper} ${isUpcoming ? styles.portalInactive : ""}`}>
-                    {portalIcons[portal.name]}
-                    <span className={styles.portalName}>{portal.name}</span>
-                  </div>
-                  <span className={styles.portalApps}>
-                    {isUpcoming ? "Próximamente" : `${portal.applications.toLocaleString()} aplicaciones (${percentage}%)`}
-                  </span>
-                </div>
-                {!isUpcoming && (
-                  <div className={styles.portalBar}>
-                    <div className={styles.portalBarFill} style={{ width: `${percentage}%` }} />
-                  </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
-      </div>
+      <div style={{ height: 16 }} />
+
+      <DistributionCard
+        title="Redirects por ATS"
+        unitLabelPlural="ofertas"
+        totalOverride={totalRedirectOffers}
+        items={redirectsOffersSorted.map((p: any) => ({
+          name: p.name,
+          count: p.count,
+        }))}
+      />
     </div>
   )
 }
