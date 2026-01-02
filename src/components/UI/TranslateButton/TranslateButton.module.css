@@ -1,9 +1,13 @@
-.button {
+.translateButton {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px; /* Added gap for proper icon spacing */
+  gap: 8px;
+  padding: 10px 20px;
+  font-size: 16px;
   font-weight: 500;
+  min-height: 40px;
+  line-height: 1;
   border: none;
   border-radius: var(--radius-md);
   transition: all var(--transition-base);
@@ -12,14 +16,24 @@
   white-space: nowrap;
 }
 
-.button:focus-visible {
+.translateButton:focus-visible {
   outline: 2px solid var(--primary-color);
   outline-offset: 2px;
 }
 
-.button:disabled {
+.translateButton:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.text {
+  font-size: 16px;
 }
 
 /* Variants */
@@ -50,45 +64,4 @@
 
 .outline:hover:not(:disabled) {
   background-color: rgba(255, 99, 0, 0.1);
-}
-
-.ghost {
-  background-color: transparent;
-  color: var(--text-primary);
-}
-
-.ghost:hover:not(:disabled) {
-  background-color: var(--surface);
-}
-
-/* Sizes */
-.small {
-  padding: 6px 12px;
-  font-size: 14px;
-  min-height: 32px;
-  line-height: 1; /* Added line-height for better vertical alignment */
-}
-
-.medium {
-  padding: 10px 20px;
-  font-size: 16px;
-  min-height: 40px;
-  line-height: 1; /* Added line-height for better vertical alignment */
-}
-
-.large {
-  padding: 14px 28px;
-  font-size: 18px;
-  min-height: 48px;
-  line-height: 1; /* Added line-height for better vertical alignment */
-}
-
-/* Full Width */
-.fullWidth {
-  width: 100%;
-}
-
-/* Loading State */
-.loading {
-  pointer-events: none;
 }

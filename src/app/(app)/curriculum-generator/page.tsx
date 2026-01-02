@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Select } from "@/components/UI/Select/Select"
 import { Input } from "@/components/UI/Input/Input"
@@ -10,17 +10,30 @@ import { Button } from "@/components/UI/Button/Button"
 import { FileCard } from "@/components/UI/FileCard/FileCard"
 import { FiUpload, FiCheck, FiFileText } from "react-icons/fi"
 import { SiOpenai } from "react-icons/si"
+import { generateCVWithOpenAI } from "@/lib/cv"
+import { getUserProfile, UserProfile } from "@/lib/users"
 import styles from "./curriculum-generator.module.css"
 
 export default function CurriculumGeneratorPage() {
   const router = useRouter()
   const [sector, setSector] = useState("")
   const [puesto, setPuesto] = useState("")
-  const [cvFile, setCvFile] = useState<File | null>(
-    new File([""], "CV_Felipe_Alvarez.pdf", { type: "application/pdf" }),
-  )
+  const [cvFile, setCvFile] = useState<File | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
   const [currentStep, setCurrentStep] = useState(0)
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  // Cargar perfil del usuario al montar el componente
+  useEffect(() => {
+    const loadProfile = async () => {
+      const response = await getUserProfile()
+      if (response.success && response.profile) {
+        setUserProfile(response.profile)
+      }
+    }
+    loadProfile()
+  }, [])
 
   const generationSteps = [
     "Leyendo tu CV actual",
@@ -45,23 +58,79 @@ export default function CurriculumGeneratorPage() {
   }
 
   const handleGenerate = async () => {
-    if (!sector || !puesto || !cvFile) {
-      alert("Por favor, completa todos los campos")
+    if (!puesto || !cvFile) {
+      alert("Por favor, completa el puesto y sube tu CV")
       return
     }
 
+    if (!userProfile) {
+      alert("No se pudo cargar tu perfil. Por favor, recarga la página.")
+      return
+    }
+
+    setError(null)
     setIsGenerating(true)
     setCurrentStep(0)
 
-    // Simular proceso de generación
-    for (let i = 0; i < generationSteps.length; i++) {
-      await new Promise((resolve) => setTimeout(resolve, 2000))
-      setCurrentStep(i + 1)
-    }
+    try {
+      // Paso 1: Leyendo tu CV actual
+      setCurrentStep(1)
+      await new Promise((resolve) => setTimeout(resolve, 1000))
 
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    setIsGenerating(false)
-    router.push("/edit-cv")
+      // Paso 2: Mejorando redacción
+      setCurrentStep(2)
+      
+      // Llamar a OpenAI
+      const result = await generateCVWithOpenAI({
+        cvFile,
+        jobTitle: puesto,
+        userProfile: {
+          name: userProfile.name,
+          lastName: userProfile.lastName,
+          email: userProfile.email,
+          phone: userProfile.phone,
+          country: userProfile.country,
+          city: userProfile.city,
+          age: userProfile.age,
+          gender: userProfile.gender,
+          experienceYears: userProfile.experienceYears,
+          englishLevel: userProfile.englishLevel,
+          currentSalary: userProfile.currentSalary,
+          expectedSalary: userProfile.expectedSalary,
+          institution: userProfile.institution,
+          degreeTitle: userProfile.degreeTitle,
+          preferredWorkModality: userProfile.preferredWorkModality,
+          jobChangeReason: userProfile.jobChangeReason,
+          skills: userProfile.skills,
+        },
+      })
+
+      if (!result.success) {
+        setError(result.error || "Error generando CV")
+        setIsGenerating(false)
+        return
+      }
+
+      // Paso 3: Aplicando ATS optimizaciones
+      setCurrentStep(3)
+      await new Promise((resolve) => setTimeout(resolve, 500))
+
+      // Paso 4: Personalizando para el puesto
+      setCurrentStep(4)
+      await new Promise((resolve) => setTimeout(resolve, 500))
+
+      // Guardar el CV generado en sessionStorage para que esté disponible en edit-cv
+      if (result.cvContent) {
+        sessionStorage.setItem("generatedCV", result.cvContent)
+      }
+
+      setIsGenerating(false)
+      router.push("/edit-cv2")
+    } catch (err) {
+      console.error("Error generando CV:", err)
+      setError(err instanceof Error ? err.message : "Error desconocido al generar CV")
+      setIsGenerating(false)
+    }
   }
 
   const handleRemoveFile = () => {
@@ -92,12 +161,17 @@ export default function CurriculumGeneratorPage() {
         </div>
 
         <div className={styles.formGroup}>
-          <Input
+          <Select
             label="Puesto al que quieres aplicar"
-            type="text"
-            placeholder="Ej: Full Stack Developer, Account Executive..."
+            options={[
+              { value: "", label: "Selecciona un puesto" },
+              { value: "Frontend Developer", label: "Frontend Developer" },
+              { value: "Backend Developer", label: "Backend Developer" },
+              { value: "Full Stack Developer", label: "Full Stack Developer" },
+            ]}
             value={puesto}
-            onChange={(e) => setPuesto(e.target.value)}
+            onChange={(value) => setPuesto(value)}
+            placeholder="Selecciona un puesto"
           />
           <p className={styles.hint}>Se destacará tu experiencia acorde al rol que deseas</p>
         </div>
@@ -131,10 +205,16 @@ export default function CurriculumGeneratorPage() {
           )}
         </div>
 
-        <Button onClick={handleGenerate} disabled={!sector || !puesto || !cvFile}>
+        <Button onClick={handleGenerate} disabled={!puesto || !cvFile || !userProfile || isGenerating}>
           <FiFileText />
           Generar CV Optimizado
         </Button>
+
+        {error && (
+          <div style={{ marginTop: "16px", padding: "12px", backgroundColor: "#fee", border: "1px solid #fcc", borderRadius: "8px", color: "#c33" }}>
+            {error}
+          </div>
+        )}
       </div>
 
       {isGenerating && (

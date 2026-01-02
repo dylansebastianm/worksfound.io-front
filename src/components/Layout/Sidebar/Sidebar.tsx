@@ -82,6 +82,16 @@ const navItems: NavItem[] = [
         href: "/admin/logs",
         icon: <IoDocumentTextOutline />,
       },
+      {
+        label: "Incidencias globales",
+        href: "/admin/incidents-global",
+        icon: <IoDocumentTextOutline />,
+      },
+      {
+        label: "Ofertas no aplicadas",
+        href: "/admin/incidents-offers",
+        icon: <IoDocumentTextOutline />,
+      },
     ],
   },
   {

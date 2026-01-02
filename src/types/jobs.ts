@@ -99,6 +99,8 @@ export interface AppliedJobOffer extends JobOffer {
   
   // Información adicional de la aplicación
   easy_apply?: boolean;
+  is_redirect?: boolean;
+  redirect_page_name?: string | null;
   notes?: string | null;
   questionsAndAnswers?: QuestionAndAnswer[];
   

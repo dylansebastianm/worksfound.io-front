@@ -260,6 +260,9 @@ const convertToJobApplication = (job: AppliedJobOffer) => {
     skills: skillsArray,
     techStack: techStackArray,
     englishRequired: job.englishRequired,
+    // Preservar información de redirect para mostrar logos
+    is_redirect: job.is_redirect,
+    redirect_page_name: job.redirect_page_name,
   }
 }
 
@@ -1261,6 +1264,36 @@ export default function AppliedJobsPage() {
     }
   }
 
+  const getPortalIcons = (job: AppliedJobOffer | any) => {
+    // Acepta tanto AppliedJobOffer como el objeto convertido
+    const showRedirect = Boolean(job.is_redirect && job.redirect_page_name)
+    const redirectName = (job.redirect_page_name || "").toLowerCase()
+    const portal = job.portal || "LinkedIn"
+
+    return (
+      <div className={styles.portalIcons}>
+        <span className={styles.portalIconPrimary} title={portal}>
+          {getPortalIcon(portal)}
+        </span>
+
+        {showRedirect && redirectName === "teamtailor" && (
+          <img
+            className={styles.portalIconSecondary}
+            src="/Images/ATS/teamtailor.png"
+            alt="Teamtailor"
+            title="Teamtailor"
+            style={{ display: 'inline-block' }}
+          />
+        )}
+        {showRedirect && redirectName !== "teamtailor" && (
+          <span className={styles.portalIconSecondaryText} title={job.redirect_page_name || "Redirect"}>
+            {job.redirect_page_name}
+          </span>
+        )}
+      </div>
+    )
+  }
+
   const getStatusClass = (status: string) => {
     switch (status) {
       case "Postulado":
@@ -1428,7 +1461,7 @@ export default function AppliedJobsPage() {
                 </div>
               </div>
 
-              <div className={styles.columnPortal}>{getPortalIcon(job.portal)}</div>
+              <div className={styles.columnPortal}>{getPortalIcons(job)}</div>
 
               <div className={styles.columnCountry}>
                 <span className={styles.flag}>{job.countryFlag}</span>
