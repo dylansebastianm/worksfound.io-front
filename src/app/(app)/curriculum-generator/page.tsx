@@ -75,10 +75,11 @@ export default function CurriculumGeneratorPage() {
     try {
       // Paso 1: Leyendo tu CV actual
       setCurrentStep(1)
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      await new Promise((resolve) => setTimeout(resolve, 3000))
 
       // Paso 2: Mejorando redacción
       setCurrentStep(2)
+      await new Promise((resolve) => setTimeout(resolve, 5000))
       
       // Llamar a OpenAI
       const result = await generateCVWithOpenAI({
@@ -125,7 +126,7 @@ export default function CurriculumGeneratorPage() {
       }
 
       setIsGenerating(false)
-      router.push("/edit-cv2")
+      router.push("/edit-cv")
     } catch (err) {
       console.error("Error generando CV:", err)
       setError(err instanceof Error ? err.message : "Error desconocido al generar CV")

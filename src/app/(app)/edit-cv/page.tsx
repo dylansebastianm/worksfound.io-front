@@ -1,9 +1,21 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import styles from "./edit-cv.module.css"
-import { FiEdit2, FiDownload, FiGlobe, FiSave } from "react-icons/fi"
+import { FiEdit2, FiDownload, FiSave, FiCheck } from "react-icons/fi"
 import { Button } from "@/components/UI/Button/Button"
+import TranslateButton from "@/components/UI/TranslateButton/TranslateButton"
+import { translateCurriculum } from "@/lib/translateCurriculum"
+import { LoadingSpinner } from "@/components/UI/LoadingSpinner/LoadingSpinner"
+import { createUserCV } from "@/lib/cv"
+import { Alert } from "@/components/UI/Alert/Alert"
+
+interface ExperienceBlock {
+  position: string;
+  company: string;
+  dates: string;
+  bullets: string[];
+}
 
 interface CVData {
   header: {
@@ -16,6 +28,7 @@ interface CVData {
   }
   profile: string
   achievements: string[]
+  strengths: string[]
   experience: Array<{
     company: string
     position: string
@@ -44,130 +57,716 @@ interface CVData {
   }>
 }
 
-export default function EditCvPage() {
-  const [isEditing, setIsEditing] = useState(false)
-
-  const [cvData, setCvData] = useState<CVData>({
-    header: {
-      name: "DYLAN SEBASTIAN",
-      title: "Full Stack Developer / Head of IT",
-      location: "Argentina",
-      phone: "+54 9 11 5175-9666",
-      email: "dylan.sebastianmte@gmail.com",
-      linkedin: "https://www.linkedin.com/in/dylan-sebastian-03706316b/",
-    },
-    profile:
-      "Full Stack Developer and Head of IT with extensive experience building, scaling, and modernizing SaaS platforms, marketplaces, and CRM systems, with a strong focus on frontend architecture, product development, performance, and user experience, supported by solid backend and cloud expertise. I work end-to-end and in parallel across frontend and backend, ensuring smooth communication between layers, technical consistency, and high development velocity. While my primary inclination is toward frontend architecture and product design, I actively develop backend logic, manage databases, and design cloud infrastructure to build scalable and maintainable systems.",
-    achievements: [
-      "Performance optimization (34 → 98): improved production platform performance by developing a new Next.js marketplace, achieving 30% faster load times, major technical SEO improvements, and a significantly better user experience.",
-      "Fast time-to-market: designed, developed, and launched a complete marketplace in under 60 days.",
-      "B2B automation at scale: implemented AI-based normalization and automatic categorization for bulk uploads, reducing operational processing times from weeks to less than 14 days.",
-      "Revenue impact: achieved a 50% increase in sales in the month following technical and performance optimizations.",
-      "Conversion improvement: reduced cart abandonment by 20% through UX-driven purchase-flow redesign.",
-      "Data-driven product decisions: implemented custom frontend events to analyze user behavior, identify friction points, and reduce churn.",
-    ],
-    experience: [
-      {
-        company: "Alaska Circular",
-        position: "Head of IT / Full Stack Developer",
-        dates: "Febrero 2025 – Diciembre 2026",
-        bullets: [
-          "Led the end-to-end technical strategy for a marketplace and an internal SaaS platform, with strong focus on product architecture, performance, and scalability.",
-          "Developed and evolved the frontend architecture, working on a legacy Vue.js platform while executing a parallel migration.",
-          "Led the greenfield development of a new marketplace and SaaS platform using Next.js, redefining frontend architecture, rendering strategy, performance, and deployment workflows.",
-          "Designed and implemented backend business logic for e-commerce operations, inventory management, orders, payments, and operational workflows.",
-          "Full ownership of MySQL databases, including data modeling, queries, indexing, migrations, backups, and production performance optimization.",
-          "Extensive use of Docker for application containerization and environment standardization.",
-          "Maintained and evolved CI/CD pipelines (GitHub Actions) deployed on Google Cloud Platform.",
-          "Resolved a critical infrastructure blocker when GCP dropped support for Node.js 16, implementing a Docker + Cloud Run solution that ensured platform continuity.",
-          "Deployed and operated containerized services on Cloud Run, optimizing costs, stability, and scalability.",
-          "Coordinated technical decisions with product and business teams, aligning technology with company growth.",
-        ],
-      },
-      {
-        company: "Equipzilla – Machinery and Tools Rental",
-        position: "Frontend Developer / Full Stack Developer",
-        dates: "Agosto 2023 – Presente",
-        bullets: [
-          "Developed a complete platform from scratch using React.js and TypeScript, with strong focus on frontend architecture, performance, and user experience.",
-          "Designed and implemented an optimized purchase flow, significantly reducing cart abandonment and improving conversion.",
-          "Built a SaaS platform for fleet and inventory management, used by industrial companies.",
-          "Developed an internal CRM integrated with Pipedrive, improving operational efficiency for order management and commercial workflows.",
-          "Built interactive dashboards with real-time metrics to support operational decision-making.",
-          "Implemented real-time geolocation panels for machinery and asset tracking.",
-          "Developed automated security and operational alert systems via SMS and email, triggered by critical system events.",
-          "Developed backend services using Express.js and REST APIs to support frontend business logic.",
-          "Managed MySQL databases, including queries and backend data operations.",
-          "Integrated and deployed services on Google Cloud Platform.",
-        ],
-      },
-      {
-        company: "WorksFound",
-        position: "Full Stack Developer",
-        dates: "Enero 2023 – Septiembre 2023",
-        bullets: [
-          "Founded and developed a SaaS platform focused on process automation and opportunity management.",
-          "Implemented web scraping and automation workflows using Python, processing large volumes of data from multiple external sources.",
-          "Developed backend services and REST APIs using Java and Spring Boot, handling the platform's core business logic.",
-          "Designed a decoupled architecture, using Python for data collection and Java for the backend core, improving maintainability and scalability.",
-          "Managed PostgreSQL databases, including data modeling, queries, and performance optimization.",
-          "Developed the frontend using Next.js and TypeScript, focusing on performance and user experience.",
-          "Deployed and operated services on Google Cloud Platform.",
-          "Maintained full ownership of the product, including architecture, development, and infrastructure.",
-        ],
-      },
-      {
-        company: "IQSocial",
-        position: "Backend Engineer",
-        dates: "Octubre 2020 – Enero 2023",
-        bullets: [
-          "Contributed to the development of a big data platform for socio-political analysis based on social media behavior.",
-          "Developed backend microservices using Java and Spring Boot.",
-          "Implemented REST APIs to expose analytical data.",
-          "Worked on microservices architecture, focusing on scalability and system decoupling.",
-          "Managed databases in AWS environments, contributing to data modeling and query optimization.",
-          "Participated in backend deployments and cloud-based service maintenance.",
-          "Collaborated closely with data analysis and product teams.",
-        ],
-      },
-    ],
-    skills: {
-      frontend: "React.js, Next.js, Vue.js",
-      backend: "Java (Spring Boot), Python, Express.js, REST APIs, Microservices",
-      languages: "TypeScript, JavaScript, Java, Python, SQL",
-      databases: "MySQL, PostgreSQL",
-      cloud: "Google Cloud Platform, AWS, Docker, Cloud Run",
-      specialties:
-        "Frontend development, full stack development, SaaS platforms, marketplaces, CRMs, performance and scalability",
-    },
-    certifications: [
-      {
-        title: "Full Stack Developer",
-        institution: "Henry",
-        date: "Abril 2022 – Mayo 2023",
-      },
-    ],
-    education: [
-      {
-        degree: "Full Stack Developer",
-        institution: "Henry",
-        dates: "Abril 2022 – Mayo 2023",
-        description:
-          "Intensive 700+ hour program focused on frontend and backend development, REST APIs, relational databases, and full stack applications.",
-      },
-    ],
-  })
-
-  const handleDownloadPDF = () => {
-    window.print()
+// Función para parsear el CV de OpenAI con marcadores de sección
+function parseCVFromOpenAI(cvText: string): CVData {
+  const sections: Record<string, string> = {};
+  
+  // Extraer cada sección usando los marcadores
+  const sectionPattern = /===SECTION_START:(\w+)===\s*([\s\S]*?)\s*===SECTION_END:\1===/g;
+  let match;
+  
+  while ((match = sectionPattern.exec(cvText)) !== null) {
+    const sectionName = match[1];
+    const sectionContent = match[2].trim();
+    sections[sectionName] = sectionContent;
   }
 
-  const handleTranslate = () => {
-    // Placeholder for future translation functionality
-    alert("Funcionalidad de traducción próximamente disponible")
+  // Parsear HEADER
+  const headerText = sections['HEADER'] || '';
+  const headerLines = headerText.split('\n').filter(l => l.trim());
+  
+  // Formato esperado: Campo: Valor (una línea por campo)
+  const header: CVData['header'] = {
+    name: '',
+    title: '',
+    location: '',
+    phone: '',
+    email: '',
+    linkedin: '',
+  };
+  
+  headerLines.forEach(line => {
+    const trimmed = line.trim();
+    // Buscar formato "Campo: Valor"
+    const colonIndex = trimmed.indexOf(':');
+    if (colonIndex > 0) {
+      const field = trimmed.substring(0, colonIndex).trim().toLowerCase();
+      const value = trimmed.substring(colonIndex + 1).trim();
+      
+      if (field === 'name') {
+        header.name = value;
+      } else if (field === 'title') {
+        header.title = value;
+      } else if (field === 'location') {
+        header.location = value;
+      } else if (field === 'phone') {
+        header.phone = value;
+      } else if (field === 'email') {
+        header.email = value;
+      } else if (field === 'linkedin') {
+        // Si el valor es "null" (case insensitive), usar string vacío
+        header.linkedin = value.toLowerCase() === 'null' ? '' : value;
+      }
+    } else {
+      // Formato alternativo: si no hay ":", intentar parsear formato antiguo
+      // Primera línea sin ":" = nombre
+      if (!header.name && !trimmed.includes('@') && !trimmed.includes('linkedin.com') && !trimmed.match(/\+?\d/)) {
+        header.name = trimmed;
+      }
+      // Línea con pipes = información de contacto
+      if (trimmed.includes('|')) {
+        const parts = trimmed.split('|').map(p => p.trim());
+        parts.forEach(part => {
+          if (part.includes('@') && !header.email) {
+            header.email = part;
+          } else if (part.match(/\+?\d/) && !header.phone) {
+            header.phone = part;
+          } else if (part.includes('linkedin.com') && !header.linkedin) {
+            header.linkedin = part;
+          }
+        });
+      }
+    }
+  });
+
+  // Parsear PROFESSIONAL_SUMMARY
+  const profile = sections['PROFESSIONAL_SUMMARY']?.trim() || '';
+
+  // Parsear ACHIEVEMENTS
+  const achievementsText = sections['ACHIEVEMENTS'] || '';
+  const achievements: string[] = [];
+  if (achievementsText) {
+    achievementsText.split('\n').forEach(line => {
+      const trimmed = line.trim();
+      if (trimmed && (trimmed.startsWith('•') || trimmed.startsWith('-') || trimmed.match(/^[A-Z]/))) {
+        achievements.push(trimmed.replace(/^[•\-]\s*/, '').trim());
+      }
+    });
+  }
+
+  // Parsear STRENGTHS
+  const strengthsText = sections['STRENGTHS'] || '';
+  const strengths: string[] = [];
+  if (strengthsText) {
+    strengthsText.split('\n').forEach(line => {
+      const trimmed = line.trim();
+      if (trimmed && (trimmed.startsWith('•') || trimmed.startsWith('-') || trimmed.match(/^[A-Z]/))) {
+        strengths.push(trimmed.replace(/^[•\-]\s*/, '').trim());
+      }
+    });
+  }
+
+  // Parsear SKILLS
+  const skillsText = sections['SKILLS'] || '';
+  // Dividir por líneas y también manejar múltiples espacios
+  const skillsLines = skillsText.split(/\r?\n/).filter(l => l.trim());
+  const skills: CVData['skills'] = {
+    frontend: '',
+    backend: '',
+    languages: '',
+    databases: '',
+    cloud: '',
+    specialties: '',
+  };
+  
+  skillsLines.forEach(line => {
+    const trimmed = line.trim();
+    // Buscar cada categoría usando regex más robusto para capturar el valor completo
+    const frontendMatch = trimmed.match(/^frontend\s*:\s*(.+)$/i);
+    const backendMatch = trimmed.match(/^backend\s*:\s*(.+)$/i);
+    const languagesMatch = trimmed.match(/^languages\s*:\s*(.+)$/i);
+    const databasesMatch = trimmed.match(/^databases\s*:\s*(.+)$/i);
+    const cloudMatch = trimmed.match(/^cloud\s*:\s*(.+)$/i);
+    const specialtiesMatch = trimmed.match(/^specialties\s*:\s*(.+)$/i);
+    
+    if (frontendMatch) {
+      skills.frontend = frontendMatch[1].trim();
+    } else if (backendMatch) {
+      skills.backend = backendMatch[1].trim();
+    } else if (languagesMatch) {
+      skills.languages = languagesMatch[1].trim();
+    } else if (databasesMatch) {
+      skills.databases = databasesMatch[1].trim();
+    } else if (cloudMatch) {
+      skills.cloud = cloudMatch[1].trim();
+    } else if (specialtiesMatch) {
+      skills.specialties = specialtiesMatch[1].trim();
+    }
+  });
+  
+  // Debug: Log para verificar el parseo
+  console.log('Skills text:', skillsText);
+  console.log('Skills lines:', skillsLines);
+  console.log('Skills parsed:', skills);
+  
+  // Debug: Log para verificar el parseo
+  console.log('Skills parsed:', skills);
+
+  // Parsear PROFESSIONAL_EXPERIENCE
+  const experienceText = sections['PROFESSIONAL_EXPERIENCE'] || '';
+  const experience: CVData['experience'] = [];
+  
+  // El formato esperado es:
+  // Position Name
+  // Company Name | Dates
+  // • bullet point 1
+  // • bullet point 2
+  
+  // Remover el título "Professional Experience" si está presente
+  let cleanText = experienceText.replace(/^Professional Experience\s*/i, '').trim();
+  
+  // Dividir por bloques de experiencia
+  // Cada bloque empieza con un título de puesto (línea que no tiene | y no empieza con •)
+  const lines = cleanText.split('\n').filter(l => l.trim());
+  
+  let currentExp: ExperienceBlock | null = null;
+  
+  lines.forEach((line, index) => {
+    const trimmed = line.trim();
+    
+    // Si la línea tiene |, es Company | Dates
+    if (trimmed.includes('|')) {
+      const parts = trimmed.split('|').map(p => p.trim());
+      if (currentExp !== null && parts.length >= 2) {
+        currentExp.company = parts[0] || '';
+        currentExp.dates = parts[1] || '';
+      }
+    }
+    // Si la línea empieza con •, es un bullet point
+    else if (trimmed.startsWith('•') || trimmed.startsWith('-')) {
+      if (currentExp !== null) {
+        currentExp.bullets.push(trimmed.replace(/^[•\-]\s*/, '').trim());
+      }
+    }
+    // Si la línea no tiene | ni empieza con •, puede ser un Position Name
+    else if (trimmed.length > 0 && !trimmed.includes('|')) {
+      // Verificar si la siguiente línea tiene | para saber si es un nuevo position
+      const nextLine = index < lines.length - 1 ? lines[index + 1].trim() : '';
+      
+      if (nextLine.includes('|')) {
+        // Es un nuevo Position Name - guardar el bloque anterior si existe
+        if (currentExp !== null && currentExp.company && currentExp.position && currentExp.dates) {
+          experience.push({
+            company: currentExp.company,
+            position: currentExp.position,
+            dates: currentExp.dates,
+            bullets: currentExp.bullets,
+          });
+        }
+        // Crear nuevo bloque
+        currentExp = {
+          position: trimmed,
+          company: '',
+          dates: '',
+          bullets: [],
+        };
+      } else if (currentExp === null) {
+        // Primera línea sin formato claro, asumir que es position
+        currentExp = {
+          position: trimmed,
+          company: '',
+          dates: '',
+          bullets: [],
+        };
+      }
+      // Si ya tenemos currentExp y no es un nuevo position, ignorar (puede ser texto suelto)
+    }
+  });
+  
+  // Guardar el último bloque
+  if (currentExp !== null) {
+    const exp = currentExp as ExperienceBlock;
+    if (exp.company && exp.position && exp.dates) {
+      experience.push({
+        company: exp.company,
+        position: exp.position,
+        dates: exp.dates,
+        bullets: exp.bullets,
+      });
+    }
+  }
+
+  // Parsear EDUCATION
+  const educationText = sections['EDUCATION'] || '';
+  const education: CVData['education'] = [];
+  
+  // El formato esperado es:
+  // Degree Title
+  // Institution Name | Dates
+  // Description (opcional - puede ser múltiples líneas)
+  
+  if (educationText.trim()) {
+    const lines = educationText.split('\n').filter(l => l.trim());
+    
+    // Procesar línea por línea de forma más simple y robusta
+    let currentEdu: { degree: string; institution: string; dates: string; description?: string } | null = null;
+    let lineIndex = 0;
+    
+    while (lineIndex < lines.length) {
+      const line = lines[lineIndex].trim();
+      
+      // Si la línea tiene |, es Institution | Dates
+      if (line.includes('|')) {
+        const parts = line.split('|').map(p => p.trim());
+        if (currentEdu && parts.length >= 2) {
+          currentEdu.institution = parts[0] || '';
+          currentEdu.dates = parts[1] || '';
+        }
+        lineIndex++;
+      }
+      // Si la línea no tiene |, verificar si es un nuevo degree o descripción
+      else {
+        // Verificar si la siguiente línea tiene | para saber si es un nuevo degree
+        const nextLine = lineIndex < lines.length - 1 ? lines[lineIndex + 1].trim() : '';
+        
+        if (nextLine.includes('|')) {
+          // Es un nuevo Degree Title - guardar la educación anterior si está completa
+          if (currentEdu && currentEdu.degree && currentEdu.institution && currentEdu.dates) {
+            education.push({
+              degree: currentEdu.degree,
+              institution: currentEdu.institution,
+              dates: currentEdu.dates,
+              description: currentEdu.description?.trim() || undefined,
+            });
+          }
+          
+          // Crear nuevo bloque
+          currentEdu = {
+            degree: line,
+            institution: '',
+            dates: '',
+            description: undefined,
+          };
+          lineIndex++;
+        } else if (!currentEdu) {
+          // Primera línea sin formato claro, asumir que es degree
+          currentEdu = {
+            degree: line,
+            institution: '',
+            dates: '',
+            description: undefined,
+          };
+          lineIndex++;
+        } else {
+          // Es parte de la descripción (solo si ya tenemos degree, institution y dates completos)
+          if (currentEdu && currentEdu.degree && currentEdu.institution && currentEdu.dates) {
+            if (!currentEdu.description) {
+              currentEdu.description = line;
+            } else {
+              currentEdu.description += ' ' + line;
+            }
+          }
+          lineIndex++;
+        }
+      }
+    }
+    
+    // Guardar la última educación solo una vez y solo si está completa
+    if (currentEdu && currentEdu.degree && currentEdu.institution && currentEdu.dates) {
+      // Verificar que no sea duplicado comparando con todas las entradas existentes
+      const isDuplicate = education.some(edu => 
+        edu.degree === currentEdu!.degree && 
+        edu.institution === currentEdu!.institution && 
+        edu.dates === currentEdu!.dates
+      );
+      
+      if (!isDuplicate) {
+        education.push({
+          degree: currentEdu.degree,
+          institution: currentEdu.institution,
+          dates: currentEdu.dates,
+          description: currentEdu.description?.trim() || undefined,
+        });
+      }
+    }
+  }
+
+  // Parsear CERTIFICATIONS
+  const certText = sections['CERTIFICATIONS'] || '';
+  const certifications: CVData['certifications'] = [];
+  const certLines = certText.split('\n').filter(l => l.trim());
+  certLines.forEach(line => {
+    const parts = line.split('|').map(p => p.trim());
+    if (parts.length >= 2) {
+      certifications.push({
+        title: parts[0] || '',
+        institution: parts[1] || '',
+        date: parts[2] || '',
+      });
+    }
+  });
+
+  return {
+    header,
+    profile,
+    achievements,
+    strengths,
+    experience,
+    skills,
+    certifications,
+    education,
+  };
+}
+
+// Función simple para detectar el idioma del CV basándose en palabras comunes
+function detectLanguage(cvText: string): "es" | "en" {
+  const spanishWords = ['experiencia', 'desarrollo', 'tecnologías', 'proyectos', 'habilidades', 'educación', 'certificaciones', 'logros', 'fortalezas'];
+  const englishWords = ['experience', 'development', 'technologies', 'projects', 'skills', 'education', 'certifications', 'achievements', 'strengths'];
+  
+  const lowerText = cvText.toLowerCase();
+  let spanishCount = 0;
+  let englishCount = 0;
+  
+  spanishWords.forEach(word => {
+    if (lowerText.includes(word)) spanishCount++;
+  });
+  
+  englishWords.forEach(word => {
+    if (lowerText.includes(word)) englishCount++;
+  });
+  
+  // Si hay más palabras en español, es español, sino inglés
+  return spanishCount > englishCount ? "es" : "en";
+}
+
+export default function EditCvPage() {
+  const [isEditing, setIsEditing] = useState(false)
+  const [cvData, setCvData] = useState<CVData | null>(null)
+  const [currentLanguage, setCurrentLanguage] = useState<"es" | "en">("en")
+  const [isTranslating, setIsTranslating] = useState(false)
+  const [originalCVText, setOriginalCVText] = useState<string>("")
+  const [isSaving, setIsSaving] = useState(false)
+  const [isPublished, setIsPublished] = useState(false) // Si el CV ya fue guardado en el perfil
+  const [hasChanges, setHasChanges] = useState(false) // Si se han hecho cambios desde la última vez que se guardó
+  const [alert, setAlert] = useState<{ status: "success" | "error"; message: string } | null>(null)
+  const cvContainerRef = useRef<HTMLDivElement>(null)
+
+  // Cargar CV desde sessionStorage al montar
+  useEffect(() => {
+    const generatedCV = sessionStorage.getItem('generatedCV');
+    if (generatedCV) {
+      try {
+        // Detectar idioma del CV original
+        const detectedLang = detectLanguage(generatedCV);
+        setCurrentLanguage(detectedLang);
+        setOriginalCVText(generatedCV);
+        
+        const parsed = parseCVFromOpenAI(generatedCV);
+        setCvData(parsed);
+      } catch (error) {
+        console.error('Error parseando CV:', error);
+        // Si falla el parseo, usar datos vacíos
+        setCvData({
+    header: {
+            name: '',
+            title: '',
+            location: '',
+            phone: '',
+            email: '',
+            linkedin: '',
+          },
+          profile: '',
+          achievements: [],
+          strengths: [],
+          experience: [],
+          skills: {
+            frontend: '',
+            backend: '',
+            languages: '',
+            databases: '',
+            cloud: '',
+            specialties: '',
+          },
+          certifications: [],
+          education: [],
+        });
+      }
+    } else {
+      // Si no hay CV generado, usar datos vacíos
+      setCvData({
+        header: {
+          name: '',
+          title: '',
+          location: '',
+          phone: '',
+          email: '',
+          linkedin: '',
+        },
+        profile: '',
+        achievements: [],
+        strengths: [],
+        experience: [],
+    skills: {
+          frontend: '',
+          backend: '',
+          languages: '',
+          databases: '',
+          cloud: '',
+          specialties: '',
+        },
+        certifications: [],
+        education: [],
+      });
+    }
+  }, []);
+
+  if (!cvData) {
+    return (
+      <div className={styles.pageContainer}>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
+          <LoadingSpinner />
+        </div>
+      </div>
+    );
+  }
+
+  const handleDownloadPDF = async () => {
+    if (!cvData || !cvContainerRef.current) return;
+
+    try {
+      // Importar dinámicamente las librerías
+      const html2canvas = (await import('html2canvas')).default;
+      const { jsPDF } = await import('jspdf');
+
+      // Ocultar el botón "Guardar en Perfil" antes de capturar
+      const saveButtonContainer = cvContainerRef.current.querySelector(`.${styles.saveButtonContainer}`);
+      if (saveButtonContainer) {
+        saveButtonContainer.classList.add(styles.hidden);
+      }
+
+      // Capturar el CV como imagen
+      const canvas = await html2canvas(cvContainerRef.current, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+      });
+
+      // Restaurar el botón después de capturar
+      if (saveButtonContainer) {
+        saveButtonContainer.classList.remove(styles.hidden);
+      }
+
+      // Convertir canvas a imagen y luego a PDF
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      });
+
+      const imgWidth = 210; // A4 width in mm
+      const pageHeight = 297; // A4 height in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      // Calcular el número de páginas necesarias
+      const totalPages = Math.ceil(imgHeight / pageHeight);
+      
+      // Agregar la primera página
+      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+      
+      // Agregar páginas adicionales solo si hay contenido significativo
+      for (let i = 1; i < totalPages; i++) {
+        const yPosition = -(i * pageHeight);
+        // Solo agregar página si hay al menos 20mm de contenido visible
+        // Esto evita páginas vacías o con muy poco contenido
+        const visibleHeight = yPosition + imgHeight;
+        if (visibleHeight > 20) {
+          pdf.addPage();
+          pdf.addImage(imgData, 'PNG', 0, yPosition, imgWidth, imgHeight);
+        }
+      }
+
+      // Descargar el PDF
+      const fileName = `CV_${cvData.header.name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+      pdf.save(fileName);
+    } catch (error) {
+      console.error('Error generando PDF:', error);
+      setAlert({
+        status: 'error',
+        message: 'Error al generar el PDF. Por favor, intenta nuevamente.',
+      });
+    }
+  }
+
+  const handleSaveToProfile = async () => {
+    if (!cvData || !cvContainerRef.current || isSaving) return;
+
+    setIsSaving(true);
+
+    try {
+      // Importar dinámicamente las librerías
+      const html2canvas = (await import('html2canvas')).default;
+      const { jsPDF } = await import('jspdf');
+
+      // Ocultar el botón "Guardar en Perfil" antes de capturar
+      const saveButtonContainer = cvContainerRef.current.querySelector(`.${styles.saveButtonContainer}`);
+      if (saveButtonContainer) {
+        saveButtonContainer.classList.add(styles.hidden);
+      }
+
+      // Capturar el CV como imagen
+      const canvas = await html2canvas(cvContainerRef.current, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+      });
+
+      // Restaurar el botón después de capturar
+      if (saveButtonContainer) {
+        saveButtonContainer.classList.remove(styles.hidden);
+      }
+
+      // Convertir canvas a imagen y luego a PDF
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      });
+
+      const imgWidth = 210; // A4 width in mm
+      const pageHeight = 297; // A4 height in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      // Calcular el número de páginas necesarias
+      const totalPages = Math.ceil(imgHeight / pageHeight);
+      
+      // Agregar la primera página
+      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+      
+      // Agregar páginas adicionales solo si hay contenido significativo
+      for (let i = 1; i < totalPages; i++) {
+        const yPosition = -(i * pageHeight);
+        // Solo agregar página si hay al menos 20mm de contenido visible
+        // Esto evita páginas vacías o con muy poco contenido
+        const visibleHeight = yPosition + imgHeight;
+        if (visibleHeight > 20) {
+          pdf.addPage();
+          pdf.addImage(imgData, 'PNG', 0, yPosition, imgWidth, imgHeight);
+        }
+      }
+
+      // Generar el PDF como blob directamente
+      const pdfBlob = pdf.output('blob');
+      
+      if (!pdfBlob || pdfBlob.size === 0) {
+        setAlert({
+          status: 'error',
+          message: 'Error: El PDF generado está vacío',
+        });
+        setIsSaving(false);
+        return;
+      }
+
+      const fileName = `CV_${cvData.header.name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+      
+      // Crear el File desde el blob (igual que en profile)
+      const pdfFile = new File([pdfBlob], fileName, {
+        type: 'application/pdf',
+        lastModified: Date.now(),
+      });
+
+      console.log('PDF generado:', {
+        name: pdfFile.name,
+        size: pdfFile.size,
+        type: pdfFile.type,
+      });
+
+      // Subir el CV al bucket (igual que en profile)
+      const result = await createUserCV(pdfFile, `CV Generado - ${cvData.header.title || 'Sin título'}`);
+
+      if (result.success) {
+        // Ocultar el botón y marcar como publicado
+        setIsPublished(true)
+        setHasChanges(false)
+        setAlert({
+          status: 'success',
+          message: 'CV guardado exitosamente en tu perfil',
+        });
+      } else {
+        setAlert({
+          status: 'error',
+          message: result.error || 'Error al guardar el CV',
+        });
+      }
+
+      setIsSaving(false);
+    } catch (error) {
+      console.error('Error guardando CV:', error);
+      setAlert({
+        status: 'error',
+        message: 'Error al guardar el CV. Por favor, intenta nuevamente.',
+      });
+      setIsSaving(false);
+    }
+  }
+
+  const handleTranslate = async () => {
+    if (!cvData || isTranslating) return;
+    
+    setIsTranslating(true);
+    
+    try {
+      // Obtener el CV actual en formato texto (desde sessionStorage o reconstruirlo)
+      const currentCVText = sessionStorage.getItem('generatedCV') || originalCVText;
+      
+      if (!currentCVText) {
+        setAlert({
+          status: 'error',
+          message: 'No se encontró el CV para traducir',
+        });
+        setIsTranslating(false);
+        return;
+      }
+      
+      // Determinar el idioma objetivo (el opuesto al actual)
+      const targetLanguage = currentLanguage === "es" ? "en" : "es";
+      
+      // Llamar a la función de traducción
+      const result = await translateCurriculum({
+        cvText: currentCVText,
+        targetLanguage,
+      });
+      
+      if (!result.success || !result.translatedCV) {
+        setAlert({
+          status: 'error',
+          message: result.error || 'Error al traducir el CV',
+        });
+        setIsTranslating(false);
+        return;
+      }
+      
+      // Actualizar el CV traducido
+      const translatedParsed = parseCVFromOpenAI(result.translatedCV);
+      setCvData(translatedParsed);
+      
+      // Guardar el CV traducido en sessionStorage
+      sessionStorage.setItem('generatedCV', result.translatedCV);
+      setOriginalCVText(result.translatedCV);
+      
+      // Actualizar el idioma actual
+      setCurrentLanguage(targetLanguage);
+      
+    } catch (error) {
+      console.error('Error traduciendo CV:', error);
+      setAlert({
+        status: 'error',
+        message: 'Error al traducir el CV. Por favor, intenta nuevamente.',
+      });
+    } finally {
+      setIsTranslating(false);
+    }
   }
 
   const toggleEdit = () => {
+    if (isEditing) {
+      // Al guardar cambios, marcar que hay cambios y mostrar el botón de publicar
+      setHasChanges(true)
+      setIsPublished(false) // Permitir publicar nuevamente después de hacer cambios
+    }
     setIsEditing(!isEditing)
   }
 
@@ -206,6 +805,7 @@ export default function EditCvPage() {
 
   return (
     <div className={styles.pageContainer}>
+      {isTranslating && <LoadingSpinner />}
       <div className={styles.toolbar}>
         <div className={styles.toolbarLeft}>
           <h1 className={styles.toolbarTitle}>Editor de CV</h1>
@@ -222,17 +822,34 @@ export default function EditCvPage() {
               </>
             )}
           </Button>
-          <Button onClick={handleTranslate} variant="secondary">
-            <FiGlobe /> Traducir
-          </Button>
+          <TranslateButton
+            currentLanguage={currentLanguage}
+            onClick={handleTranslate}
+            disabled={isTranslating}
+          />
           <Button onClick={handleDownloadPDF} variant="primary">
             <FiDownload /> Descargar PDF
           </Button>
         </div>
       </div>
 
-      <div className={styles.cvContainer}>
+      <div className={styles.cvContainer} ref={cvContainerRef}>
         <div className={styles.cvPage}>
+          {!isPublished && (
+            <div className={styles.saveButtonContainer}>
+              <Button onClick={handleSaveToProfile} variant="primary" disabled={isSaving} className={styles.saveButton}>
+                {isSaving ? (
+                  <>
+                    <div className={styles.spinnerWhite}></div> Publicando...
+                  </>
+                ) : (
+                  <>
+                    <FiCheck /> Guardar en Perfil
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
           {/* HEADER */}
           <header className={styles.header}>
             {isEditing ? (
@@ -415,23 +1032,65 @@ export default function EditCvPage() {
           <section className={styles.section}>
             <h2 className={styles.sectionTitle}>SKILLS</h2>
             <div className={styles.skillsGrid}>
-              {Object.entries(cvData.skills).map(([category, value]) => (
-                <div key={category} className={styles.skillCategory}>
-                  <strong className={styles.skillLabel}>{category.charAt(0).toUpperCase() + category.slice(1)}:</strong>
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      value={value}
-                      onChange={(e) => updateField(`skills.${category}`, e.target.value)}
-                      className={styles.skillInput}
-                    />
-                  ) : (
-                    <span className={styles.skillValue}>{value}</span>
-                  )}
-                </div>
-              ))}
+              {Object.entries(cvData.skills).map(([category, value]) => {
+                // Capitalizar correctamente los nombres de las categorías
+                const categoryLabels: Record<string, string> = {
+                  frontend: 'Frontend',
+                  backend: 'Backend',
+                  languages: 'Languages',
+                  databases: 'Databases',
+                  cloud: 'Cloud',
+                  specialties: 'Specialties',
+                };
+                const categoryLabel = categoryLabels[category] || category.charAt(0).toUpperCase() + category.slice(1);
+                
+                return (
+                  <div key={category} className={styles.skillCategory}>
+                    <strong className={styles.skillLabel}>{categoryLabel}:</strong>
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        value={value || ''}
+                        onChange={(e) => updateField(`skills.${category}`, e.target.value)}
+                        className={styles.skillInput}
+                      />
+                    ) : (
+                      <span className={styles.skillValue}>{value || ''}</span>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </section>
+
+          {/* FORTALEZAS */}
+          {cvData.strengths && cvData.strengths.length > 0 && (
+            <section className={styles.section}>
+              <h2 className={styles.sectionTitle}>FORTALEZAS</h2>
+              <ul className={styles.bulletList}>
+                {cvData.strengths.map((strength, index) => (
+                  <li key={index} className={styles.bulletItem}>
+                    {isEditing ? (
+                      <textarea
+                        value={strength}
+                        onChange={(e) => updateArrayItem("strengths", index, e.target.value)}
+                        className={styles.bulletTextarea}
+                        rows={2}
+                      />
+                    ) : (
+                      <span
+                        dangerouslySetInnerHTML={{
+                          __html: strength
+                            .replace(/$$([^)]+)$$/g, "<strong>($1)</strong>")
+                            .replace(/(\d+%)/g, "<strong>$1</strong>"),
+                        }}
+                      />
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
 
           {/* CERTIFICACIONES */}
           <section className={styles.section}>

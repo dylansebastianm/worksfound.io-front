@@ -55,6 +55,11 @@ IMPORTANT GUIDELINES – DATA ACCURACY
 • Do not create freelance roles, projects, or responsibilities that are not present in the original content.
 • Impact metrics (percentages, improvements, reductions) may be expressed only when they can be reasonably inferred from the original descriptions. Avoid fabricating precise figures.
 
+CRITICAL: Contact Information Extraction
+• When extracting contact information (phone, email, LinkedIn) from CV_RAW, search THOROUGHLY throughout the entire CV_RAW content.
+• LinkedIn URLs may appear in various formats: "LinkedIn: [URL]", "linkedin.com/in/username", "www.linkedin.com/in/username", or embedded in contact sections.
+• ALWAYS extract the complete LinkedIn URL if found anywhere in CV_RAW. Do NOT write "null" if a LinkedIn URL exists in CV_RAW.
+
 ---
 
 LANGUAGE AND FORMAT REQUIREMENTS
@@ -169,7 +174,13 @@ HEADER
 • Location: Extract from USER_PROFILE if available, otherwise from CV_RAW or phone country code
 • Phone: ${userPhone || "extract from CV_RAW"}
 • Email: ${userEmail}
-• LinkedIn: Use the full URL if available, otherwise write "null"
+• LinkedIn: MANDATORY FIELD - You MUST search for LinkedIn URL in CV_RAW before writing "null". 
+  - Search for patterns: "LinkedIn:", "linkedin.com/in/", "linkedin.com/", "www.linkedin.com/in/", "https://www.linkedin.com/in/"
+  - The LinkedIn URL may appear in the header section, contact information, or anywhere in CV_RAW
+  - If you find ANY LinkedIn URL in CV_RAW (even if it's just "linkedin.com/in/username"), extract the COMPLETE URL including "https://www." if not present
+  - Examples of what to look for: "LinkedIn: https://www.linkedin.com/in/dylan-sebastian-03706316b/", "linkedin.com/in/username", "www.linkedin.com/in/username"
+  - ONLY write "null" if you have thoroughly searched CV_RAW and confirmed there is NO LinkedIn URL anywhere
+  - Do NOT omit this field or write "null" if LinkedIn appears in CV_RAW
 
 PROFESSIONAL SUMMARY  
 • 3–4 concise lines

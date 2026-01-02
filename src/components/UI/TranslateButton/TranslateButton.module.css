@@ -1,19 +1,51 @@
+/* Simplified styles using react-icons instead of SVG */
 .translateButton {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 10px;
   padding: 10px 20px;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 500;
-  min-height: 40px;
+  min-height: 42px;
   line-height: 1;
-  border: none;
-  border-radius: var(--radius-md);
-  transition: all var(--transition-base);
+  border: 2px solid var(--primary-color);
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(255, 99, 0, 0.05) 0%, rgba(255, 99, 0, 0.1) 100%);
+  color: var(--primary-color);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
   outline: none;
   white-space: nowrap;
+  position: relative;
+  overflow: hidden;
+}
+
+.translateButton::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s;
+}
+
+.translateButton:hover:not(:disabled)::before {
+  left: 100%;
+}
+
+.translateButton:hover:not(:disabled) {
+  background: linear-gradient(135deg, rgba(255, 99, 0, 0.1) 0%, rgba(255, 99, 0, 0.15) 100%);
+  border-color: var(--primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 99, 0, 0.2);
+}
+
+.translateButton:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(255, 99, 0, 0.2);
 }
 
 .translateButton:focus-visible {
@@ -24,44 +56,16 @@
 .translateButton:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  transform: none;
 }
 
 .icon {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   flex-shrink: 0;
 }
 
 .text {
-  font-size: 16px;
-}
-
-/* Variants */
-.primary {
-  background-color: var(--primary-color);
-  color: white;
-}
-
-.primary:hover:not(:disabled) {
-  background-color: var(--primary-hover);
-}
-
-.secondary {
-  background-color: var(--surface);
-  color: var(--text-primary);
-  border: 1px solid var(--border);
-}
-
-.secondary:hover:not(:disabled) {
-  background-color: var(--border);
-}
-
-.outline {
-  background-color: transparent;
-  color: var(--primary-color);
-  border: 1px solid var(--primary-color);
-}
-
-.outline:hover:not(:disabled) {
-  background-color: rgba(255, 99, 0, 0.1);
+  font-size: 15px;
+  font-weight: 500;
 }
