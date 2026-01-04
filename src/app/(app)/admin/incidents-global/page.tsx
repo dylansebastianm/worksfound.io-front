@@ -122,7 +122,15 @@ export default function AdminGlobalIncidentsPage() {
             key: "resolved_by",
             label: "Resuelta por",
             width: "auto",
-            render: (r) => <MonoCell>{r.resolved_by_job_application_id ? `JobApp #${r.resolved_by_job_application_id}` : "-"}</MonoCell>,
+            render: (r) => {
+              if (!r.resolved_by_job_application_id) return <MonoCell>-</MonoCell>
+              const parts = []
+              parts.push(`JobApp #${r.resolved_by_job_application_id}`)
+              if (r.resolved_by_linkedin_job_id) {
+                parts.push(`(LinkedIn Job ID: ${r.resolved_by_linkedin_job_id})`)
+              }
+              return <MonoCell>{parts.join(" ")}</MonoCell>
+            },
           },
           {
             key: "actions",

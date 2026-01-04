@@ -145,15 +145,58 @@ Category: comma-separated list
 
 If no data is available for a category, use "N/A".
 
-CRITICAL - Technology Categorization Rules:
-• Frontend: React, React.js, Next.js, Vue.js, Nuxt.js, Angular, Svelte, HTML, CSS, Redux, Zustand, Tailwind CSS, Material-UI, and any frontend frameworks/libraries. Next.js is a FRONTEND framework (React-based), NOT backend.
-• Backend: Express.js, Nest.js, Spring Boot, Django, Flask, FastAPI, REST APIs, GraphQL, Microservices, Serverless, and backend frameworks/runtimes. Node.js can be backend if used for server-side, but Next.js is FRONTEND.
-• Languages: JavaScript, TypeScript, Java, Python, PHP, SQL, Go, Rust, C++, C#, Ruby, and programming languages (NOT frameworks).
-• Databases: MySQL, PostgreSQL, MongoDB, Redis, SQLite, Oracle, and database systems.
-• Cloud: Google Cloud Platform (GCP), AWS, Azure, Docker, Kubernetes, Cloud Run, Vercel, Heroku, and cloud/infrastructure tools.
-• Specialties: Frontend development, full stack development, SaaS platforms, marketplaces, CRMs, performance optimization, technical SEO, scalable systems, and professional specializations.
+CRITICAL - Technology Categorization Rules (YOU MUST FOLLOW THESE EXACTLY):
 
-IMPORTANT: Next.js, Vue.js, Nuxt.js, Angular, and similar frameworks are FRONTEND technologies, NOT backend. Only include backend-specific frameworks (Express.js, Nest.js, Spring Boot, etc.) in Backend.
+**Frontend Category** - ONLY frontend frameworks, libraries, and UI technologies:
+• Frameworks: React, React.js, Next.js, Vue.js, Nuxt.js, Angular, Svelte, Remix, Astro
+• State Management: Redux, Zustand, MobX, Jotai, Recoil
+• UI Libraries: Material-UI, Tailwind CSS, Bootstrap, Chakra UI, Ant Design
+• Styling: HTML, CSS, SCSS, SASS, Styled Components, CSS Modules
+• Build Tools: Webpack, Vite, Parcel (when used for frontend)
+• Testing: Jest, React Testing Library, Cypress (frontend testing)
+• IMPORTANT: Next.js, Vue.js, Nuxt.js, Angular, Svelte are FRONTEND frameworks, NEVER backend
+
+**Backend Category** - ONLY backend frameworks, runtimes, and server-side technologies:
+• Frameworks: Express.js, Nest.js, Spring Boot, Django, Flask, FastAPI, Ruby on Rails, Laravel, ASP.NET
+• APIs: REST APIs, GraphQL, RESTful APIs, SOAP
+• Architecture: Microservices, Serverless, Server-Side Rendering (SSR) patterns
+• Runtime: Node.js (when used for backend/server-side), Deno (backend)
+• IMPORTANT: Node.js is backend ONLY when used for server-side. Next.js is FRONTEND, not backend.
+
+**Languages Category** - ONLY programming languages (NOT frameworks, NOT libraries):
+• Languages: JavaScript, TypeScript, Java, Python, PHP, SQL, Go, Rust, C++, C#, Ruby, Swift, Kotlin, Dart, Elixir, Scala
+• IMPORTANT: JavaScript and TypeScript are languages, but React, Next.js, Vue.js are FRAMEWORKS and go in Frontend. SQL is a language, but PostgreSQL, MySQL are databases and go in Databases.
+
+**Databases Category** - ONLY database systems and data storage:
+• Relational: MySQL, PostgreSQL, SQL Server, Oracle, SQLite, MariaDB
+• NoSQL: MongoDB, Redis, DynamoDB, Cassandra, Firebase Realtime Database
+• Search: Elasticsearch, Solr
+• IMPORTANT: SQL is a language (goes in Languages), but PostgreSQL, MySQL are databases (go here).
+
+**Cloud Category** - ONLY cloud platforms, infrastructure, and deployment tools:
+• Cloud Platforms: Google Cloud Platform (GCP), AWS, Azure, DigitalOcean, Heroku, Vercel (deployment)
+• Containers: Docker, Kubernetes, Docker Compose
+• Serverless: Cloud Run, AWS Lambda, Azure Functions, Vercel Functions
+• Infrastructure: Terraform, Ansible, CI/CD tools, Cloudflare
+• IMPORTANT: Vercel goes in Cloud (it's a deployment platform), but Next.js goes in Frontend (it's a framework).
+
+**Specialties Category** - ONLY professional specializations and areas of expertise:
+• Development Types: Frontend development, Backend development, Full stack development, Mobile development
+• Platform Types: SaaS platforms, Marketplaces, CRMs, E-commerce platforms, Fintech platforms
+• Technical Areas: Performance optimization, Technical SEO, Scalable systems, System architecture, DevOps
+• Methodologies: Agile, Scrum, Test-Driven Development (TDD)
+• IMPORTANT: These are professional specializations, NOT technologies. Technologies go in their respective categories above.
+
+CRITICAL EXAMPLES TO FOLLOW:
+• Next.js → Frontend (NOT Backend, NOT Languages)
+• React, Redux → Frontend (NOT Backend)
+• JavaScript, TypeScript → Languages (NOT Frontend, NOT Backend)
+• Express.js, Nest.js → Backend (NOT Frontend)
+• Node.js → Backend (when used server-side, NOT in Frontend)
+• PostgreSQL, MySQL → Databases (NOT Languages, even though they use SQL)
+• SQL → Languages (NOT Databases)
+• Vercel, Docker → Cloud (NOT Frontend, NOT Backend)
+• Full stack development → Specialties (NOT Backend, NOT Frontend)
 
 EDUCATION  
 This section is MANDATORY and must always be included.  

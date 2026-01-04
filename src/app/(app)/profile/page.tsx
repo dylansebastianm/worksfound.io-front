@@ -25,9 +25,12 @@ export default function ProfilePage() {
     expectedSalary: "",
     degreeTitle: "",
     institution: "",
+    educationTitle: "",
     englishLevel: "",
     country: "",
     city: "",
+    streetAddress: "",
+    postalCode: "",
     phone: "",
     jobChangeReason: "",
   })
@@ -63,6 +66,7 @@ export default function ProfilePage() {
   const [newCVName, setNewCVName] = useState("")
   const [uploadingCV, setUploadingCV] = useState(false)
   const [coverLetter, setCoverLetter] = useState<File | null>(null)
+  const [educationCertificate, setEducationCertificate] = useState<File | null>(null)
 
   const [isLoading, setIsLoading] = useState(false)
   const [isLoadingProfile, setIsLoadingProfile] = useState(true)
@@ -87,9 +91,12 @@ export default function ProfilePage() {
             expectedSalary: profile.expectedSalary || "",
             degreeTitle: profile.degreeTitle || "",
             institution: profile.institution || "",
+            educationTitle: profile.educationTitle || "",
             englishLevel: profile.englishLevel || "",
             country: profile.country || "",
             city: profile.city || "",
+            streetAddress: profile.streetAddress || "",
+            postalCode: profile.postalCode || "",
             phone: profile.phone || "",
             jobChangeReason: profile.jobChangeReason || "",
           })
@@ -194,9 +201,12 @@ export default function ProfilePage() {
         expectedSalary: formData.expectedSalary,
         degreeTitle: formData.degreeTitle,
         institution: formData.institution,
+        educationTitle: formData.educationTitle,
         englishLevel: formData.englishLevel,
         country: formData.country,
         city: formData.city,
+        streetAddress: formData.streetAddress,
+        postalCode: formData.postalCode,
         phone: formData.phone,
         jobChangeReason: formData.jobChangeReason,
       })
@@ -434,11 +444,11 @@ export default function ProfilePage() {
             />
 
             <Input
-              label="País"
+              label="Dirección"
               type="text"
-              value={formData.country}
-              onChange={(e) => handleChange("country", e.target.value)}
-              placeholder="Ej: Argentina"
+              value={formData.streetAddress}
+              onChange={(e) => handleChange("streetAddress", e.target.value)}
+              placeholder="Ej: Calle Libertad 1234"
               disabled={!editMode.personal}
             />
 
@@ -448,6 +458,27 @@ export default function ProfilePage() {
               value={formData.city}
               onChange={(e) => handleChange("city", e.target.value)}
               placeholder="Ej: Buenos Aires"
+              disabled={!editMode.personal}
+            />
+
+            <Input
+              label="País"
+              type="text"
+              value={formData.country}
+              onChange={(e) => handleChange("country", e.target.value)}
+              placeholder="Ej: Argentina"
+              disabled={!editMode.personal}
+            />
+
+            <Input
+              label="CP"
+              type="text"
+              value={formData.postalCode}
+              onChange={(e) => {
+                const value = e.target.value.replace(/\D/g, '');
+                handleChange("postalCode", value);
+              }}
+              placeholder="Ej: 1234"
               disabled={!editMode.personal}
             />
           </div>
@@ -504,6 +535,24 @@ export default function ProfilePage() {
               value={formData.institution}
               onChange={(e) => handleChange("institution", e.target.value)}
               placeholder="Ej: Universidad de Buenos Aires"
+              disabled={!editMode.experience}
+            />
+
+            <Input
+              label="Título"
+              type="text"
+              value={formData.educationTitle}
+              onChange={(e) => handleChange("educationTitle", e.target.value)}
+              placeholder="Ej: Certificado en Desarrollo Web"
+              disabled={!editMode.experience}
+            />
+
+            <FileUpload
+              label="Certificado"
+              accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+              value={educationCertificate}
+              onChange={setEducationCertificate}
+              placeholder="Sube tu certificado (PDF, DOC, DOCX o imagen)"
               disabled={!editMode.experience}
             />
 

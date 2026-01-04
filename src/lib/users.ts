@@ -44,6 +44,8 @@ export interface UserProfile {
   phone: string;
   country: string;
   city: string;
+  streetAddress: string;
+  postalCode: string;
   age: string;
   gender: string;
   experienceYears: string;
@@ -52,6 +54,8 @@ export interface UserProfile {
   expectedSalary: string;
   institution: string;
   degreeTitle: string;
+  educationTitle?: string;
+  educationCertificateUrl?: string;
   preferredWorkModality: string[];
   jobChangeReason: string;
   cvUrl?: string;
@@ -68,6 +72,8 @@ export interface UpdateUserProfileRequest {
   phone?: string;
   country?: string;
   city?: string;
+  streetAddress?: string;
+  postalCode?: string;
   age?: string;
   gender?: string;
   experienceYears?: string;
@@ -76,6 +82,7 @@ export interface UpdateUserProfileRequest {
   expectedSalary?: string;
   institution?: string;
   degreeTitle?: string;
+  educationTitle?: string;
   preferredWorkModality?: string[];
   jobChangeReason?: string;
 }
