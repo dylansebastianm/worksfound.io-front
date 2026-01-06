@@ -489,10 +489,37 @@ export default function EditCvPage() {
           const parsed = parseCVFromOpenAI(generatedCV, profile);
           setCvData(parsed);
         } catch (error) {
-        console.error('Error parseando CV:', error);
-        // Si falla el parseo, usar datos vacíos
+          console.error('Error parseando CV:', error);
+          // Si falla el parseo, usar datos vacíos
+          setCvData({
+            header: {
+              name: '',
+              title: '',
+              location: '',
+              phone: '',
+              email: '',
+              linkedin: '',
+            },
+            profile: '',
+            achievements: [],
+            strengths: [],
+            experience: [],
+            skills: {
+              frontend: '',
+              backend: '',
+              languages: '',
+              databases: '',
+              cloud: '',
+              specialties: '',
+            },
+            certifications: [],
+            education: [],
+          });
+        }
+      } else {
+        // Si no hay CV generado, usar datos vacíos
         setCvData({
-    header: {
+          header: {
             name: '',
             title: '',
             location: '',
@@ -516,33 +543,9 @@ export default function EditCvPage() {
           education: [],
         });
       }
-    } else {
-      // Si no hay CV generado, usar datos vacíos
-      setCvData({
-        header: {
-          name: '',
-          title: '',
-          location: '',
-          phone: '',
-          email: '',
-          linkedin: '',
-        },
-        profile: '',
-        achievements: [],
-        strengths: [],
-        experience: [],
-    skills: {
-          frontend: '',
-          backend: '',
-          languages: '',
-          databases: '',
-          cloud: '',
-          specialties: '',
-        },
-        certifications: [],
-        education: [],
-      });
-    }
+    };
+    
+    loadData();
   }, []);
 
   if (!cvData) {
