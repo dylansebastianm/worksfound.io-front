@@ -59,6 +59,8 @@ export interface UserProfile {
   preferredWorkModality: string[];
   jobChangeReason: string;
   cvUrl?: string;
+  linkedinUrl?: string;
+  githubUrl?: string;
   skills?: Array<{
     skill_key: string;
     label: string;
@@ -85,6 +87,8 @@ export interface UpdateUserProfileRequest {
   educationTitle?: string;
   preferredWorkModality?: string[];
   jobChangeReason?: string;
+  linkedinUrl?: string;
+  githubUrl?: string;
 }
 
 /**

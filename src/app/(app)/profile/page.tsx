@@ -14,6 +14,7 @@ import { getUserProfile, updateUserProfile, updateUserSkills, UserProfile } from
 import { getUserCVs, createUserCV, deleteUserCV, UserCV } from "@/lib/cv"
 import { useSkillsStore } from "@/store/skillsStore"
 import { FiTrash2, FiPlus } from "react-icons/fi"
+import { BsLinkedin, BsGithub } from "react-icons/bs"
 import styles from "./profile.module.css"
 
 export default function ProfilePage() {
@@ -33,6 +34,8 @@ export default function ProfilePage() {
     postalCode: "",
     phone: "",
     jobChangeReason: "",
+    linkedinUrl: "",
+    githubUrl: "",
   })
 
   const [editMode, setEditMode] = useState({
@@ -99,6 +102,8 @@ export default function ProfilePage() {
             postalCode: profile.postalCode || "",
             phone: profile.phone || "",
             jobChangeReason: profile.jobChangeReason || "",
+            linkedinUrl: profile.linkedinUrl || "",
+            githubUrl: profile.githubUrl || "",
           })
 
           // Cargar skills del usuario (si vienen del backend)
@@ -209,6 +214,8 @@ export default function ProfilePage() {
         postalCode: formData.postalCode,
         phone: formData.phone,
         jobChangeReason: formData.jobChangeReason,
+        linkedinUrl: formData.linkedinUrl,
+        githubUrl: formData.githubUrl,
       })
 
       // Si se están editando skills, persistirlas en user_skills
@@ -442,44 +449,78 @@ export default function ProfilePage() {
               placeholder="+54 11 1234-5678"
               disabled={!editMode.personal}
             />
+          </div>
 
+          <div className={styles.addressSubsection}>
+            <h3 className={styles.subsectionTitle}>Dirección</h3>
+            <div className={styles.grid}>
+              <Input
+                label="Calle y número"
+                type="text"
+                value={formData.streetAddress}
+                onChange={(e) => handleChange("streetAddress", e.target.value)}
+                placeholder="Ej: Calle Libertad 1234"
+                disabled={!editMode.personal}
+              />
+
+              <Input
+                label="Ciudad"
+                type="text"
+                value={formData.city}
+                onChange={(e) => handleChange("city", e.target.value)}
+                placeholder="Ej: Buenos Aires"
+                disabled={!editMode.personal}
+              />
+
+              <Input
+                label="País"
+                type="text"
+                value={formData.country}
+                onChange={(e) => handleChange("country", e.target.value)}
+                placeholder="Ej: Argentina"
+                disabled={!editMode.personal}
+              />
+
+              <Input
+                label="CP"
+                type="text"
+                value={formData.postalCode}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/\D/g, '');
+                  handleChange("postalCode", value);
+                }}
+                placeholder="Ej: 1234"
+                disabled={!editMode.personal}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className={styles.section}>
+          <div className={styles.sectionHeader}>
+            <h2 className={styles.sectionTitle}>Redes Sociales</h2>
+            <button type="button" className={styles.editButton} onClick={() => toggleEditMode("personal")}>
+              {editMode.personal ? "Cancelar" : "Editar"}
+            </button>
+          </div>
+          <div className={styles.grid}>
             <Input
-              label="Dirección"
-              type="text"
-              value={formData.streetAddress}
-              onChange={(e) => handleChange("streetAddress", e.target.value)}
-              placeholder="Ej: Calle Libertad 1234"
+              label="LinkedIn"
+              type="url"
+              value={formData.linkedinUrl}
+              onChange={(e) => handleChange("linkedinUrl", e.target.value)}
+              placeholder="https://www.linkedin.com/in/tu-perfil"
               disabled={!editMode.personal}
+              icon={<BsLinkedin style={{ color: '#0077B5' }} />}
             />
-
             <Input
-              label="Ciudad"
-              type="text"
-              value={formData.city}
-              onChange={(e) => handleChange("city", e.target.value)}
-              placeholder="Ej: Buenos Aires"
+              label="GitHub"
+              type="url"
+              value={formData.githubUrl}
+              onChange={(e) => handleChange("githubUrl", e.target.value)}
+              placeholder="https://github.com/tu-usuario"
               disabled={!editMode.personal}
-            />
-
-            <Input
-              label="País"
-              type="text"
-              value={formData.country}
-              onChange={(e) => handleChange("country", e.target.value)}
-              placeholder="Ej: Argentina"
-              disabled={!editMode.personal}
-            />
-
-            <Input
-              label="CP"
-              type="text"
-              value={formData.postalCode}
-              onChange={(e) => {
-                const value = e.target.value.replace(/\D/g, '');
-                handleChange("postalCode", value);
-              }}
-              placeholder="Ej: 1234"
-              disabled={!editMode.personal}
+              icon={<BsGithub style={{ color: '#333' }} />}
             />
           </div>
         </div>
@@ -547,21 +588,23 @@ export default function ProfilePage() {
               disabled={!editMode.experience}
             />
 
-            <FileUpload
-              label="Certificado"
-              accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
-              value={educationCertificate}
-              onChange={setEducationCertificate}
-              placeholder="Sube tu certificado (PDF, DOC, DOCX o imagen)"
-              disabled={!editMode.experience}
-            />
-
             <Select
               label="Nivel de Inglés"
               options={englishLevelOptions}
               value={formData.englishLevel}
               onChange={(value) => handleChange("englishLevel", value)}
               placeholder="Selecciona tu nivel"
+              disabled={!editMode.experience}
+            />
+          </div>
+
+          <div className={styles.fullWidthUpload}>
+            <FileUpload
+              label="Certificado"
+              accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+              value={educationCertificate}
+              onChange={setEducationCertificate}
+              placeholder="Sube tu certificado (PDF, DOC, DOCX o imagen)"
               disabled={!editMode.experience}
             />
           </div>

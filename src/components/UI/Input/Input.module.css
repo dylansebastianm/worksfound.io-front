@@ -15,6 +15,25 @@
   color: var(--text-primary);
 }
 
+.inputContainer {
+  position: relative;
+  width: 100%;
+}
+
+.iconWrapper {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-secondary);
+  font-size: 18px;
+  pointer-events: none;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .input {
   width: 100%;
   padding: 10px 14px;
@@ -27,6 +46,10 @@
   transition: all var(--transition-fast);
   height: 40px;
   box-sizing: border-box;
+}
+
+.inputWithIcon {
+  padding-left: 40px;
 }
 
 .input:focus {

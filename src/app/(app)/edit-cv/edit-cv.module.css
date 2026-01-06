@@ -360,6 +360,28 @@
   font-size: 10pt;
 }
 
+.deleteCertButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px;
+  background: #fee;
+  border: 1px solid #fcc;
+  border-radius: var(--radius-sm);
+  color: #c33;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+  min-width: 32px;
+  height: 28px;
+}
+
+.deleteCertButton:hover {
+  background: #fcc;
+  border-color: #f99;
+  color: #a00;
+}
+
 /* EDUCATION */
 .educationItem {
   margin-bottom: 10px;

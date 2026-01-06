@@ -63,6 +63,7 @@ export interface GenerateCVRequest {
     expectedSalary: string;
     institution: string;
     degreeTitle: string;
+    educationTitle?: string;
     preferredWorkModality: string[];
     jobChangeReason: string;
     skills?: Array<{
@@ -505,7 +506,8 @@ INFORMACIÓN DEL USUARIO:
 - Salario actual: ${request.userProfile.currentSalary || 'No especificado'}
 - Salario esperado: ${request.userProfile.expectedSalary || 'No especificado'}
 - Institución educativa: ${request.userProfile.institution || 'No especificado'}
-- Título: ${request.userProfile.degreeTitle || 'No especificado'}
+- Título (degreeTitle): ${request.userProfile.degreeTitle || 'No especificado'}
+- Título de educación (educationTitle): ${request.userProfile.educationTitle || 'No especificado'}
 - Modalidad de trabajo preferida: ${request.userProfile.preferredWorkModality?.join(', ') || 'No especificado'}
 - Razón de cambio de trabajo: ${request.userProfile.jobChangeReason || 'No especificado'}
 - Habilidades técnicas: ${skillsText}
@@ -520,6 +522,7 @@ INFORMACIÓN DEL USUARIO:
       userPhone: request.userProfile.phone || '',
       userInstitution: request.userProfile.institution,
       userDegreeTitle: request.userProfile.degreeTitle,
+      userEducationTitle: request.userProfile.educationTitle,
       userInfoText,
     });
 

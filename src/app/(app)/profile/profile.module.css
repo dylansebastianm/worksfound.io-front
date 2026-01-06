@@ -69,6 +69,24 @@
   gap: 20px;
 }
 
+.addressSubsection {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+
+.subsectionTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 16px 0;
+}
+
+.fullWidthUpload {
+  margin-top: 20px;
+  width: 100%;
+}
+
 .uploads {
   display: flex;
   flex-direction: column;

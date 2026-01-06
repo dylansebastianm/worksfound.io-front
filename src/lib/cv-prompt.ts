@@ -6,6 +6,7 @@ export interface CVPromptParams {
   userPhone: string;
   userInstitution?: string;
   userDegreeTitle?: string;
+  userEducationTitle?: string;
   userInfoText: string;
 }
 
@@ -18,6 +19,7 @@ export function getCVPrompt(params: CVPromptParams): string {
     userPhone,
     userInstitution,
     userDegreeTitle,
+    userEducationTitle,
     userInfoText
   } = params;
 
@@ -201,6 +203,7 @@ CRITICAL EXAMPLES TO FOLLOW:
 EDUCATION  
 This section is MANDATORY and must always be included.  
 Extract education information from USER_PROFILE first, then from CV_RAW if needed.  
+IMPORTANT: Only include education entries that have a degreeTitle. If the user has educationTitle but no degreeTitle, that information should go in CERTIFICATIONS section instead (see CERTIFICATIONS rules above).
 If education information exists in either source, it must be included.  
 Format:
 Degree Title  
@@ -255,6 +258,7 @@ PROJECTS
 EDUCATION  
 • This section is MANDATORY and must always be included in the output.
 • Use USER_PROFILE data when available (Institution: ${userInstitution || "from CV_RAW"}, Degree: ${userDegreeTitle || "from CV_RAW"})
+• IMPORTANT: Only include education entries that have a degreeTitle. If the user has educationTitle (${userEducationTitle || "not provided"}) but no degreeTitle, that information should go in CERTIFICATIONS section instead.
 • If education information exists in USER_PROFILE or CV_RAW, it MUST be included.
 • Format:
   Degree Title  
@@ -264,6 +268,10 @@ EDUCATION
 
 CERTIFICATIONS  
 • Include only certifications or volunteer activities explicitly present in CV_RAW or USER_PROFILE
+• IMPORTANT: If the user has no degreeTitle but has educationTitle, institution, and dates in USER_PROFILE, you MUST include this education information as a certification entry in the CERTIFICATIONS section (not in EDUCATION).
+  - Format: Title | Institution | Dates
+  - Use educationTitle as the title, institution as the institution, and extract dates from USER_PROFILE if available
+  - Do NOT include a description for this certification entry
 
 ---
 

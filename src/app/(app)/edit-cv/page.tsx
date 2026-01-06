@@ -2,13 +2,14 @@
 
 import { useState, useEffect, useRef } from "react"
 import styles from "./edit-cv.module.css"
-import { FiEdit2, FiDownload, FiSave, FiCheck } from "react-icons/fi"
+import { FiEdit2, FiDownload, FiSave, FiCheck, FiTrash2 } from "react-icons/fi"
 import { Button } from "@/components/UI/Button/Button"
 import TranslateButton from "@/components/UI/TranslateButton/TranslateButton"
 import { translateCurriculum } from "@/lib/translateCurriculum"
 import { LoadingSpinner } from "@/components/UI/LoadingSpinner/LoadingSpinner"
 import { createUserCV } from "@/lib/cv"
 import { Alert } from "@/components/UI/Alert/Alert"
+import { getUserProfile, UserProfile } from "@/lib/users"
 
 interface ExperienceBlock {
   position: string;
@@ -58,7 +59,7 @@ interface CVData {
 }
 
 // Función para parsear el CV de OpenAI con marcadores de sección
-function parseCVFromOpenAI(cvText: string): CVData {
+function parseCVFromOpenAI(cvText: string, userProfile?: UserProfile | null): CVData {
   const sections: Record<string, string> = {};
   
   // Extraer cada sección usando los marcadores
@@ -396,6 +397,29 @@ function parseCVFromOpenAI(cvText: string): CVData {
     }
   });
 
+  // Si el usuario tiene degreeTitle pero no educationTitle, agregarlo como certificado
+  // usando la institución del perfil y las fechas de la educación parseada (si están disponibles)
+  if (userProfile && userProfile.degreeTitle && !userProfile.educationTitle) {
+    // Buscar fechas en la sección de educación parseada
+    let educationDates = '';
+    if (education.length > 0 && education[0].dates) {
+      educationDates = education[0].dates;
+    }
+    
+    // Agregar el certificado solo si no existe ya uno con el mismo título
+    const certExists = certifications.some(cert => 
+      cert.title.toLowerCase() === userProfile.degreeTitle.toLowerCase()
+    );
+    
+    if (!certExists && userProfile.institution) {
+      certifications.push({
+        title: userProfile.degreeTitle,
+        institution: userProfile.institution,
+        date: educationDates,
+      });
+    }
+  }
+
   return {
     header,
     profile,
@@ -439,21 +463,32 @@ export default function EditCvPage() {
   const [isPublished, setIsPublished] = useState(false) // Si el CV ya fue guardado en el perfil
   const [hasChanges, setHasChanges] = useState(false) // Si se han hecho cambios desde la última vez que se guardó
   const [alert, setAlert] = useState<{ status: "success" | "error"; message: string } | null>(null)
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const cvContainerRef = useRef<HTMLDivElement>(null)
 
-  // Cargar CV desde sessionStorage al montar
+  // Cargar perfil del usuario y CV desde sessionStorage al montar
   useEffect(() => {
-    const generatedCV = sessionStorage.getItem('generatedCV');
-    if (generatedCV) {
-      try {
-        // Detectar idioma del CV original
-        const detectedLang = detectLanguage(generatedCV);
-        setCurrentLanguage(detectedLang);
-        setOriginalCVText(generatedCV);
-        
-        const parsed = parseCVFromOpenAI(generatedCV);
-        setCvData(parsed);
-      } catch (error) {
+    const loadData = async () => {
+      // Cargar perfil del usuario
+      const profileResponse = await getUserProfile();
+      const profile = profileResponse.success && profileResponse.profile ? profileResponse.profile : null;
+      if (profile) {
+        setUserProfile(profile);
+      }
+
+      // Cargar y parsear CV
+      const generatedCV = sessionStorage.getItem('generatedCV');
+      if (generatedCV) {
+        try {
+          // Detectar idioma del CV original
+          const detectedLang = detectLanguage(generatedCV);
+          setCurrentLanguage(detectedLang);
+          setOriginalCVText(generatedCV);
+          
+          // Parsear CV con el perfil (si está disponible)
+          const parsed = parseCVFromOpenAI(generatedCV, profile);
+          setCvData(parsed);
+        } catch (error) {
         console.error('Error parseando CV:', error);
         // Si falla el parseo, usar datos vacíos
         setCvData({
@@ -739,8 +774,8 @@ export default function EditCvPage() {
         return;
       }
       
-      // Actualizar el CV traducido
-      const translatedParsed = parseCVFromOpenAI(result.translatedCV);
+      // Actualizar el CV traducido (con el perfil para mantener certificados)
+      const translatedParsed = parseCVFromOpenAI(result.translatedCV, userProfile);
       setCvData(translatedParsed);
       
       // Guardar el CV traducido en sessionStorage
@@ -1133,6 +1168,17 @@ export default function EditCvPage() {
                         className={styles.certDateInput}
                         placeholder="Fecha"
                       />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newCerts = cvData.certifications.filter((_, i) => i !== index)
+                          setCvData({ ...cvData, certifications: newCerts })
+                        }}
+                        className={styles.deleteCertButton}
+                        aria-label="Eliminar certificado"
+                      >
+                        <FiTrash2 />
+                      </button>
                     </div>
                   ) : (
                     <>

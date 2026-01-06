@@ -100,6 +100,7 @@ export default function CurriculumGeneratorPage() {
           expectedSalary: userProfile.expectedSalary,
           institution: userProfile.institution,
           degreeTitle: userProfile.degreeTitle,
+          educationTitle: userProfile.educationTitle,
           preferredWorkModality: userProfile.preferredWorkModality,
           jobChangeReason: userProfile.jobChangeReason,
           skills: userProfile.skills,
