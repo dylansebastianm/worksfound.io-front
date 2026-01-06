@@ -5,6 +5,7 @@ import { FiChevronUp, FiChevronDown, FiClock, FiCheckCircle, FiXCircle, FiAlertC
 import { Pagination } from "@/components/UI/Pagination/Pagination"
 import { LoadingSpinner } from "@/components/UI/LoadingSpinner/LoadingSpinner"
 import { Alert } from "@/components/UI/Alert/Alert"
+import { Select } from "@/components/UI/Select/Select"
 import { getIngestionLogs, type IngestionLog } from "@/lib/ingestion"
 import styles from "./logs.module.css"
 
@@ -137,14 +138,19 @@ export default function AdminLoggingsPage() {
 
       <div className={styles.filtersCard}>
         <div className={styles.filters}>
-          <select value={selectedStatus} onChange={(e) => handleStatusChange(e.target.value)} className={styles.select}>
-            <option value="all">Todos los estados</option>
-            <option value="Exitoso">Exitoso</option>
-            <option value="Fallido">Fallido</option>
-            <option value="Error">Error</option>
-            <option value="Cancelado">Cancelado</option>
-            <option value="En Proceso">En Proceso</option>
-          </select>
+          <Select
+            options={[
+              { value: "all", label: "Todos los estados" },
+              { value: "Exitoso", label: "Exitoso" },
+              { value: "Fallido", label: "Fallido" },
+              { value: "Error", label: "Error" },
+              { value: "Cancelado", label: "Cancelado" },
+              { value: "En Proceso", label: "En Proceso" },
+            ]}
+            value={selectedStatus}
+            onChange={(value) => handleStatusChange(value)}
+            placeholder="Selecciona un estado"
+          />
 
           <button
             className={styles.clearButton}

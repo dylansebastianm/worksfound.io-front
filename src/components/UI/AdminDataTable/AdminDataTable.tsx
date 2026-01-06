@@ -33,7 +33,7 @@ export function AdminDataTable<T>({
       {rows.length === 0 ? (
         <div className={styles.emptyState}>{emptyText || "No hay registros para mostrar"}</div>
       ) : (
-        <div className={styles.gridTable}>
+        <>
           <div className={styles.headerRow}>
             {columns.map((col) => {
               const isActive = sortField === col.key
@@ -44,7 +44,7 @@ export function AdminDataTable<T>({
                   className={`${styles.headerCell} ${styles.cell} ${canSort ? styles.sortableHeader : ""}`}
                   onClick={() => (canSort ? onSort!(col.key) : undefined)}
                 >
-                  <span className={styles.sortableHeader}>
+                  <span className={canSort ? styles.sortableHeader : ""}>
                     {col.label}
                     {canSort ? (
                       <span className={isActive ? styles.sortIconActive : styles.sortIconInactive}>
@@ -57,16 +57,18 @@ export function AdminDataTable<T>({
             })}
           </div>
 
-          {rows.map((row, idx) => (
-            <div key={idx} className={styles.dataRow}>
-              {columns.map((col) => (
-                <div key={col.key} className={`${styles.bodyCell} ${styles.cell}`}>
-                  {col.render(row)}
-                </div>
-              ))}
-            </div>
-          ))}
-        </div>
+          <div className={styles.gridTable}>
+            {rows.map((row, idx) => (
+              <div key={idx} className={styles.dataRow}>
+                {columns.map((col) => (
+                  <div key={col.key} className={`${styles.bodyCell} ${styles.cell}`}>
+                    {col.render(row)}
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        </>
       )}
     </div>
   )

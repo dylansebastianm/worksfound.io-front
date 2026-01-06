@@ -24,6 +24,7 @@ import { getIngestionConfig, updateIngestionConfig } from "@/lib/ingestion"
 import { scrapeJobs } from "@/lib/jobs"
 import { LoadingSpinner } from "@/components/UI/LoadingSpinner/LoadingSpinner"
 import DistributionCard from "@/components/UI/DistributionCard/DistributionCard"
+import { Alert } from "@/components/UI/Alert/Alert"
 import styles from "./admin-dashboard.module.css"
 
 export default function AdminDashboardPage() {
@@ -40,6 +41,7 @@ export default function AdminDashboardPage() {
   const [isLoadingStats, setIsLoadingStats] = useState(true)
   const [statsError, setStatsError] = useState<string | null>(null)
   const [statistics, setStatistics] = useState<any>(null)
+  const [alert, setAlert] = useState<{ status: "success" | "error"; message: string } | null>(null)
   const router = useRouter()
 
   useEffect(() => {
@@ -119,13 +121,22 @@ export default function AdminDashboardPage() {
 
       if (response.success) {
         const message = response.message || `Ingesta completada: ${response.jobs_saved || 0} ofertas nuevas guardadas`
-        alert(message)
+        setAlert({
+          status: "success",
+          message: message,
+        })
       } else {
-        alert(`Error en la ingesta: ${response.error || "Error desconocido"}`)
+        setAlert({
+          status: "error",
+          message: `Error en la ingesta: ${response.error || "Error desconocido"}`,
+        })
       }
     } catch (error: any) {
       console.error("Error en ingesta:", error)
-      alert("Error al realizar la ingesta. Por favor, intenta nuevamente.")
+      setAlert({
+        status: "error",
+        message: "Error al realizar la ingesta. Por favor, intenta nuevamente.",
+      })
     } finally {
       setIsIngesting(false)
       // Eliminar estado de sessionStorage al terminar
@@ -147,13 +158,22 @@ export default function AdminDashboardPage() {
       if (response.success) {
         setIngestConfig(config)
         setShowConfigModal(false)
-        alert("Configuración guardada exitosamente")
+        setAlert({
+          status: "success",
+          message: "Configuración guardada exitosamente",
+        })
       } else {
-        alert(`Error al guardar configuración: ${response.error || "Error desconocido"}`)
+        setAlert({
+          status: "error",
+          message: `Error al guardar configuración: ${response.error || "Error desconocido"}`,
+        })
       }
     } catch (error) {
       console.error("Error guardando configuración:", error)
-      alert("Error al guardar la configuración. Por favor, intenta nuevamente.")
+      setAlert({
+        status: "error",
+        message: "Error al guardar la configuración. Por favor, intenta nuevamente.",
+      })
     }
   }
 
@@ -202,6 +222,7 @@ export default function AdminDashboardPage() {
 
   return (
     <div className={styles.container}>
+      {alert && <Alert status={alert.status} message={alert.message} onClose={() => setAlert(null)} />}
       <div className={styles.header}>
         <div>
           <h1 className={styles.title}>Dashboard Administrativo</h1>

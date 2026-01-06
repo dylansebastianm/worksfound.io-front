@@ -112,24 +112,19 @@ export default function AdminGlobalIncidentsPage() {
 
       <AdminDataTable<RunnerIncident>
         columns={[
-          { key: "detected_at", label: "Detectada", width: "auto", sortable: true, render: (r) => <MonoCell>{formatDateTime(r.detected_at)}</MonoCell> },
-          { key: "user", label: "Usuario", width: "auto", render: (r) => <MonoCell>{r.user_email || String(r.user_id)}</MonoCell> },
-          { key: "incident_type", label: "Tipo", width: "minmax(0, 1fr)", render: (r) => <MonoCell>{r.incident_type}</MonoCell> },
-          { key: "severity", label: "Sev", width: "auto", render: (r) => <MonoCell>{r.severity}</MonoCell> },
-          { key: "cooldown_until", label: "Cooldown hasta", width: "auto", sortable: true, render: (r) => <MonoCell>{formatDateTime(r.cooldown_until)}</MonoCell> },
-          { key: "resolved_at", label: "Resuelta", width: "auto", render: (r) => <MonoCell>{formatDateTime(r.resolved_at)}</MonoCell> },
+          { key: "detected_at", label: "Detectada", width: "minmax(160px, auto)", sortable: true, render: (r) => <MonoCell>{formatDateTime(r.detected_at)}</MonoCell> },
+          { key: "user", label: "Usuario", width: "minmax(200px, auto)", render: (r) => <MonoCell>{r.user_email || String(r.user_id)}</MonoCell> },
+          { key: "incident_type", label: "Tipo", width: "minmax(200px, 1fr)", render: (r) => <MonoCell>{r.incident_type}</MonoCell> },
+          { key: "severity", label: "Sev", width: "minmax(80px, auto)", render: (r) => <MonoCell>{r.severity}</MonoCell> },
+          { key: "cooldown_until", label: "Cooldown hasta", width: "minmax(160px, auto)", sortable: true, render: (r) => <MonoCell>{formatDateTime(r.cooldown_until)}</MonoCell> },
+          { key: "resolved_at", label: "Resuelta", width: "minmax(160px, auto)", render: (r) => <MonoCell>{formatDateTime(r.resolved_at)}</MonoCell> },
           {
             key: "resolved_by",
             label: "Resuelta por",
-            width: "auto",
+            width: "minmax(80px, auto)",
             render: (r) => {
               if (!r.resolved_by_job_application_id) return <MonoCell>-</MonoCell>
-              const parts = []
-              parts.push(`JobApp #${r.resolved_by_job_application_id}`)
-              if (r.resolved_by_linkedin_job_id) {
-                parts.push(`(LinkedIn Job ID: ${r.resolved_by_linkedin_job_id})`)
-              }
-              return <MonoCell>{parts.join(" ")}</MonoCell>
+              return <MonoCell>{r.resolved_by_job_application_id}</MonoCell>
             },
           },
           {

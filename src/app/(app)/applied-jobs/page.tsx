@@ -1270,22 +1270,37 @@ export default function AppliedJobsPage() {
     const redirectName = (job.redirect_page_name || "").toLowerCase()
     const portal = job.portal || "LinkedIn"
 
+    // Mapeo de nombres de redirect a rutas de imágenes
+    const redirectImageMap: Record<string, { src: string; alt: string }> = {
+      teamtailor: { src: "/Images/ATS/teamtailor.png", alt: "Teamtailor" },
+      ashbyhq: { src: "/Images/ATS/ashbyhq.png", alt: "AshbyHQ" },
+      breezyhr: { src: "/Images/ATS/breezyhr.png", alt: "BreezyHR" },
+      jobdiva: { src: "/Images/ATS/jobdiva.png", alt: "JobDiva" },
+      googleforms: { src: "/Images/ATS/googleForm.svg", alt: "Google Forms" },
+      googleform: { src: "/Images/ATS/googleForm.svg", alt: "Google Forms" },
+      greenhouse: { src: "/Images/ATS/greenhouse.png", alt: "Greenhouse" },
+      lever: { src: "/Images/ATS/lever.png", alt: "Lever" },
+      workable: { src: "/Images/ATS/workable.png", alt: "Workable" },
+    }
+
+    const redirectImage = redirectImageMap[redirectName]
+
     return (
       <div className={styles.portalIcons}>
         <span className={styles.portalIconPrimary} title={portal}>
           {getPortalIcon(portal)}
         </span>
 
-        {showRedirect && redirectName === "teamtailor" && (
+        {showRedirect && redirectImage && (
           <img
             className={styles.portalIconSecondary}
-            src="/Images/ATS/teamtailor.png"
-            alt="Teamtailor"
-            title="Teamtailor"
+            src={redirectImage.src}
+            alt={redirectImage.alt}
+            title={redirectImage.alt}
             style={{ display: 'inline-block' }}
           />
         )}
-        {showRedirect && redirectName !== "teamtailor" && (
+        {showRedirect && !redirectImage && (
           <span className={styles.portalIconSecondaryText} title={job.redirect_page_name || "Redirect"}>
             {job.redirect_page_name}
           </span>

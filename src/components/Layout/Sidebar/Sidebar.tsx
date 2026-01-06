@@ -92,6 +92,11 @@ const navItems: NavItem[] = [
         href: "/admin/incidents-offers",
         icon: <IoDocumentTextOutline />,
       },
+      {
+        label: "CV Prompt",
+        href: "/admin/cv-prompt",
+        icon: <IoChatbubblesOutline />,
+      },
     ],
   },
   {

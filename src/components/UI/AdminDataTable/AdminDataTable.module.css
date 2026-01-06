@@ -10,10 +10,22 @@
   display: grid;
   grid-template-columns: var(--columns);
   column-gap: 1rem;
+  row-gap: 0;
 }
 
 .headerRow {
-  display: contents;
+  display: grid;
+  grid-template-columns: var(--columns);
+  column-gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--surface);
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-radius: var(--radius-md);
+  margin-bottom: 0.5rem;
 }
 
 .dataRow {
@@ -28,10 +40,12 @@
 }
 
 .headerCell {
-  padding: 1rem 0;
+  padding: 0;
   font-weight: 600;
+  font-size: 0.85rem;
   color: var(--text-secondary);
-  border-bottom: 1px solid var(--border);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
   align-self: center;
 }
 
@@ -46,15 +60,29 @@
   user-select: none;
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.25rem;
+  transition: var(--transition-fast);
+}
+
+.sortableHeader:hover {
+  color: var(--primary-color);
+}
+
+.sortableHeader:hover .sortIconInactive {
+  color: var(--primary-color);
 }
 
 .sortIconInactive {
-  opacity: 0.35;
+  display: flex;
+  align-items: center;
+  color: #9ca3af;
+  transition: var(--transition-fast);
 }
 
 .sortIconActive {
-  opacity: 1;
+  display: flex;
+  align-items: center;
+  color: var(--primary-color);
 }
 
 .mono {
