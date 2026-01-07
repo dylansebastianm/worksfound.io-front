@@ -1,5 +1,4 @@
 import { getToken } from './auth';
-import { getCVPrompt } from './cv-prompt';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
@@ -329,19 +328,13 @@ export async function deleteUserCV(cvId: number): Promise<DeleteUserCVResponse> 
 
 /**
  * Genera un CV optimizado usando OpenAI
+ * Ahora usa un endpoint del servidor para mantener la API key segura
  * 
  * @param request - Datos para generar el CV (archivo, puesto objetivo, perfil del usuario)
  * @returns Respuesta con el contenido del CV generado
  */
 export async function generateCVWithOpenAI(request: GenerateCVRequest): Promise<GenerateCVResponse> {
   try {
-    const apiKey = process.env.NEXT_PUBLIC_OPENAI_API_KEY;
-    if (!apiKey) {
-      return {
-        success: false,
-        error: 'API key de OpenAI no configurada',
-      };
-    }
 
     // Función robusta para extraer texto literal del PDF
     async function extractLiteralTextFromPDF(file: File): Promise<string> {
@@ -488,85 +481,30 @@ export async function generateCVWithOpenAI(request: GenerateCVRequest): Promise<
       };
     }
 
-    // Construir el prompt mejorado
-    const skillsText = request.userProfile.skills 
-      ? request.userProfile.skills.map(s => `${s.label} (${s.years} años)`).join(', ')
-      : 'No especificado';
-
-    const userInfoText = `
-INFORMACIÓN DEL USUARIO:
-- Nombre completo: ${request.userProfile.name} ${request.userProfile.lastName}
-- Email: ${request.userProfile.email}
-- Teléfono: ${request.userProfile.phone || 'No especificado'}
-- Ubicación: ${request.userProfile.city || 'No especificado'}, ${request.userProfile.country || 'No especificado'}
-- Edad: ${request.userProfile.age || 'No especificado'}
-- Género: ${request.userProfile.gender || 'No especificado'}
-- Años de experiencia: ${request.userProfile.experienceYears || 'No especificado'}
-- Nivel de inglés: ${request.userProfile.englishLevel || 'No especificado'}
-- Salario actual: ${request.userProfile.currentSalary || 'No especificado'}
-- Salario esperado: ${request.userProfile.expectedSalary || 'No especificado'}
-- Institución educativa: ${request.userProfile.institution || 'No especificado'}
-- Título (degreeTitle): ${request.userProfile.degreeTitle || 'No especificado'}
-- Título de educación (educationTitle): ${request.userProfile.educationTitle || 'No especificado'}
-- Modalidad de trabajo preferida: ${request.userProfile.preferredWorkModality?.join(', ') || 'No especificado'}
-- Razón de cambio de trabajo: ${request.userProfile.jobChangeReason || 'No especificado'}
-- Habilidades técnicas: ${skillsText}
-`;
-
-    // Obtener el prompt desde el archivo modularizado
-    const prompt = getCVPrompt({
-      jobTitle: request.jobTitle,
-      userName: request.userProfile.name,
-      userLastName: request.userProfile.lastName,
-      userEmail: request.userProfile.email,
-      userPhone: request.userProfile.phone || '',
-      userInstitution: request.userProfile.institution,
-      userDegreeTitle: request.userProfile.degreeTitle,
-      userEducationTitle: request.userProfile.educationTitle,
-      userInfoText,
-    });
-
-    // Construir el mensaje completo: prompt + texto del CV + información del perfil + puesto
-    const fullPrompt = `${prompt}
-
----CV_RAW---
-${cvRawContent}
----END_CV_RAW---
-
----JOB_POSITION---
-${request.jobTitle}
----END_JOB_POSITION---`;
-
-    // Usar Chat Completions API (API común de OpenAI)
-    const chatResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+    // Llamar al endpoint del servidor que usa la API key de forma segura
+    // El servidor construye el prompt completo con toda la información del usuario
+    const response = await fetch('/api/cv/generate', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
-        messages: [
-          {
-            role: 'user',
-            content: fullPrompt,
-          },
-        ],
-        temperature: 0.7,
-        max_tokens: 4000,
+        cvRawContent,
+        jobTitle: request.jobTitle,
+        userProfile: request.userProfile,
       }),
     });
 
-    if (!chatResponse.ok) {
-      const errorData = await chatResponse.json();
+    if (!response.ok) {
+      const errorData = await response.json();
       return {
         success: false,
-        error: `Error generando CV: ${errorData.error?.message || 'Error desconocido'}`,
+        error: errorData.error || 'Error generando CV',
       };
     }
 
-    const chatData = await chatResponse.json();
-    const cvContent = chatData.choices[0]?.message?.content;
+    const data = await response.json();
+    const cvContent = data.cvContent;
 
     console.log('📄 OUTPUT COMPLETO DE CHATGPT:');
     console.log('='.repeat(80));
