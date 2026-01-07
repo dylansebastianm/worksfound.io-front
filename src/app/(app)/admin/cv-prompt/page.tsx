@@ -381,7 +381,7 @@ Resultado esperado: Un CV que destaque inmediatamente las propuestas de valor ú
             </div>
 
             <div className={styles.modalContent}>
-              <div className={styles.section}>
+              <div className={styles.section} style={{ marginBottom: '1.5rem' }}>
                 <Input
                   label="Nombre del Prompt"
                   type="text"
@@ -389,7 +389,6 @@ Resultado esperado: Un CV que destaque inmediatamente las propuestas de valor ú
                   onChange={(e) => setEditedName(e.target.value)}
                   placeholder="Nombre del prompt"
                   fullWidth
-                  style={{ marginBottom: '1.5rem' }}
                 />
               </div>
               <div className={styles.editorRow}>
