@@ -11,6 +11,7 @@ import {
   FiLoader,
   FiArrowRight,
   FiArrowLeft,
+  FiPlus,
 } from "react-icons/fi"
 import { SiOpenai } from "react-icons/si"
 import { Button } from "@/components/UI/Button/Button"
@@ -150,18 +151,48 @@ export default function CVPromptPage() {
     setReformulatedResult("")
   }
 
+  const handleCreateNewPrompt = () => {
+    setSelectedPrompt({
+      id: 0, // ID temporal para nuevos prompts
+      name: "",
+      promptText: "",
+      isActive: false,
+      createdAt: null,
+      updatedAt: null,
+    })
+    setEditedContent("")
+    setEditedName("")
+    setReformulateInput("")
+    setReformulatedResult("")
+  }
+
   const handleSavePrompt = async () => {
     if (!selectedPrompt) return
 
+    // Validar campos requeridos
+    if (!editedName.trim() || !editedContent.trim()) {
+      setAlert({
+        status: "error",
+        message: 'Nombre y contenido del prompt son requeridos',
+      })
+      return
+    }
+
     setIsSaving(true)
     try {
-      const response = await fetch(`${API_URL}/api/admin/cv-prompts/${selectedPrompt.id}`, {
-        method: 'PUT',
+      const isNewPrompt = selectedPrompt.id === 0
+      const url = isNewPrompt 
+        ? `${API_URL}/api/admin/cv-prompts`
+        : `${API_URL}/api/admin/cv-prompts/${selectedPrompt.id}`
+      const method = isNewPrompt ? 'POST' : 'PUT'
+
+      const response = await fetch(url, {
+        method: method,
         headers: getAuthHeaders(),
         body: JSON.stringify({
           name: editedName,
           promptText: editedContent,
-          isActive: selectedPrompt.isActive, // Mantener el estado actual
+          isActive: isNewPrompt ? false : selectedPrompt.isActive, // Nuevos prompts siempre inactivos
         }),
       })
 
@@ -185,7 +216,7 @@ export default function CVPromptPage() {
       if (data.success) {
         setAlert({
           status: "success",
-          message: 'Prompt actualizado correctamente',
+          message: isNewPrompt ? 'Prompt creado correctamente' : 'Prompt actualizado correctamente',
         })
         setSelectedPrompt(null)
         setReformulatedResult("")
@@ -194,7 +225,7 @@ export default function CVPromptPage() {
       } else {
         setAlert({
           status: "error",
-          message: data.error || 'Error al actualizar el prompt',
+          message: data.error || (isNewPrompt ? 'Error al crear el prompt' : 'Error al actualizar el prompt'),
         })
       }
     } catch (error) {
@@ -314,8 +345,13 @@ Resultado esperado: Un CV que destaque inmediatamente las propuestas de valor ú
       {alert && <Alert status={alert.status} message={alert.message} onClose={() => setAlert(null)} />}
 
       <div className={styles.header}>
-        <h1 className={styles.title}>CV Prompt</h1>
-        <p className={styles.subtitle}>Gestiona las versiones del prompt para generación de CVs</p>
+        <div>
+          <h1 className={styles.title}>CV Prompt</h1>
+          <p className={styles.subtitle}>Gestiona las versiones del prompt para generación de CVs</p>
+        </div>
+        <Button onClick={handleCreateNewPrompt} variant="secondary">
+          <FiPlus /> Crear nuevo prompt
+        </Button>
       </div>
 
       <div className={styles.tableCard}>
@@ -374,7 +410,7 @@ Resultado esperado: Un CV que destaque inmediatamente las propuestas de valor ú
         <div className={styles.modalOverlay} onClick={() => setSelectedPrompt(null)}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
-              <h2>Editar Prompt: {selectedPrompt.name}</h2>
+              <h2>{selectedPrompt.id === 0 ? 'Crear Nuevo Prompt' : `Editar Prompt: ${selectedPrompt.name}`}</h2>
               <button className={styles.closeButton} onClick={() => setSelectedPrompt(null)}>
                 <FiX size={24} />
               </button>

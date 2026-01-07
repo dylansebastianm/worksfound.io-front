@@ -78,6 +78,8 @@ export async function register(
   last_name: string,
   email: string,
   password: string,
+  userType?: 'candidate' | 'recruiter',
+  recruiterRole?: string,
 ): Promise<RegisterResponse> {
   try {
     const response = await fetch(`${API_URL}/api/auth/register`, {
@@ -90,6 +92,8 @@ export async function register(
         last_name,
         email,
         password,
+        user_type: userType || 'candidate',
+        recruiter_role: recruiterRole || null,
       }),
     });
 

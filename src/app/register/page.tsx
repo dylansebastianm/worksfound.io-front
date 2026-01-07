@@ -66,7 +66,14 @@ export default function RegisterPage() {
     setIsLoading(true)
 
     try {
-      const result = await register(formData.name, formData.last_name, formData.email, formData.password)
+      const result = await register(
+        formData.name,
+        formData.last_name,
+        formData.email,
+        formData.password,
+        registerType,
+        registerType === 'recruiter' ? formData.recruiter_role : undefined
+      )
 
       if (result.success) {
         // Redirigir a login después de 2 segundos
