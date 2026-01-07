@@ -157,7 +157,7 @@ export default function CurriculumGeneratorPage() {
               { value: "Customer Experience", label: "Customer Experience" },
             ]}
             value={sector}
-            onChange={(value) => setSector(value)}
+            onChange={(value: string) => setSector(value)}
             placeholder="Selecciona un sector"
           />
         </div>
@@ -172,7 +172,7 @@ export default function CurriculumGeneratorPage() {
               { value: "Full Stack Developer", label: "Full Stack Developer" },
             ]}
             value={puesto}
-            onChange={(value) => setPuesto(value)}
+            onChange={(value: string) => setPuesto(value)}
             placeholder="Selecciona un puesto"
           />
           <p className={styles.hint}>Se destacará tu experiencia acorde al rol que deseas</p>

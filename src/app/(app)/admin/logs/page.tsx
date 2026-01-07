@@ -6,7 +6,8 @@ import { Pagination } from "@/components/UI/Pagination/Pagination"
 import { LoadingSpinner } from "@/components/UI/LoadingSpinner/LoadingSpinner"
 import { Alert } from "@/components/UI/Alert/Alert"
 import { Select } from "@/components/UI/Select/Select"
-import { getIngestionLogs, type IngestionLog } from "@/lib/ingestion"
+import { getIngestionLogs } from "@/lib/ingestion"
+import type { IngestionLog } from "@/types/ingestion"
 import styles from "./logs.module.css"
 
 export default function AdminLoggingsPage() {
@@ -148,7 +149,7 @@ export default function AdminLoggingsPage() {
               { value: "En Proceso", label: "En Proceso" },
             ]}
             value={selectedStatus}
-            onChange={(value) => handleStatusChange(value)}
+            onChange={(value: string) => handleStatusChange(value)}
             placeholder="Selecciona un estado"
           />
 

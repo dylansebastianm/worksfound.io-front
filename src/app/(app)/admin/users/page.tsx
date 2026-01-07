@@ -11,7 +11,6 @@ import { SearchInput } from "@/components/UI/SearchInput/SearchInput"
 import { TagInput } from "@/components/UI/TagInput/TagInput"
 import { Switch } from "@/components/UI/Switch/Switch"
 import { Pagination } from "@/components/UI/Pagination/Pagination"
-import { DateRangePicker } from "@/components/UI/DateRangePicker/DateRangePicker"
 import { LoadingSpinner } from "@/components/UI/LoadingSpinner/LoadingSpinner"
 import { getUsers, User as ApiUser } from "@/lib/users"
 import styles from "./users.module.css"
@@ -260,9 +259,23 @@ export default function AdminUsersPage() {
 
   const updateEditedUserProfile = (field: string, value: any) => {
     if (editedUser) {
+      const defaultProfile = {
+        age: "",
+        gender: "",
+        experienceYears: "",
+        currentSalary: "",
+        expectedSalary: "",
+        degreeTitle: "",
+        institution: "",
+        englishLevel: "",
+        country: "",
+        city: "",
+        phone: "",
+      }
       setEditedUser({
         ...editedUser,
         profile: {
+          ...defaultProfile,
           ...editedUser.profile,
           [field]: value,
         },
@@ -271,10 +284,19 @@ export default function AdminUsersPage() {
   }
 
   const updateEditedUserSearchGroup = (groupId: string, field: keyof JobSearchGroup, value: any) => {
-    if (editedUser) {
+    if (editedUser && editedUser.searchConfig) {
+      const defaultSearchConfig = {
+        searchGroups: [],
+        requiresEnglish: false,
+        techStackFilter: "",
+        countryFilter: "",
+        workType: "",
+        acceptUnpaidInternships: false,
+      }
       setEditedUser({
         ...editedUser,
         searchConfig: {
+          ...defaultSearchConfig,
           ...editedUser.searchConfig,
           searchGroups: editedUser.searchConfig.searchGroups.map((group) =>
             group.id === groupId ? { ...group, [field]: value } : group,
@@ -286,9 +308,18 @@ export default function AdminUsersPage() {
 
   const updateEditedUserSearchConfig = (field: string, value: any) => {
     if (editedUser) {
+      const defaultSearchConfig = {
+        searchGroups: [],
+        requiresEnglish: false,
+        techStackFilter: "",
+        countryFilter: "",
+        workType: "",
+        acceptUnpaidInternships: false,
+      }
       setEditedUser({
         ...editedUser,
         searchConfig: {
+          ...defaultSearchConfig,
           ...editedUser.searchConfig,
           [field]: value,
         },
@@ -298,12 +329,22 @@ export default function AdminUsersPage() {
 
   const addSearchGroupToEditedUser = () => {
     if (editedUser) {
+      const defaultSearchConfig = {
+        searchGroups: [],
+        requiresEnglish: false,
+        techStackFilter: "",
+        countryFilter: "",
+        workType: "",
+        acceptUnpaidInternships: false,
+      }
+      const currentGroups = editedUser.searchConfig?.searchGroups || []
       setEditedUser({
         ...editedUser,
         searchConfig: {
+          ...defaultSearchConfig,
           ...editedUser.searchConfig,
           searchGroups: [
-            ...editedUser.searchConfig.searchGroups,
+            ...currentGroups,
             {
               id: Date.now().toString(),
               jobTitle: "",
@@ -318,10 +359,19 @@ export default function AdminUsersPage() {
   }
 
   const removeSearchGroupFromEditedUser = (groupId: string) => {
-    if (editedUser && editedUser.searchConfig.searchGroups.length > 1) {
+    if (editedUser && editedUser.searchConfig && editedUser.searchConfig.searchGroups.length > 1) {
+      const defaultSearchConfig = {
+        searchGroups: [],
+        requiresEnglish: false,
+        techStackFilter: "",
+        countryFilter: "",
+        workType: "",
+        acceptUnpaidInternships: false,
+      }
       setEditedUser({
         ...editedUser,
         searchConfig: {
+          ...defaultSearchConfig,
           ...editedUser.searchConfig,
           searchGroups: editedUser.searchConfig.searchGroups.filter((group) => group.id !== groupId),
         },
@@ -610,7 +660,7 @@ export default function AdminUsersPage() {
                   <Input
                     label="Edad"
                     type="number"
-                    value={editedUser.profile.age}
+                    value={editedUser.profile?.age || ""}
                     onChange={(e) => updateEditedUserProfile("age", e.target.value)}
                     placeholder="Ej: 28"
                   />
@@ -618,7 +668,7 @@ export default function AdminUsersPage() {
                   <Select
                     label="Género"
                     options={genderOptions}
-                    value={editedUser.profile.gender}
+                    value={editedUser.profile?.gender || ""}
                     onChange={(value) => updateEditedUserProfile("gender", value)}
                     placeholder="Selecciona tu género"
                   />
@@ -626,7 +676,7 @@ export default function AdminUsersPage() {
                   <Input
                     label="Teléfono"
                     type="tel"
-                    value={editedUser.profile.phone}
+                    value={editedUser.profile?.phone || ""}
                     onChange={(e) => updateEditedUserProfile("phone", e.target.value)}
                     placeholder="+54 11 1234-5678"
                   />
@@ -634,7 +684,7 @@ export default function AdminUsersPage() {
                   <Input
                     label="País"
                     type="text"
-                    value={editedUser.profile.country}
+                    value={editedUser.profile?.country || ""}
                     onChange={(e) => updateEditedUserProfile("country", e.target.value)}
                     placeholder="Ej: Argentina"
                   />
@@ -642,7 +692,7 @@ export default function AdminUsersPage() {
                   <Input
                     label="Ciudad"
                     type="text"
-                    value={editedUser.profile.city}
+                    value={editedUser.profile?.city || ""}
                     onChange={(e) => updateEditedUserProfile("city", e.target.value)}
                     placeholder="Ej: Buenos Aires"
                   />
@@ -655,7 +705,7 @@ export default function AdminUsersPage() {
                   <Input
                     label="Años de Experiencia"
                     type="number"
-                    value={editedUser.profile.experienceYears}
+                    value={editedUser.profile?.experienceYears || ""}
                     onChange={(e) => updateEditedUserProfile("experienceYears", e.target.value)}
                     placeholder="Ej: 5"
                   />
@@ -663,7 +713,7 @@ export default function AdminUsersPage() {
                   <Input
                     label="Título"
                     type="text"
-                    value={editedUser.profile.degreeTitle}
+                    value={editedUser.profile?.degreeTitle || ""}
                     onChange={(e) => updateEditedUserProfile("degreeTitle", e.target.value)}
                     placeholder="Ej: Ingeniero en Sistemas"
                   />
@@ -671,7 +721,7 @@ export default function AdminUsersPage() {
                   <Input
                     label="Institución"
                     type="text"
-                    value={editedUser.profile.institution}
+                    value={editedUser.profile?.institution || ""}
                     onChange={(e) => updateEditedUserProfile("institution", e.target.value)}
                     placeholder="Ej: Universidad de Buenos Aires"
                   />
@@ -679,7 +729,7 @@ export default function AdminUsersPage() {
                   <Select
                     label="Nivel de Inglés"
                     options={englishLevelOptions}
-                    value={editedUser.profile.englishLevel}
+                    value={editedUser.profile?.englishLevel || ""}
                     onChange={(value) => updateEditedUserProfile("englishLevel", value)}
                     placeholder="Selecciona tu nivel"
                   />
@@ -692,7 +742,7 @@ export default function AdminUsersPage() {
                   <Input
                     label="Salario Actual (USD/año)"
                     type="number"
-                    value={editedUser.profile.currentSalary}
+                    value={editedUser.profile?.currentSalary || ""}
                     onChange={(e) => updateEditedUserProfile("currentSalary", e.target.value)}
                     placeholder="Ej: 50000"
                   />
@@ -700,7 +750,7 @@ export default function AdminUsersPage() {
                   <Input
                     label="Salario Pretendido (USD/año)"
                     type="number"
-                    value={editedUser.profile.expectedSalary}
+                    value={editedUser.profile?.expectedSalary || ""}
                     onChange={(e) => updateEditedUserProfile("expectedSalary", e.target.value)}
                     placeholder="Ej: 60000"
                   />
@@ -722,7 +772,7 @@ export default function AdminUsersPage() {
                     </div>
 
                     <div className={styles.groupsList}>
-                      {editedUser.searchConfig.searchGroups.map((group, index) => (
+                      {editedUser.searchConfig?.searchGroups?.map((group, index) => (
                         <div key={group.id} className={styles.groupCard}>
                           <div className={styles.groupHeader}>
                             <input
@@ -732,7 +782,7 @@ export default function AdminUsersPage() {
                               onChange={(e) => updateEditedUserSearchGroup(group.id, "jobTitle", e.target.value)}
                               className={styles.jobTitleInput}
                             />
-                            {editedUser.searchConfig.searchGroups.length > 1 && (
+                            {editedUser.searchConfig && editedUser.searchConfig.searchGroups.length > 1 && (
                               <button
                                 type="button"
                                 onClick={() => removeSearchGroupFromEditedUser(group.id)}
@@ -779,7 +829,7 @@ export default function AdminUsersPage() {
                       <Select
                         label="Países"
                         options={countryOptions}
-                        value={editedUser.searchConfig.countryFilter}
+                        value={editedUser.searchConfig?.countryFilter || ""}
                         onChange={(value) => updateEditedUserSearchConfig("countryFilter", value)}
                         fullWidth
                       />
@@ -787,7 +837,7 @@ export default function AdminUsersPage() {
                       <Select
                         label="Tipo de Empleo"
                         options={workTypeOptions}
-                        value={editedUser.searchConfig.workType}
+                        value={editedUser.searchConfig?.workType || ""}
                         onChange={(value) => updateEditedUserSearchConfig("workType", value)}
                         fullWidth
                       />
@@ -795,7 +845,7 @@ export default function AdminUsersPage() {
                       <Select
                         label="Stack Tecnológico"
                         options={techStackOptions}
-                        value={editedUser.searchConfig.techStackFilter}
+                        value={editedUser.searchConfig?.techStackFilter || ""}
                         onChange={(value) => updateEditedUserSearchConfig("techStackFilter", value)}
                         fullWidth
                       />
@@ -805,7 +855,7 @@ export default function AdminUsersPage() {
                           id="requiresEnglish"
                           label="Filtrar por inglés"
                           description="Solo ofertas que requieran inglés"
-                          checked={editedUser.searchConfig.requiresEnglish}
+                          checked={editedUser.searchConfig?.requiresEnglish || false}
                           onChange={(e) => updateEditedUserSearchConfig("requiresEnglish", e.target.checked)}
                         />
                       </div>
@@ -815,7 +865,7 @@ export default function AdminUsersPage() {
                           id="acceptUnpaidInternships"
                           label="Pasantías no pagas"
                           description="Incluir ofertas sin remuneración"
-                          checked={editedUser.searchConfig.acceptUnpaidInternships}
+                          checked={editedUser.searchConfig?.acceptUnpaidInternships || false}
                           onChange={(e) => updateEditedUserSearchConfig("acceptUnpaidInternships", e.target.checked)}
                         />
                       </div>
@@ -830,7 +880,7 @@ export default function AdminUsersPage() {
                   <Input
                     label="Días Restantes"
                     type="number"
-                    value={editedUser.daysRemaining.toString()}
+                    value={editedUser.daysRemaining?.toString() || ""}
                     onChange={(e) =>
                       setEditedUser({ ...editedUser, daysRemaining: Number.parseInt(e.target.value) || 0 })
                     }
@@ -850,7 +900,7 @@ export default function AdminUsersPage() {
                   <Select
                     label="Sector"
                     options={sectorSelectOptions}
-                    value={editedUser.sector}
+                    value={editedUser.sector || ""}
                     onChange={(value) => setEditedUser({ ...editedUser, sector: value })}
                     placeholder="Selecciona el sector"
                   />

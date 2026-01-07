@@ -11,15 +11,12 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
  */
 export async function submitFeedback(feedbackData: FeedbackRequest): Promise<FeedbackResponse> {
   try {
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-    };
-
     // Agregar token si está disponible (opcional para feedback)
     const authHeaders = getAuthHeaders();
-    if (authHeaders.Authorization) {
-      headers.Authorization = authHeaders.Authorization;
-    }
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...(authHeaders && typeof authHeaders === 'object' && !Array.isArray(authHeaders) ? authHeaders : {}),
+    };
 
     const response = await fetch(`${API_URL}/api/feedback`, {
       method: 'POST',
