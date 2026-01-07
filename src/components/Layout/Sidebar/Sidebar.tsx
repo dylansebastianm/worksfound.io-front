@@ -16,7 +16,7 @@ import {
   IoChevronDownOutline,
   IoSettingsOutline,
 } from "react-icons/io5"
-import { logout } from "@/lib/auth"
+import { logout, isAdmin } from "@/lib/auth"
 import styles from "./Sidebar.module.css"
 
 interface NavItem {
@@ -59,6 +59,11 @@ const navItems: NavItem[] = [
     icon: <IoChatbubblesOutline />,
   },
   {
+    label: "Reclutamiento",
+    href: "/recruitment",
+    icon: <IoPersonOutline />,
+  },
+  {
     label: "Admin",
     icon: <IoSettingsOutline />,
     submenu: [
@@ -72,13 +77,32 @@ const navItems: NavItem[] = [
         href: "/admin/users",
         icon: <IoPersonOutline />,
       },
+      {
+        label: "Logs",
+        href: "/admin/logs",
+        icon: <IoDocumentTextOutline />,
+      },
+      {
+        label: "Incidencias globales",
+        href: "/admin/incidents-global",
+        icon: <IoDocumentTextOutline />,
+      },
+      {
+        label: "Ofertas no aplicadas",
+        href: "/admin/incidents-offers",
+        icon: <IoDocumentTextOutline />,
+      },
+      {
+        label: "CV Prompt",
+        href: "/admin/cv-prompt",
+        icon: <IoChatbubblesOutline />,
+      },
     ],
   },
   {
     label: "Generador de CV",
     href: "/curriculum-generator",
     icon: <IoDocumentTextOutline />,
-    disabled: true,
   },
 ]
 
@@ -86,6 +110,7 @@ export const Sidebar: React.FC = () => {
   const pathname = usePathname()
   const router = useRouter()
   const [expandedMenus, setExpandedMenus] = useState<string[]>(["Admin"])
+  const userIsAdmin = isAdmin()
 
   const handleLogout = () => {
     logout()
@@ -115,6 +140,11 @@ export const Sidebar: React.FC = () => {
 
       <nav className={styles.nav}>
         {navItems.map((item) => {
+          // Ocultar menú Admin si el usuario no es administrador
+          if (item.label === "Admin" && !userIsAdmin) {
+            return null
+          }
+
           if (item.submenu) {
             const isExpanded = expandedMenus.includes(item.label)
             const hasActiveSubmenu = isSubmenuActive(item.submenu)

@@ -1,0 +1,17 @@
+.infoIcon {
+  position: absolute;
+  top: var(--spacing-sm);
+  right: var(--spacing-sm);
+  color: #999;
+  cursor: help;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+  z-index: 1;
+}
+
+.infoIcon:hover {
+  color: var(--primary-color);
+}
+

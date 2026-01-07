@@ -1,6 +1,6 @@
 "use client"
 
-export const LoadingSpinner = () => {
+const LoadingSpinner = () => {
   return (
     <div className="spinner-overlay">
       <div className="spinner"></div>
@@ -36,3 +36,5 @@ export const LoadingSpinner = () => {
     </div>
   )
 }
+
+export { LoadingSpinner }

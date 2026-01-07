@@ -261,6 +261,11 @@
   color: var(--text-primary);
 }
 
+.portalInactive {
+  filter: grayscale(100%) opacity(0.5);
+  pointer-events: none;
+}
+
 .portalApps {
   font-size: 0.875rem;
   color: var(--text-secondary);
@@ -292,6 +297,7 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   padding: var(--spacing-xl);
+  position: relative;
 }
 
 /* Added styles for comparison header with icon */
@@ -358,6 +364,7 @@
   padding: var(--spacing-xl);
   display: flex;
   gap: var(--spacing-xl);
+  position: relative;
 }
 
 .savingItem {
@@ -366,6 +373,7 @@
   flex-direction: column;
   align-items: center;
   text-align: center;
+  position: relative;
 }
 
 .savingTitle {

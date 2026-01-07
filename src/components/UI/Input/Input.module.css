@@ -2,6 +2,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--spacing-xs);
+  position: relative; /* para posicionar el errorText en absolute */
 }
 
 .fullWidth {
@@ -14,7 +15,27 @@
   color: var(--text-primary);
 }
 
+.inputContainer {
+  position: relative;
+  width: 100%;
+}
+
+.iconWrapper {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-secondary);
+  font-size: 18px;
+  pointer-events: none;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .input {
+  width: 100%;
   padding: 10px 14px;
   font-size: 16px;
   /* Using neutral gray border, orange only on focus */
@@ -25,6 +46,10 @@
   transition: all var(--transition-fast);
   height: 40px;
   box-sizing: border-box;
+}
+
+.inputWithIcon {
+  padding-left: 40px;
 }
 
 .input:focus {
@@ -53,8 +78,17 @@
 }
 
 .errorText {
-  font-size: 14px;
+  position: absolute;
+  left: 0;
+  top: calc(100% + 2px);
+  font-size: 12px;
+  line-height: 14px;
   color: var(--error);
+  pointer-events: none;
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Responsive */

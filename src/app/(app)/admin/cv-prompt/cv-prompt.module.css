@@ -1,0 +1,528 @@
+.container {
+    padding: 2rem;
+  }
+  
+  .header {
+    margin-bottom: 2rem;
+  }
+  
+  .title {
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+  }
+  
+  .subtitle {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+  }
+  
+  /* Table Styles */
+  .tableCard {
+    background: white;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    padding: 1.5rem;
+  }
+  
+  .tableHeader {
+    display: grid;
+    grid-template-columns: 2fr 1.2fr 1.2fr 1fr 0.8fr;
+    gap: 1rem;
+    padding: 0.75rem 1rem;
+    background: var(--surface);
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-radius: var(--radius-md);
+    margin-bottom: 0.5rem;
+  }
+  
+  .tableBody {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .tableRow {
+    display: grid;
+    grid-template-columns: 2fr 1.2fr 1.2fr 1fr 0.8fr;
+    gap: 1rem;
+    padding: 1rem;
+    border-bottom: 1px solid var(--border);
+    align-items: center;
+    transition: var(--transition-fast);
+  }
+  
+  .tableRow:hover {
+    background: var(--surface);
+  }
+  
+  .tableRow:last-child {
+    border-bottom: none;
+  }
+  
+  .sortableHeader {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    cursor: pointer;
+    user-select: none;
+  }
+  
+  .sortableHeader:hover {
+    color: var(--primary-color);
+  }
+  
+  .sortableHeader:hover .sortIconInactive {
+    color: var(--primary-color);
+  }
+  
+  .sortIconActive {
+    color: var(--primary-color);
+  }
+  
+  .sortIconInactive {
+    color: #9ca3af;
+    transition: var(--transition-fast);
+  }
+  
+  .columnName {
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+  
+  .columnDate {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+  }
+  
+  .columnStatus {
+    display: flex;
+    justify-content: center;
+  }
+  
+  .statusBadge {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 8px 16px;
+    border-radius: var(--radius-md);
+    font-size: 0.85rem;
+    font-weight: 500;
+    border: 2px solid var(--border);
+    cursor: pointer;
+    transition: var(--transition-fast);
+    background: white;
+    color: var(--text-secondary);
+  }
+  
+  .statusBadge:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+  }
+  
+  .statusActive {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+  }
+  
+  .statusActive:hover {
+    background: var(--primary-hover);
+    border-color: var(--primary-hover);
+  }
+  
+  .statusInactive {
+    background: white;
+    color: var(--text-secondary);
+    border-color: var(--border);
+  }
+  
+  .statusInactive:hover {
+    background: var(--surface);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+  }
+  
+  .radioIndicator {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 2px solid currentColor;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: var(--transition-fast);
+  }
+  
+  .statusActive .radioIndicator {
+    border-color: white;
+    background: white;
+  }
+  
+  .statusInactive .radioIndicator {
+    border-color: var(--text-secondary);
+    background: white;
+  }
+  
+  .statusInactive:hover .radioIndicator {
+    border-color: var(--primary-color);
+  }
+  
+  .radioDot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--primary-color);
+  }
+  
+  .columnActions {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+  }
+  
+  .actionButton {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition-fast);
+    color: var(--text-secondary);
+  }
+  
+  .actionButton:hover {
+    background: var(--surface);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+  }
+  
+  /* Modal Styles */
+  .modalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: var(--z-modal);
+    padding: 2rem;
+  }
+  
+  .modal {
+    background: white;
+    border-radius: var(--radius-lg);
+    max-width: 900px;
+    width: 100%;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--shadow-lg);
+  }
+  
+  .modalHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: white;
+    z-index: 10;
+    flex-shrink: 0;
+  }
+  
+  .modalHeader h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+  
+  .closeButton {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-secondary);
+    padding: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-md);
+    transition: var(--transition-fast);
+  }
+  
+  .closeButton:hover {
+    background: var(--surface);
+    color: var(--text-primary);
+  }
+  
+  .modalContent {
+    padding: 1.5rem;
+    overflow-y: auto;
+    flex: 1;
+  }
+  
+  /* Added row layout for side-by-side editor with arrows */
+  /* Fixed row layout to prevent arrows from wrapping and align textareas at top */
+  .editorRow {
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-start;
+  }
+  
+  .editorColumn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 400px;
+    align-items: stretch;
+  }
+  
+  .arrowsContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 1rem;
+    padding: 0 0.5rem;
+    flex-shrink: 0;
+    align-self: flex-start;
+    padding-top: 2.75rem;
+    height: fit-content;
+  }
+  
+  .arrowButton {
+    background: white;
+    border: 2px solid var(--primary-color);
+    border-radius: 50%;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: var(--transition-fast);
+    color: var(--primary-color);
+  }
+  
+  .arrowButton:hover:not(:disabled) {
+    background: var(--primary-color);
+    color: white;
+    transform: scale(1.1);
+  }
+  
+  .arrowButton:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    border-color: var(--text-secondary);
+    color: var(--text-secondary);
+  }
+  
+  .arrowDivider {
+    width: 2px;
+    height: 40px;
+    background: linear-gradient(to bottom, var(--primary-color), transparent);
+  }
+  
+  .section {
+    margin-bottom: 2rem;
+  }
+  
+  .section:last-child {
+    margin-bottom: 0;
+  }
+  
+  .sectionTitle {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.75rem;
+    display: block;
+    flex-shrink: 0;
+  }
+  
+  .promptTextarea {
+    width: 100%;
+    padding: 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    font-size: 0.95rem;
+    font-family: inherit;
+    flex: 1;
+    resize: vertical;
+    min-height: 200px;
+    transition: var(--transition-fast);
+  }
+  
+  .promptTextarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(255, 99, 0, 0.1);
+  }
+  
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 2rem 0;
+  }
+  
+  .reformulateHeader {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-shrink: 0;
+    margin-bottom: 0.75rem;
+    line-height: 1;
+  }
+  
+  .reformulateHeader .sectionTitle {
+    margin-bottom: 0;
+  }
+  
+  .openaiIcon {
+    color: var(--primary-color);
+    font-size: 1.5rem;
+    animation: pulse 2s ease-in-out infinite;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  
+  @keyframes pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.6;
+    }
+  }
+  
+  .reformulateDescription {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+  }
+  
+  .reformulateInput {
+    width: 100%;
+    padding: 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    font-size: 0.95rem;
+    font-family: inherit;
+    resize: vertical;
+    margin-bottom: 1rem;
+    transition: var(--transition-fast);
+    flex: 1;
+    min-height: 200px;
+    margin-top: 0;
+  }
+  
+  .reformulateInput:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(255, 99, 0, 0.1);
+  }
+  
+  .reformulateInput:disabled {
+    background: var(--surface);
+    color: var(--text-secondary);
+    cursor: not-allowed;
+  }
+  
+  .reformulateButton {
+    width: 100%;
+  }
+  
+  .spinning {
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  
+  /* Made result box take full height to match left textarea */
+  .reformulatedResult {
+    background: rgba(255, 99, 0, 0.05);
+    border: 2px solid var(--primary-color);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 350px;
+  }
+  
+  .resultHeader {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+  
+  .resultIcon {
+    color: var(--primary-color);
+    font-size: 1.25rem;
+  }
+
+  .resultLabel {
+    font-weight: 600;
+    color: var(--primary-color);
+    font-size: 0.95rem;
+  }
+  
+  .resultContent {
+    background: white;
+    padding: 1rem;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--primary-color);
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    margin-bottom: 1rem;
+    overflow-y: auto;
+    flex: 1;
+    max-height: 250px;
+  }
+  
+  .resultActions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
+  }
+  
+  .modalFooter {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    padding: 1.5rem;
+    border-top: 1px solid var(--border);
+    position: sticky;
+    bottom: 0;
+    background: white;
+    z-index: 10;
+    flex-shrink: 0;
+  }
+  

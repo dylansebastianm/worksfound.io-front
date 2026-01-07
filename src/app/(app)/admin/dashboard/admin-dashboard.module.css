@@ -21,6 +21,12 @@
   font-size: 0.95rem;
 }
 
+.buttonGroup {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
 .ingestButton {
   display: flex;
   align-items: center;
@@ -60,6 +66,30 @@
     opacity: 0.7;
   }
 }
+
+.configButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  color: var(--primary-color);
+  border: 2px solid var(--primary-color);
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  font-size: 1.25rem;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  box-shadow: var(--shadow-sm);
+}
+
+.configButton:hover {
+  background: var(--primary-color);
+  color: white;
+  box-shadow: var(--shadow-md);
+}
+
+/* Removed all modal-related styles - now handled by IngestionConfigModal component */
 
 .usersGrid {
   display: grid;
@@ -230,6 +260,15 @@
   gap: 0.75rem;
 }
 
+.portalInactive {
+  opacity: 0.55;
+  filter: grayscale(1);
+}
+
+.portalInactive .portalName {
+  color: var(--text-secondary);
+}
+
 .portalName {
   font-weight: 600;
   color: var(--text-primary);
@@ -263,8 +302,12 @@
     gap: 1rem;
   }
 
-  .ingestButton {
+  .buttonGroup {
     width: 100%;
+  }
+
+  .ingestButton {
+    flex: 1;
     justify-content: center;
   }
 

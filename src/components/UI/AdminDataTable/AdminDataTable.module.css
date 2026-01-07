@@ -1,0 +1,127 @@
+.tableCard {
+  background: white;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  padding: 1.5rem;
+}
+
+.gridTable {
+  display: grid;
+  grid-template-columns: var(--columns);
+  column-gap: 1rem;
+  row-gap: 0;
+}
+
+.headerRow {
+  display: grid;
+  grid-template-columns: var(--columns);
+  column-gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--surface);
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-radius: var(--radius-md);
+  margin-bottom: 0.5rem;
+}
+
+.dataRow {
+  display: contents;
+}
+
+.cell {
+  min-width: 0; /* clave para que ellipsis funcione en grid */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.headerCell {
+  padding: 0;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  align-self: center;
+}
+
+.bodyCell {
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--border);
+  align-self: center;
+}
+
+.sortableHeader {
+  cursor: pointer;
+  user-select: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  transition: var(--transition-fast);
+}
+
+.sortableHeader:hover {
+  color: var(--primary-color);
+}
+
+.sortableHeader:hover .sortIconInactive {
+  color: var(--primary-color);
+}
+
+.sortIconInactive {
+  display: flex;
+  align-items: center;
+  color: #9ca3af;
+  transition: var(--transition-fast);
+}
+
+.sortIconActive {
+  display: flex;
+  align-items: center;
+  color: var(--primary-color);
+}
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.link {
+  color: var(--primary-color);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  max-width: 100%;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+.linkText {
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.linkIcon {
+  flex: 0 0 auto;
+}
+
+.emptyState {
+  padding: 2rem 0;
+  color: var(--text-secondary);
+}
+
+
+

@@ -1,29 +1,41 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Input } from "@/components/UI/Input/Input"
 import { Select } from "@/components/UI/Select/Select"
+import SelectWithSearch from "@/components/UI/SelectWithSearch/SelectWithSearch"
 import { FileUpload } from "@/components/UI/FileUpload/FileUpload"
+import { FileCard } from "@/components/UI/FileCard/FileCard"
 import { Button } from "@/components/UI/Button/Button"
-import { LoadingSpinner } from "@/components/UI/LoadingSpinner/LoadingSpiner"
+import { LoadingSpinner } from "@/components/UI/LoadingSpinner/LoadingSpinner"
 import { Alert } from "@/components/UI/Alert/Alert"
+import { getUserProfile, updateUserProfile, updateUserSkills, UserProfile } from "@/lib/users"
+import { getUserCVs, createUserCV, deleteUserCV, UserCV } from "@/lib/cv"
+import { useSkillsStore } from "@/store/skillsStore"
+import { FiTrash2, FiPlus } from "react-icons/fi"
+import { BsLinkedin, BsGithub } from "react-icons/bs"
 import styles from "./profile.module.css"
 
 export default function ProfilePage() {
   const [formData, setFormData] = useState({
-    age: "28",
-    gender: "male",
-    experienceYears: "5",
-    currentSalary: "85000",
-    expectedSalary: "110000",
-    degreeTitle: "Ingeniero en Sistemas",
-    institution: "Universidad de Buenos Aires",
-    englishLevel: "c1",
-    country: "Argentina",
-    city: "Buenos Aires",
-    phone: "+54 11 5555-1234",
+    age: "",
+    gender: "",
+    experienceYears: "",
+    currentSalary: "",
+    expectedSalary: "",
+    degreeTitle: "",
+    institution: "",
+    educationTitle: "",
+    englishLevel: "",
+    country: "",
+    city: "",
+    streetAddress: "",
+    postalCode: "",
+    phone: "",
     jobChangeReason: "",
+    linkedinUrl: "",
+    githubUrl: "",
   })
 
   const [editMode, setEditMode] = useState({
@@ -32,13 +44,105 @@ export default function ProfilePage() {
     experience: false,
     salary: false,
     documents: false,
+    skills: false,
   })
 
-  const [curriculum, setCurriculum] = useState<File | null>(null)
+  interface Skill {
+    id: number
+    skill_key: string
+    years: string
+  }
+
+  const [skills, setSkills] = useState<Skill[]>([])
+  const [skillsErrors, setSkillsErrors] = useState<Record<number, { skill_key?: string; years?: string }>>({})
+
+  const catalogSkills = useSkillsStore((s) => s.skills)
+  const loadSkills = useSkillsStore((s) => s.loadSkills)
+
+  const skillOptions = catalogSkills.map((s) => ({
+    value: s.skill_key,
+    label: s.name,
+  }))
+
+  const [cvs, setCvs] = useState<UserCV[]>([])
+  const [newCVFile, setNewCVFile] = useState<File | null>(null)
+  const [newCVName, setNewCVName] = useState("")
+  const [uploadingCV, setUploadingCV] = useState(false)
   const [coverLetter, setCoverLetter] = useState<File | null>(null)
+  const [educationCertificate, setEducationCertificate] = useState<File | null>(null)
 
   const [isLoading, setIsLoading] = useState(false)
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true)
   const [alert, setAlert] = useState<{ status: "success" | "error"; message: string } | null>(null)
+
+  // Cargar perfil al montar el componente
+  useEffect(() => {
+    // Asegurar catálogo global de skills (si no fue hidratado por SSR)
+    loadSkills()
+
+    const loadProfile = async () => {
+      setIsLoadingProfile(true)
+      try {
+        const response = await getUserProfile()
+        if (response.success && response.profile) {
+          const profile = response.profile
+          setFormData({
+            age: profile.age || "",
+            gender: profile.gender || "",
+            experienceYears: profile.experienceYears || "",
+            currentSalary: profile.currentSalary || "",
+            expectedSalary: profile.expectedSalary || "",
+            degreeTitle: profile.degreeTitle || "",
+            institution: profile.institution || "",
+            educationTitle: profile.educationTitle || "",
+            englishLevel: profile.englishLevel || "",
+            country: profile.country || "",
+            city: profile.city || "",
+            streetAddress: profile.streetAddress || "",
+            postalCode: profile.postalCode || "",
+            phone: profile.phone || "",
+            jobChangeReason: profile.jobChangeReason || "",
+            linkedinUrl: profile.linkedinUrl || "",
+            githubUrl: profile.githubUrl || "",
+          })
+
+          // Cargar skills del usuario (si vienen del backend)
+          if (Array.isArray(profile.skills)) {
+            setSkills(
+              profile.skills.map((s, idx) => ({
+                id: idx + 1,
+                skill_key: s.skill_key || "",
+                years: s.years || "",
+              }))
+            )
+          } else {
+            setSkills([])
+          }
+          
+          // Cargar CVs del usuario
+          const cvsResponse = await getUserCVs()
+          if (cvsResponse.success && cvsResponse.cvs) {
+            setCvs(cvsResponse.cvs)
+          }
+        } else {
+          setAlert({
+            status: "error",
+            message: response.error || "Error al cargar el perfil",
+          })
+        }
+      } catch (error) {
+        console.error("Error loading profile:", error)
+        setAlert({
+          status: "error",
+          message: "Error al cargar el perfil",
+        })
+      } finally {
+        setIsLoadingProfile(false)
+      }
+    }
+
+    loadProfile()
+  }, [])
 
   const handleChange = (name: string, value: string) => {
     setFormData((prev) => ({ ...prev, [name]: value }))
@@ -51,24 +155,212 @@ export default function ProfilePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
+    setAlert(null)
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 2000))
+    try {
+      const wasSkillsEditing = editMode.skills
 
-    setIsLoading(false)
-    setAlert({
-      status: "success",
-      message: "Los datos han sido actualizados correctamente",
+      if (wasSkillsEditing) {
+        // Validación: si hay una skill, years es requerido y viceversa.
+        const nextErrors: Record<number, { skill_key?: string; years?: string }> = {}
+
+        for (const s of skills) {
+          const key = (s.skill_key || "").trim()
+          const years = (s.years || "").trim()
+
+          // Si la fila está vacía, ignorar
+          if (!key && !years) continue
+
+          if (!key) {
+            nextErrors[s.id] = { ...(nextErrors[s.id] || {}), skill_key: "Requerido" }
+          }
+
+          if (!years) {
+            nextErrors[s.id] = { ...(nextErrors[s.id] || {}), years: "Requerido" }
+          } else {
+            const n = Number(years)
+            if (!Number.isInteger(n) || n < 0) {
+              nextErrors[s.id] = { ...(nextErrors[s.id] || {}), years: "Debe ser un entero (0 o más)" }
+            }
+          }
+        }
+
+        setSkillsErrors(nextErrors)
+
+        if (Object.keys(nextErrors).length > 0) {
+          setIsLoading(false)
+          setAlert({
+            status: "error",
+            message: "Completa todos los campos de Habilidades Técnicas (tecnología y años).",
+          })
+          return
+        }
+      }
+
+      // Actualizar los datos del perfil
+      const response = await updateUserProfile({
+        age: formData.age,
+        gender: formData.gender,
+        experienceYears: formData.experienceYears,
+        currentSalary: formData.currentSalary,
+        expectedSalary: formData.expectedSalary,
+        degreeTitle: formData.degreeTitle,
+        institution: formData.institution,
+        educationTitle: formData.educationTitle,
+        englishLevel: formData.englishLevel,
+        country: formData.country,
+        city: formData.city,
+        streetAddress: formData.streetAddress,
+        postalCode: formData.postalCode,
+        phone: formData.phone,
+        jobChangeReason: formData.jobChangeReason,
+        linkedinUrl: formData.linkedinUrl,
+        githubUrl: formData.githubUrl,
+      })
+
+      // Si se están editando skills, persistirlas en user_skills
+      let skillsSaveOk = true
+      let skillsSaveError: string | null = null
+      if (response.success && wasSkillsEditing) {
+        const payloadSkills = skills
+          .map((s) => ({ skill_key: (s.skill_key || "").trim(), years: (s.years || "").trim() }))
+          .filter((s) => s.skill_key !== "")
+
+        const skillsResp = await updateUserSkills(payloadSkills)
+        if (!skillsResp.success) {
+          skillsSaveOk = false
+          skillsSaveError = skillsResp.error || "Error al actualizar skills"
+        }
+      }
+
+      if (response.success && skillsSaveOk) {
+        setAlert({
+          status: "success",
+          message: response.message || "Los datos han sido actualizados correctamente",
+        })
+
+        // Reset all edit modes, including 'skills'
+        setEditMode({
+          personal: false,
+          additional: false,
+          experience: false,
+          salary: false,
+          documents: false,
+          skills: false,
+        })
+      } else if (response.success && !skillsSaveOk) {
+        setAlert({
+          status: "error",
+          message: skillsSaveError || "Error al actualizar skills",
+        })
+      } else {
+        setAlert({
+          status: "error",
+          message: response.error || "Error al actualizar el perfil",
+        })
+      }
+    } catch (error) {
+      console.error("Error updating profile:", error)
+      setAlert({
+        status: "error",
+        message: "Error al actualizar el perfil",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleUploadCV = async () => {
+    if (!newCVFile) {
+      setAlert({
+        status: "error",
+        message: "Por favor selecciona un archivo",
+      })
+      return
+    }
+
+    setUploadingCV(true)
+    setAlert(null)
+
+    try {
+      const response = await createUserCV(newCVFile, newCVName || undefined)
+      if (response.success && response.cv) {
+        setCvs([...cvs, response.cv])
+        setNewCVFile(null)
+        setNewCVName("")
+        setAlert({
+          status: "success",
+          message: "CV subido exitosamente",
+        })
+      } else {
+        setAlert({
+          status: "error",
+          message: response.error || "Error al subir el CV",
+        })
+      }
+    } catch (error) {
+      console.error("Error uploading CV:", error)
+      setAlert({
+        status: "error",
+        message: "Error al subir el CV",
+      })
+    } finally {
+      setUploadingCV(false)
+    }
+  }
+
+  const handleDeleteCV = async (cvId: number) => {
+    if (!confirm("¿Estás seguro de que deseas eliminar este CV?")) {
+      return
+    }
+
+    setIsLoading(true)
+    try {
+      const response = await deleteUserCV(cvId)
+      if (response.success) {
+        setCvs(cvs.filter((cv) => cv.id !== cvId))
+        setAlert({
+          status: "success",
+          message: "CV eliminado exitosamente",
+        })
+      } else {
+        setAlert({
+          status: "error",
+          message: response.error || "Error al eliminar el CV",
+        })
+      }
+    } catch (error) {
+      console.error("Error deleting CV:", error)
+      setAlert({
+        status: "error",
+        message: "Error al eliminar el CV",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const addSkill = () => {
+    const newId = skills.length > 0 ? Math.max(...skills.map(s => s.id)) + 1 : 1
+    setSkills([...skills, { id: newId, skill_key: "", years: "" }])
+  }
+
+  const updateSkill = (id: number, field: "skill_key" | "years", value: string) => {
+    setSkills(skills.map(skill => 
+      skill.id === id ? { ...skill, [field]: value } : skill
+    ))
+    setSkillsErrors((prev) => {
+      if (!prev[id]) return prev
+      const next = { ...prev }
+      next[id] = { ...next[id] }
+      delete next[id][field]
+      if (!next[id].skill_key && !next[id].years) delete next[id]
+      return next
     })
+  }
 
-    // Reset all edit modes
-    setEditMode({
-      personal: false,
-      additional: false,
-      experience: false,
-      salary: false,
-      documents: false,
-    })
+  const removeSkill = (id: number) => {
+    setSkills(skills.filter(skill => skill.id !== id))
   }
 
   const genderOptions = [
@@ -102,6 +394,14 @@ export default function ProfilePage() {
     { value: "no-growth", label: "Sin posibilidad de crecimiento" },
     { value: "contract-termination", label: "Finalización de contrato sin renovación" },
   ]
+
+  if (isLoadingProfile) {
+    return (
+      <div className={styles.container}>
+        <LoadingSpinner />
+      </div>
+    )
+  }
 
   return (
     <div className={styles.container}>
@@ -149,23 +449,78 @@ export default function ProfilePage() {
               placeholder="+54 11 1234-5678"
               disabled={!editMode.personal}
             />
+          </div>
 
+          <div className={styles.addressSubsection}>
+            <h3 className={styles.subsectionTitle}>Dirección</h3>
+            <div className={styles.grid}>
+              <Input
+                label="Calle y número"
+                type="text"
+                value={formData.streetAddress}
+                onChange={(e) => handleChange("streetAddress", e.target.value)}
+                placeholder="Ej: Calle Libertad 1234"
+                disabled={!editMode.personal}
+              />
+
+              <Input
+                label="Ciudad"
+                type="text"
+                value={formData.city}
+                onChange={(e) => handleChange("city", e.target.value)}
+                placeholder="Ej: Buenos Aires"
+                disabled={!editMode.personal}
+              />
+
+              <Input
+                label="País"
+                type="text"
+                value={formData.country}
+                onChange={(e) => handleChange("country", e.target.value)}
+                placeholder="Ej: Argentina"
+                disabled={!editMode.personal}
+              />
+
+              <Input
+                label="CP"
+                type="text"
+                value={formData.postalCode}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/\D/g, '');
+                  handleChange("postalCode", value);
+                }}
+                placeholder="Ej: 1234"
+                disabled={!editMode.personal}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className={styles.section}>
+          <div className={styles.sectionHeader}>
+            <h2 className={styles.sectionTitle}>Redes Sociales</h2>
+            <button type="button" className={styles.editButton} onClick={() => toggleEditMode("personal")}>
+              {editMode.personal ? "Cancelar" : "Editar"}
+            </button>
+          </div>
+          <div className={styles.grid}>
             <Input
-              label="País"
-              type="text"
-              value={formData.country}
-              onChange={(e) => handleChange("country", e.target.value)}
-              placeholder="Ej: Argentina"
+              label="LinkedIn"
+              type="url"
+              value={formData.linkedinUrl}
+              onChange={(e) => handleChange("linkedinUrl", e.target.value)}
+              placeholder="https://www.linkedin.com/in/tu-perfil"
               disabled={!editMode.personal}
+              icon={<BsLinkedin style={{ color: '#0077B5' }} />}
             />
-
             <Input
-              label="Ciudad"
-              type="text"
-              value={formData.city}
-              onChange={(e) => handleChange("city", e.target.value)}
-              placeholder="Ej: Buenos Aires"
+              label="GitHub"
+              type="url"
+              value={formData.githubUrl}
+              onChange={(e) => handleChange("githubUrl", e.target.value)}
+              placeholder="https://github.com/tu-usuario"
               disabled={!editMode.personal}
+              icon={<BsGithub style={{ color: '#333' }} />}
             />
           </div>
         </div>
@@ -224,6 +579,15 @@ export default function ProfilePage() {
               disabled={!editMode.experience}
             />
 
+            <Input
+              label="Título"
+              type="text"
+              value={formData.educationTitle}
+              onChange={(e) => handleChange("educationTitle", e.target.value)}
+              placeholder="Ej: Certificado en Desarrollo Web"
+              disabled={!editMode.experience}
+            />
+
             <Select
               label="Nivel de Inglés"
               options={englishLevelOptions}
@@ -232,6 +596,68 @@ export default function ProfilePage() {
               placeholder="Selecciona tu nivel"
               disabled={!editMode.experience}
             />
+          </div>
+
+          <div className={styles.fullWidthUpload}>
+            <FileUpload
+              label="Certificado"
+              accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+              value={educationCertificate}
+              onChange={setEducationCertificate}
+              placeholder="Sube tu certificado (PDF, DOC, DOCX o imagen)"
+              disabled={!editMode.experience}
+            />
+          </div>
+        </div>
+
+        <div className={styles.section}>
+          <div className={styles.sectionHeader}>
+            <h2 className={styles.sectionTitle}>Habilidades Técnicas</h2>
+            <button type="button" className={styles.editButton} onClick={() => toggleEditMode("skills")}>
+              {editMode.skills ? "Cancelar" : "Editar"}
+            </button>
+          </div>
+          <div className={styles.skillsList}>
+            {skills.map((skill) => (
+              <div key={skill.id} className={styles.skillItem}>
+                <SelectWithSearch
+                  label="Stack / Tecnología"
+                  options={skillOptions}
+                  value={skill.skill_key}
+                  onChange={(value) => updateSkill(skill.id, "skill_key", value)}
+                  placeholder="Buscar tecnología..."
+                  disabled={!editMode.skills}
+                  error={skillsErrors[skill.id]?.skill_key}
+                  fullWidth
+                />
+                <Input
+                  label="Años de Experiencia"
+                  type="number"
+                  value={skill.years}
+                  onChange={(e) => updateSkill(skill.id, "years", e.target.value)}
+                  placeholder="Ej: 3"
+                  min={0}
+                  step={1}
+                  disabled={!editMode.skills}
+                  error={skillsErrors[skill.id]?.years}
+                />
+                {editMode.skills && (
+                  <button
+                    type="button"
+                    className={styles.removeSkillButton}
+                    onClick={() => removeSkill(skill.id)}
+                    aria-label="Eliminar habilidad"
+                  >
+                    <FiTrash2 />
+                  </button>
+                )}
+              </div>
+            ))}
+            {editMode.skills && (
+              <button type="button" className={styles.addSkillButton} onClick={addSkill}>
+                <FiPlus /> Agregar Habilidad
+              </button>
+            )}
           </div>
         </div>
 
@@ -271,14 +697,71 @@ export default function ProfilePage() {
             </button>
           </div>
           <div className={styles.uploads}>
-            <FileUpload
-              label="Curriculum Vitae (CV)"
-              accept=".pdf,.doc,.docx"
-              value={curriculum}
-              onChange={setCurriculum}
-              placeholder="Sube tu CV en formato PDF o DOC"
-              disabled={!editMode.documents}
-            />
+            {/* Lista de CVs existentes */}
+            {cvs.length > 0 && (
+              <div className={styles.cvsList}>
+                <h3 className={styles.cvsListTitle}>CVs subidos</h3>
+                {cvs.map((cv) => {
+                  // Extraer nombre del archivo de la URL si file_name es null
+                  let fileName = cv.file_name;
+                  if (!fileName && cv.cv_url) {
+                    try {
+                      const urlObj = new URL(cv.cv_url);
+                      const pathParts = urlObj.pathname.split('/');
+                      fileName = decodeURIComponent(pathParts[pathParts.length - 1]) || cv.cv_name;
+                    } catch (e) {
+                      fileName = cv.cv_name;
+                    }
+                  } else if (!fileName) {
+                    fileName = cv.cv_name;
+                  }
+                  
+                  return (
+                    <FileCard
+                      key={cv.id}
+                      fileName={fileName}
+                      fileUrl={cv.cv_url}
+                      showDownload={true}
+                      onDelete={editMode.documents ? () => handleDeleteCV(cv.id) : undefined}
+                    />
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Formulario para subir nuevo CV */}
+            {editMode.documents && (
+              <div className={styles.uploadNewCV}>
+                <h3 className={styles.uploadTitle}>Subir nuevo CV</h3>
+                <FileUpload
+                  label="Seleccionar archivo"
+                  accept=".pdf,.doc,.docx,.rtf,.txt"
+                  value={newCVFile}
+                  onChange={(file) => setNewCVFile(file)}
+                  placeholder="Sube tu CV en formato PDF o DOC"
+                  disabled={uploadingCV}
+                />
+                <Input
+                  label="Nombre del CV (opcional)"
+                  type="text"
+                  placeholder="Ej: CV Frontend Developer, CV Inglés..."
+                  value={newCVName}
+                  onChange={(e) => setNewCVName(e.target.value)}
+                  disabled={uploadingCV}
+                />
+                <p className={styles.uploadHint}>
+                  Si no especificas un nombre, se usará el nombre del archivo
+                </p>
+                <Button
+                  onClick={handleUploadCV}
+                  variant="primary"
+                  disabled={!newCVFile || uploadingCV}
+                  fullWidth
+                >
+                  {uploadingCV ? "Subiendo..." : "Subir CV"}
+                </Button>
+              </div>
+            )}
 
             <FileUpload
               label="Carta de Presentación"

@@ -2,7 +2,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 8px; /* Added gap for proper icon spacing */
   font-weight: 500;
   border: none;
   border-radius: var(--radius-md);
@@ -33,15 +33,17 @@
 }
 
 .secondary {
-  background-color: var(--surface);
-  color: var(--text-primary);
-  border: 1px solid var(--border);
+  background: linear-gradient(135deg, rgba(255, 99, 0, 0.05) 0%, rgba(255, 99, 0, 0.1) 100%);
+  color: var(--primary-color);
+  border: 2px solid var(--primary-color);
+  border-radius: 8px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .secondary:hover:not(:disabled) {
-  background-color: rgba(255, 99, 0, 0.15);
-  border-color: var(--primary-color);
-  color: var(--primary-color);
+  background: linear-gradient(135deg, rgba(255, 99, 0, 0.1) 0%, rgba(255, 99, 0, 0.15) 100%);
+  border-color: var(--primary-hover);
+  box-shadow: 0 4px 12px rgba(255, 99, 0, 0.2);
 }
 
 .outline {
@@ -68,18 +70,21 @@
   padding: 6px 12px;
   font-size: 14px;
   min-height: 32px;
+  line-height: 1; /* Added line-height for better vertical alignment */
 }
 
 .medium {
   padding: 10px 20px;
   font-size: 16px;
   min-height: 40px;
+  line-height: 1; /* Added line-height for better vertical alignment */
 }
 
 .large {
   padding: 14px 28px;
   font-size: 18px;
   min-height: 48px;
+  line-height: 1; /* Added line-height for better vertical alignment */
 }
 
 /* Full Width */

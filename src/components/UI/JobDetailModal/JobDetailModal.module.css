@@ -41,6 +41,7 @@
   font-weight: 600;
   color: var(--text-primary);
   margin: 0;
+  cursor: pointer;
 }
 
 .modalClose {
@@ -150,7 +151,59 @@
   font-size: 14px;
   line-height: 1.6;
   color: var(--text-primary);
-  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+/* Estilos para elementos HTML dentro de la descripción */
+.description h1,
+.description h2,
+.description h3,
+.description h4,
+.description h5,
+.description h6 {
+  margin: 16px 0 8px 0;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.description h2 {
+  font-size: 20px;
+}
+
+.description h3 {
+  font-size: 18px;
+}
+
+.description p {
+  margin: 8px 0;
+}
+
+.description ul,
+.description ol {
+  margin: 8px 0;
+  padding-left: 24px;
+}
+
+.description li {
+  margin: 4px 0;
+}
+
+.description strong,
+.description b {
+  font-weight: 600;
+}
+
+.description em,
+.description i {
+  font-style: italic;
+}
+
+.description br {
+  line-height: 1.5;
+}
+
+.description span {
+  display: inline;
 }
 
 .tagsBlock {

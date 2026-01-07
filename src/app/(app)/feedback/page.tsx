@@ -6,8 +6,9 @@ import { useState } from "react"
 import { Input } from "@/components/UI/Input/Input"
 import { Checkbox } from "@/components/UI/Checkbox/Checkbox"
 import { Button } from "@/components/UI/Button/Button"
-import { LoadingSpinner } from "@/components/UI/LoadingSpinner/LoadingSpiner"
+import { LoadingSpinner } from "@/components/UI/LoadingSpinner/LoadingSpinner"
 import { Alert } from "@/components/UI/Alert/Alert"
+import { submitFeedback } from "@/lib/feedback"
 import styles from "./feedback.module.css"
 
 export default function FeedbackPage() {
@@ -24,27 +25,49 @@ export default function FeedbackPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
+    setAlert(null)
 
-    // Simular envío
-    await new Promise((resolve) => setTimeout(resolve, 2000))
+    try {
+      const response = await submitFeedback({
+        name: formData.name,
+        email: formData.email,
+        subject: formData.subject,
+        message: formData.message,
+        isAnonymous: isAnonymous,
+      })
 
-    setIsLoading(false)
-    setAlert({
-      status: "success",
-      message: "Tu mensaje ha sido enviado correctamente. Te responderemos pronto.",
-    })
+      if (response.success) {
+        setAlert({
+          status: "success",
+          message: response.message || "Tu mensaje ha sido enviado correctamente. Te responderemos pronto.",
+        })
 
-    // Limpiar formulario
-    setFormData({
-      name: "",
-      email: "",
-      subject: "",
-      message: "",
-    })
-    setIsAnonymous(false)
+        // Limpiar formulario
+        setFormData({
+          name: "",
+          email: "",
+          subject: "",
+          message: "",
+        })
+        setIsAnonymous(false)
 
-    // Ocultar alerta después de 5 segundos
-    setTimeout(() => setAlert(null), 5000)
+        // Ocultar alerta después de 5 segundos
+        setTimeout(() => setAlert(null), 5000)
+      } else {
+        setAlert({
+          status: "error",
+          message: response.error || "Error al enviar el mensaje. Por favor, intenta nuevamente.",
+        })
+      }
+    } catch (error) {
+      console.error("Error submitting feedback:", error)
+      setAlert({
+        status: "error",
+        message: "Error al enviar el mensaje. Por favor, intenta nuevamente.",
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
