@@ -24,65 +24,17 @@ export async function translateCurriculum(
   request: TranslateCurriculumRequest
 ): Promise<TranslateCurriculumResponse> {
   try {
-    const apiKey = process.env.NEXT_PUBLIC_OPENAI_API_KEY;
-    
-    if (!apiKey) {
-      return {
-        success: false,
-        error: 'OpenAI API key no configurada',
-      };
-    }
-
     const { cvText, targetLanguage } = request;
-    const targetLangName = targetLanguage === 'es' ? 'español' : 'inglés';
-    const sourceLangName = targetLanguage === 'es' ? 'inglés' : 'español';
 
-    const prompt = `Eres un traductor profesional especializado en currículums vitae.
-
-Tu tarea es traducir el CV completo del ${sourceLangName} al ${targetLangName}, manteniendo EXACTAMENTE:
-- Todos los marcadores de sección (===SECTION_START:NAME=== y ===SECTION_END:NAME===)
-- El formato de cada sección
-- La estructura y organización
-- Los bullet points (•)
-- Los separadores (|)
-- El formato de fechas y números
-- Los nombres de empresas, instituciones y tecnologías (NO traducir nombres propios)
-- Las URLs (LinkedIn, emails, etc.)
-
-INSTRUCCIONES:
-1. Traduce SOLO el contenido textual, manteniendo toda la estructura intacta
-2. NO cambies ningún marcador de sección
-3. NO cambies el formato de las fechas (mantén el formato original)
-4. NO traduzcas nombres propios de empresas, instituciones, tecnologías o personas
-5. NO traduzcas URLs, emails o números de teléfono
-6. Traduce el contenido profesional manteniendo el tono y estilo apropiado para un CV
-7. Si el CV ya está en ${targetLangName}, devuélvelo sin cambios
-
-CV A TRADUCIR:
-${cvText}
-
-Devuelve ÚNICAMENTE el CV traducido, sin explicaciones ni comentarios adicionales.`;
-
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    // Llamar al endpoint del servidor que usa la API key de forma segura
+    const response = await fetch('/api/cv/translate', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
-        messages: [
-          {
-            role: 'system',
-            content: 'Eres un traductor profesional especializado en currículums vitae. Traduces contenido manteniendo toda la estructura y formato intactos.',
-          },
-          {
-            role: 'user',
-            content: prompt,
-          },
-        ],
-        temperature: 0.3, // Baja temperatura para traducción más precisa
-        max_tokens: 4000,
+        cvText,
+        targetLanguage,
       }),
     });
 
@@ -90,12 +42,12 @@ Devuelve ÚNICAMENTE el CV traducido, sin explicaciones ni comentarios adicional
       const errorData = await response.json();
       return {
         success: false,
-        error: `Error traduciendo CV: ${errorData.error?.message || 'Error desconocido'}`,
+        error: errorData.error || 'Error traduciendo CV',
       };
     }
 
     const data = await response.json();
-    const translatedCV = data.choices[0]?.message?.content;
+    const translatedCV = data.translatedCV;
 
     if (!translatedCV) {
       return {
