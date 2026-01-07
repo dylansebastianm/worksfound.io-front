@@ -16,6 +16,7 @@ import { SiOpenai } from "react-icons/si"
 import { Button } from "@/components/UI/Button/Button"
 import { LoadingSpinner } from "@/components/UI/LoadingSpinner/LoadingSpinner"
 import { Alert } from "@/components/UI/Alert/Alert"
+import { Input } from "@/components/UI/Input/Input"
 import { getAuthHeaders } from "@/lib/auth"
 import styles from "./cv-prompt.module.css"
 
@@ -381,20 +382,14 @@ Resultado esperado: Un CV que destaque inmediatamente las propuestas de valor ú
 
             <div className={styles.modalContent}>
               <div className={styles.section}>
-                <label className={styles.sectionTitle} style={{ display: 'block', marginBottom: '0.5rem' }}>Nombre del Prompt</label>
-                <input
+                <Input
+                  label="Nombre del Prompt"
                   type="text"
                   value={editedName}
                   onChange={(e) => setEditedName(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem',
-                    border: '1px solid var(--border)',
-                    borderRadius: 'var(--radius-md)',
-                    fontSize: '0.95rem',
-                    marginBottom: '1.5rem',
-                  }}
                   placeholder="Nombre del prompt"
+                  fullWidth
+                  style={{ marginBottom: '1.5rem' }}
                 />
               </div>
               <div className={styles.editorRow}>
