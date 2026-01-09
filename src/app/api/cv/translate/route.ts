@@ -30,6 +30,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Extraer la sección SKILLS antes de traducir para preservarla intacta
+    const skillsSectionPattern = /===SECTION_START:SKILLS===([\s\S]*?)===SECTION_END:SKILLS===/;
+    const skillsMatch = cvText.match(skillsSectionPattern);
+    const originalSkillsSection = skillsMatch ? skillsMatch[0] : null;
+
     const targetLangName = targetLanguage === 'es' ? 'español' : 'inglés';
     const sourceLangName = targetLanguage === 'es' ? 'inglés' : 'español';
 
@@ -45,7 +50,7 @@ Tu tarea es traducir el CV completo del ${sourceLangName} al ${targetLangName}, 
 - Los nombres de empresas, instituciones y tecnologías (NO traducir nombres propios)
 - Las URLs (LinkedIn, emails, etc.)
 
-INSTRUCCIONES:
+INSTRUCCIONES CRÍTICAS:
 1. Traduce SOLO el contenido textual, manteniendo toda la estructura intacta
 2. NO cambies ningún marcador de sección
 3. NO cambies el formato de las fechas (mantén el formato original)
@@ -53,6 +58,7 @@ INSTRUCCIONES:
 5. NO traduzcas URLs, emails o números de teléfono
 6. Traduce el contenido profesional manteniendo el tono y estilo apropiado para un CV
 7. Si el CV ya está en ${targetLangName}, devuélvelo sin cambios
+8. IMPORTANTE: La sección SKILLS debe mantenerse EXACTAMENTE como está, sin ninguna traducción. Los skills (React, JavaScript, Python, etc.) SIEMPRE deben permanecer en inglés y sin cambios. Solo traduce los nombres de las categorías (Frontend, Backend, etc.) si es necesario, pero NUNCA traduzcas los nombres de las tecnologías o herramientas.
 
 CV A TRADUCIR:
 ${cvText}
@@ -64,7 +70,7 @@ Devuelve ÚNICAMENTE el CV traducido, sin explicaciones ni comentarios adicional
       messages: [
         {
           role: 'system',
-          content: 'Eres un traductor profesional especializado en currículums vitae. Traduces contenido manteniendo toda la estructura y formato intactos.',
+          content: 'Eres un traductor profesional especializado en currículums vitae. Traduces contenido manteniendo toda la estructura y formato intactos. NUNCA traduces la sección SKILLS - los nombres de tecnologías deben permanecer siempre en inglés.',
         },
         {
           role: 'user',
@@ -75,7 +81,16 @@ Devuelve ÚNICAMENTE el CV traducido, sin explicaciones ni comentarios adicional
       max_tokens: 4000,
     });
 
-    const translatedCV = completion.choices[0]?.message?.content;
+    let translatedCV = completion.choices[0]?.message?.content;
+
+    // Si se extrajo la sección SKILLS original, reemplazar la traducida con la original
+    if (originalSkillsSection && translatedCV) {
+      const translatedSkillsPattern = /===SECTION_START:SKILLS===([\s\S]*?)===SECTION_END:SKILLS===/;
+      if (translatedCV.match(translatedSkillsPattern)) {
+        // Reemplazar la sección SKILLS traducida con la original
+        translatedCV = translatedCV.replace(translatedSkillsPattern, originalSkillsSection);
+      }
+    }
 
     if (!translatedCV) {
       return NextResponse.json(

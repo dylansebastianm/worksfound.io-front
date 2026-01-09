@@ -16,7 +16,7 @@ import styles from "./curriculum-generator.module.css"
 
 export default function CurriculumGeneratorPage() {
   const router = useRouter()
-  const [sector, setSector] = useState("")
+  const [sector, setSector] = useState("IT")
   const [puesto, setPuesto] = useState("")
   const [cvFile, setCvFile] = useState<File | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
@@ -151,7 +151,6 @@ export default function CurriculumGeneratorPage() {
           <Select
             label="Sector"
             options={[
-              { value: "", label: "Selecciona un sector" },
               { value: "IT", label: "IT" },
               { value: "Sales", label: "Sales" },
               { value: "Customer Experience", label: "Customer Experience" },
@@ -159,6 +158,7 @@ export default function CurriculumGeneratorPage() {
             value={sector}
             onChange={(value: string) => setSector(value)}
             placeholder="Selecciona un sector"
+            disabled={true}
           />
         </div>
 
