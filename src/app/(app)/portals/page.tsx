@@ -112,8 +112,23 @@ export default function PortalsPage() {
     try {
       const status = await checkLinkedInConnection(uid)
       setIsLinkedInConnected(status.is_connected || false)
+      
+      // Si no está conectado, limpiar estados de modal (evita que queden estados previos)
+      if (!status.is_connected) {
+        setShowSuccess(false)
+        setShowError(false)
+        setIsProcessingPin(false)
+        setRequiresVerification(false)
+        setUserEmail("")
+        setShowLinkedInForm(false)
+        setLoginSessionId(null)
+        setError("")
+      }
     } catch (err) {
       console.error("Error verificando conexión:", err)
+      // En caso de error, limpiar estados para evitar estados inconsistentes
+      setShowSuccess(false)
+      setShowError(false)
     } finally {
       setIsLoadingConnectionStatus(false)
     }
@@ -169,9 +184,15 @@ export default function PortalsPage() {
         // Desconectar
         handleDisconnect()
       } else {
-        // Mostrar formulario de vinculación
+        // Mostrar formulario de vinculación - limpiar todos los estados previos
         setShowLinkedInForm(true)
         setError("")
+        setShowError(false)
+        setShowSuccess(false)
+        setIsProcessingPin(false)
+        setRequiresVerification(false)
+        setUserEmail("")
+        setIsLoading(false)
       }
     }
   }
@@ -187,6 +208,11 @@ export default function PortalsPage() {
     console.log('🔵 Configurando loading state...')
     setIsLoading(true)
     setError("")
+    setShowError(false) // CRÍTICO: Resetear estado de error al iniciar nuevo login
+    setShowSuccess(false) // También resetear success por si acaso
+    setIsProcessingPin(false)
+    setRequiresVerification(false)
+    setUserEmail("")
     console.log('🔵 Llamando startLinkedInLogin...')
 
     try {
@@ -278,9 +304,11 @@ export default function PortalsPage() {
 
     const maxPollingTime = 360000 // 6 minutos máximo de polling total
     const maxErrorTime = 60000 // 1 minuto máximo de errores continuos
+    const maxConsecutiveErrors = 5 // Máximo de errores consecutivos antes de considerar backend caído
     const startTime = Date.now()
     let lastSuccessTime = Date.now()
     let firstErrorTime: number | null = null
+    let consecutiveErrors = 0 // Contador de errores consecutivos de conexión
     let pollCount = 0
 
     // Función que hace el check
@@ -301,11 +329,20 @@ export default function PortalsPage() {
             setShowLinkedInForm(false)
             setLoginSessionId(null)
             setShowError(false)
+            setShowSuccess(false)
+            setIsProcessingPin(false)
+            setRequiresVerification(false)
+            setUserEmail("")
+            setError("")
+            setIsLoading(false)
           }, 3000)
           return
         }
 
         const status = await checkLinkedInLoginStatus(sessionId)
+        
+        // Backend respondió correctamente → resetear contador de errores consecutivos
+        consecutiveErrors = 0
         
         console.log(`📊 Status recibido del backend (poll #${pollCount}):`, {
           success: status.success,
@@ -335,6 +372,7 @@ export default function PortalsPage() {
         if (status.success) {
           firstErrorTime = null
           lastSuccessTime = Date.now()
+          consecutiveErrors = 0 // Resetear contador de errores consecutivos
         }
         
         // IMPORTANTE: NO procesar errores aquí a menos que sean:
@@ -388,6 +426,9 @@ export default function PortalsPage() {
           if (!showLinkedInForm) {
             console.log('   ⚠️ Modal no estaba abierto, abriéndolo...')
             setShowLinkedInForm(true)
+            // Limpiar estados de error/success al abrir el modal
+            setShowError(false)
+            setShowSuccess(false)
           }
           
           // Establecer email PRIMERO
@@ -435,6 +476,11 @@ export default function PortalsPage() {
             setLoginSessionId(null)
             setUserEmail("")
             setShowError(false)
+            setShowSuccess(false)
+            setIsProcessingPin(false)
+            setRequiresVerification(false)
+            setError("")
+            setIsLoading(false)
           }, 3000) // Mostrar error por 3 segundos antes de cerrar
         } else if (status.status === "error") {
           // Error que mata Playwright (proceso finalizado) - mostrar error inmediatamente
@@ -452,17 +498,46 @@ export default function PortalsPage() {
             setLoginSessionId(null)
             setUserEmail("")
             setShowError(false)
+            setShowSuccess(false)
+            setIsProcessingPin(false)
+            setRequiresVerification(false)
+            setError("")
+            setIsLoading(false)
           }, 3000) // Mostrar error por 3 segundos antes de cerrar
         } else {
           // Estados desconocidos o no manejados → seguir esperando
           console.log(`⏳ Estado no manejado: ${status.status} - Continuando polling... (próxima verificación en 2s)`)
         }
       } catch (err) {
-        // Errores de conexión temporales - NO mostrar error, solo continuar polling
-        // El error solo se mostrará cuando se cumpla el timeout de 6 minutos
-        console.error(`⚠️ Error temporal en polling #${pollCount} (continuando...):`, err)
-        // NO marcar firstErrorTime ni mostrar error - solo continuar
-        // El timeout de 6 minutos se maneja más abajo
+        // Errores de conexión (backend caído, red, etc.)
+        consecutiveErrors++
+        console.error(`⚠️ Error de conexión en polling #${pollCount} (${consecutiveErrors}/${maxConsecutiveErrors} consecutivos):`, err)
+        
+        // Si hay muchos errores consecutivos, el backend probablemente está caído
+        if (consecutiveErrors >= maxConsecutiveErrors) {
+          console.error(`❌ Backend no responde después de ${maxConsecutiveErrors} intentos - deteniendo polling y mostrando error`)
+          stopPolling()
+          setIsProcessingPin(false)
+          setShowSuccess(false)
+          setShowError(true) // Mostrar estado de error
+          setError("") // Limpiar error del banner, el error se mostrará en el estado
+          setIsLoading(false)
+          setRequiresVerification(false)
+          // Cerrar después de mostrar error
+          setTimeout(() => {
+            setShowLinkedInForm(false)
+            setLoginSessionId(null)
+            setUserEmail("")
+            setShowError(false)
+            setShowSuccess(false)
+            setIsProcessingPin(false)
+            setRequiresVerification(false)
+            setError("")
+            setIsLoading(false)
+          }, 3000) // Mostrar error por 3 segundos antes de cerrar
+          return
+        }
+        // Si no alcanzamos el máximo, continuar polling (puede ser un error temporal)
       }
     }
 
@@ -545,6 +620,10 @@ export default function PortalsPage() {
 
     setIsLoading(true)
     setError("")
+    // CRÍTICO: Limpiar estados de éxito/error al desvincular
+    setShowSuccess(false)
+    setShowError(false)
+    setIsProcessingPin(false)
 
     try {
       const result = await disconnectLinkedIn(userId)
@@ -553,6 +632,12 @@ export default function PortalsPage() {
         setIsLinkedInConnected(false)
         setShowLinkedInForm(false)
         setError("")
+        // Asegurar que todos los estados estén limpios después de desvincular
+        setShowSuccess(false)
+        setShowError(false)
+        setIsProcessingPin(false)
+        setRequiresVerification(false)
+        setUserEmail("")
       } else {
         setError(result.error || "Error desconectando LinkedIn")
       }
@@ -613,12 +698,6 @@ export default function PortalsPage() {
         showError={showError}
         keepOpenOnSuccess={true}
             />
-
-            {loginSessionId && (
-        <div style={{ padding: "12px", background: "#e3f2fd", borderRadius: "4px", marginBottom: "16px", fontSize: "14px", maxWidth: "400px", margin: "0 auto 24px" }}>
-                ⏳ Esperando a que completes el login en la ventana del navegador...
-        </div>
-      )}
 
       <div className={styles.grid}>
         {/* LinkedIn - Activo */}
