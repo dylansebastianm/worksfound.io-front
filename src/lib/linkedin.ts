@@ -26,7 +26,7 @@ export interface StartLoginResponse {
 
 export interface CheckLoginStatusResponse {
   success: boolean;
-  status?: 'pending' | 'in_progress' | 'waiting' | 'completed' | 'timeout' | 'error' | 'requires_verification';
+  status?: 'pending' | 'in_progress' | 'waiting' | 'waiting_for_pin' | 'processing' | 'completed' | 'timeout' | 'error' | 'requires_verification';
   session_id?: string;
   user_id?: number;
   message?: string;
