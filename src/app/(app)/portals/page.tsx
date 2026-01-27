@@ -15,6 +15,7 @@ import {
   disconnectLinkedIn,
   toggleAutoApply,
   getAutoApplyStatus,
+  submitLinkedInPin,
 } from "@/lib/linkedin"
 import styles from "./portals.module.css"
 
@@ -28,6 +29,11 @@ export default function PortalsPage() {
   const [error, setError] = useState("")
   const [showLinkedInForm, setShowLinkedInForm] = useState(false)
   const [loginSessionId, setLoginSessionId] = useState<string | null>(null)
+  const [requiresVerification, setRequiresVerification] = useState(false)
+  const [userEmail, setUserEmail] = useState("")
+  const [isProcessingPin, setIsProcessingPin] = useState(false)
+  const [showSuccess, setShowSuccess] = useState(false)
+  const [showError, setShowError] = useState(false)
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const autoApplyPollingRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -171,32 +177,86 @@ export default function PortalsPage() {
   }
 
   const handleLinkedInConnect = async (email: string, password: string) => {
+    console.log('🔵 handleLinkedInConnect llamado - email:', email, 'userId:', userId)
+    
     if (!userId) {
+      console.error('❌ No hay userId, lanzando error')
       throw new Error("Debes iniciar sesión primero")
     }
 
+    console.log('🔵 Configurando loading state...')
     setIsLoading(true)
     setError("")
+    console.log('🔵 Llamando startLinkedInLogin...')
 
     try {
+      console.log('🔵 Haciendo fetch a startLinkedInLogin...')
       const result = await startLinkedInLogin(email, password, userId)
+      console.log('🔵 Resultado de startLinkedInLogin:', result)
 
       if (result.success && result.session_id) {
+        console.log('✅ Login iniciado con sessionId:', result.session_id)
         setLoginSessionId(result.session_id)
+        
+        // Si hay URL interactiva (Browserless), intentar abrirla
+        // Si da 429, el usuario debe usar el dashboard de Browserless
+        if (result.interactive_url) {
+          console.log("🌐 Abriendo sesión interactiva de Browserless:", result.interactive_url)
+          
+          // Intentar abrir la URL interactiva
+          const popup = window.open(
+            result.interactive_url,
+            'linkedin-browserless',
+            'width=1200,height=800,scrollbars=yes,resizable=yes'
+          )
+          
+          if (!popup) {
+            setIsLoading(false)
+            throw new Error("El popup fue bloqueado. Por favor, permite popups para este sitio.")
+          }
+          
+          // Si hay dashboard_url, también abrirla como alternativa
+          if (result.dashboard_url) {
+            console.log("📋 Dashboard alternativo disponible:", result.dashboard_url)
+            // Abrir dashboard en otra pestaña después de 2 segundos
+            setTimeout(() => {
+              window.open(result.dashboard_url, '_blank')
+            }, 2000)
+          }
+          
+          // Monitorear si el popup se cierra
+          const checkPopupClosed = setInterval(() => {
+            if (popup.closed) {
+              clearInterval(checkPopupClosed)
+              console.log("Popup cerrado, iniciando polling...")
+              startPollingLoginStatus(result.session_id!)
+            }
+          }, 1000)
+          
+          // También iniciar polling en caso de que el popup no se cierre
+          console.log('🚀 Iniciando polling desde handleLinkedInConnect (con interactive_url)')
+          startPollingLoginStatus(result.session_id)
+        } else {
+          // Modo local (Playwright) - comportamiento anterior
+          console.log('🚀 Iniciando polling desde handleLinkedInConnect (modo local)')
+          startPollingLoginStatus(result.session_id)
+        }
+        
+        console.log('✅ handleLinkedInConnect completado - polling debería estar ejecutándose')
         // No cerramos el modal todavía, esperamos a que el polling complete
         // El modal se cerrará cuando el polling detecte que el login fue exitoso
-        // Iniciar polling para verificar estado
-        startPollingLoginStatus(result.session_id)
-        // No lanzamos error, pero tampoco resolvemos inmediatamente
-        // El modal permanecerá abierto mostrando el loading mientras esperamos
+        // La función async resuelve aquí automáticamente
       } else {
         setIsLoading(false)
         throw new Error(result.error || "Error iniciando login de LinkedIn")
       }
     } catch (err) {
+      // Error al iniciar el login - NO mostrar error aquí, solo mostrar en el banner
+      // El error solo se muestra cuando se cumple timeout de 6 minutos o error que mata Playwright
+      console.error('❌ Error en handleLinkedInConnect:', err)
       setIsLoading(false)
       const errorMessage = err instanceof Error ? err.message : "Error conectando con el servidor"
-      setError(errorMessage)
+      setError(errorMessage)  // Mostrar error en el banner, NO usar setShowError
       throw err // Re-lanzar para que el modal maneje el error
     }
   }
@@ -206,106 +266,269 @@ export default function PortalsPage() {
       clearInterval(pollingIntervalRef.current)
       pollingIntervalRef.current = null
     }
+    // Resetear estados de procesamiento cuando se detiene el polling
+    setIsProcessingPin(false)
   }
 
   const startPollingLoginStatus = (sessionId: string) => {
     // Limpiar polling anterior si existe
     stopPolling()
 
-    const maxPollingTime = 600000 // 10 minutos máximo de polling total
+    console.log('🔄 Iniciando polling para sessionId:', sessionId)
+
+    const maxPollingTime = 360000 // 6 minutos máximo de polling total
     const maxErrorTime = 60000 // 1 minuto máximo de errores continuos
     const startTime = Date.now()
     let lastSuccessTime = Date.now()
     let firstErrorTime: number | null = null
+    let pollCount = 0
 
-    // Polling cada 2 segundos
-    pollingIntervalRef.current = setInterval(async () => {
+    // Función que hace el check
+    const performCheck = async () => {
+      pollCount++
+      console.log(`🔄 Polling #${pollCount} - Verificando estado del login...`)
+      
       try {
-        // Verificar timeout máximo total
+        // Verificar timeout máximo total - esto corta el proceso
         if (Date.now() - startTime > maxPollingTime) {
           console.warn("Timeout máximo de polling alcanzado")
           stopPolling()
-          setError("Tiempo de espera agotado. Por favor, intenta de nuevo.")
+          setShowError(true)  // Mostrar error con mensaje genérico (no mencionar "timeout")
+          setError("")  // Limpiar error del banner, se mostrará en el estado de error
           setIsLoading(false)
-          setLoginSessionId(null)
+          // Cerrar después de mostrar error
+          setTimeout(() => {
+            setShowLinkedInForm(false)
+            setLoginSessionId(null)
+            setShowError(false)
+          }, 3000)
           return
         }
 
         const status = await checkLinkedInLoginStatus(sessionId)
+        
+        console.log(`📊 Status recibido del backend (poll #${pollCount}):`, {
+          success: status.success,
+          status: status.status,
+          message: status.message,
+          email: status.email,
+          error: status.error
+        })
+        console.log(`   🔍 Estado actual del frontend: requiresVerification=${requiresVerification}, showLinkedInForm=${showLinkedInForm}`)
 
-        // Si el backend devuelve error, verificar tiempo de errores continuos
-        if (!status.success && status.error) {
-          const now = Date.now()
-          
-          // Marcar el inicio del primer error si no estaba marcado
-          if (firstErrorTime === null) {
-            firstErrorTime = now
-            console.warn("Primer error detectado, iniciando contador de tiempo:", status.error)
-          }
-          
-          // Verificar si llevamos más de 1 minuto con errores
-          if (firstErrorTime !== null && now - firstErrorTime > maxErrorTime) {
-            console.warn("Demasiado tiempo con errores continuos, deteniendo polling")
-            stopPolling()
-            setError("La sesión de login expiró o no se encontró. Por favor, intenta de nuevo.")
-            setIsLoading(false)
-            setLoginSessionId(null)
-            return
-          }
-          
-          // Continuar polling si no hemos alcanzado el tiempo máximo de errores
-          return
+        // PRIORIDAD 1: Verificar estados de proceso activo PRIMERO
+        // Durante estos estados (in_progress, pending, waiting_for_pin, processing),
+        // NUNCA mostrar error, incluso si success es false o hay errores temporales
+        // Esto incluye la resolución del CAPTCHA que puede tomar 20-120 segundos
+        const isActiveProcess = status.status === 'in_progress' || status.status === 'pending' || 
+                                status.status === 'waiting_for_pin' || status.status === 'processing'
+        
+        if (isActiveProcess) {
+          // Resetear contador de errores cuando estamos en proceso activo
+          firstErrorTime = null
+          lastSuccessTime = Date.now()
+          // Continuar con la lógica normal de estos estados (manejada más abajo)
+          // NO procesar errores aquí, solo continuar
         }
-
+        
         // Si la petición fue exitosa, resetear el contador de errores
         if (status.success) {
           firstErrorTime = null
           lastSuccessTime = Date.now()
         }
+        
+        // IMPORTANTE: NO procesar errores aquí a menos que sean:
+        // 1. status.status === 'error' (error que mata Playwright - manejado más abajo)
+        // 2. status.status === 'timeout' (timeout explícito - manejado más abajo)
+        // 3. Timeout de 6 minutos del polling (manejado más abajo)
+        // Cualquier otro error temporal se ignora y se continúa el polling
 
         if (status.status === "completed") {
-          // Login exitoso
+          // Login exitoso - mostrar success ANTES de cerrar
+          // CRÍTICO: NO llamar setIsLinkedInConnected(true) ni checkConnectionStatus aquí.
+          // checkConnectionStatus hace setIsLinkedInConnected(true) al recibir is_connected,
+          // lo que cierra el modal al instante y nunca se ve el success.
+          console.log('✅ Login completado - mostrando success')
           stopPolling()
-          setIsLinkedInConnected(true)
-          setShowLinkedInForm(false) // Esto cerrará el modal
-          setLoginSessionId(null)
-          setIsLoading(false)
-          setError("")
-          // Verificar estado de conexión y auto-apply
-          if (userId) {
-            checkConnectionStatus(userId)
-            checkAutoApplyStatus(userId)
+          setIsProcessingPin(false)
+          setRequiresVerification(false)
+          setShowSuccess(true)
+          // IMPORTANTE: Esperar 3s mostrando PortalConnectionAlert success, LUEGO cerrar
+          // NO llamar checkConnectionStatus aquí: pone isLoadingConnectionStatus(true),
+          // la página devuelve solo <LoadingSpinner /> y se desmonta el modal al instante.
+          setTimeout(() => {
+            setIsLinkedInConnected(true)
+            setShowLinkedInForm(false)
+            setLoginSessionId(null)
+            setIsLoading(false)
+            setError("")
+            setRequiresVerification(false)
+            setUserEmail("")
+            setShowSuccess(false)
+            if (userId) {
+              checkAutoApplyStatus(userId)
+            }
+          }, 3000)
+        } else if (status.status === "processing") {
+          // PIN siendo procesado - mostrar verifying
+          console.log('⏳ PIN siendo procesado - mostrando verifying')
+          setIsProcessingPin(true)
+        } else if (status.status === "waiting_for_pin") {
+          // Esperando que el usuario ingrese el PIN - mostrar formulario
+          console.log('🔐 Esperando código PIN - mostrando formulario (polling continúa)')
+          console.log('   📧 Email recibido:', status.email)
+          
+          // IMPORTANTE: NO detener el polling - debe continuar para detectar cuando se procesa el PIN
+          // PRIMERO: Desactivar todos los estados de carga/procesamiento
+          setIsProcessingPin(false)
+          setShowSuccess(false)
+          setIsLoading(false)  // Esto es crítico - debe estar en false para que el modal pueda cambiar de step
+          
+          // Asegurar que el modal esté abierto
+          if (!showLinkedInForm) {
+            console.log('   ⚠️ Modal no estaba abierto, abriéndolo...')
+            setShowLinkedInForm(true)
           }
-        } else if (status.status === "timeout" || status.status === "error") {
-          // Error o timeout definitivo
+          
+          // Establecer email PRIMERO
+          if (status.email) {
+            setUserEmail(status.email)
+            console.log('   ✅ userEmail establecido a:', status.email)
+          }
+          
+          // IMPORTANTE: Establecer requiresVerification para forzar el cambio de step
+          // El modal debe cambiar de 'connecting' a 'verification' cuando requiresVerification es true
+          console.log('   🔄 Estado actual de requiresVerification:', requiresVerification)
+          
+          // SIEMPRE forzar actualización para asegurar que el useEffect se ejecute
+          // Esto es necesario porque si requiresVerification ya era true, el useEffect no se ejecutaría
+          setRequiresVerification(false)
+          // Usar setTimeout con 0 para asegurar que React procese el cambio
+          setTimeout(() => {
+            console.log('   ✅ Estableciendo requiresVerification a TRUE')
+            setRequiresVerification(true)
+          }, 0)
+          
+          // No cerramos el modal, mostramos el paso de verificación
+          // El polling continuará para detectar cuando el PIN se procesa y cuando el login se completa
+        } else if (status.status === "in_progress" || status.status === "pending") {
+          // Login en curso (puede estar resolviendo CAPTCHA o conectando)
+          console.log(`⏳ Login en curso - status: ${status.status}`)
+          setIsProcessingPin(false)
+          setShowSuccess(false)
+          setRequiresVerification(false)
+          setIsLoading(true)
+          // El modal mostrará "Conectando..." mientras está en este estado
+        } else if (status.status === "timeout") {
+          // Timeout explícito del backend - mostrar error
+          console.log('⏰ Timeout del backend - mostrando error')
           stopPolling()
-          setError(status.error || "Tiempo de espera agotado")
+          setIsProcessingPin(false)
+          setShowSuccess(false)
+          setShowError(true)  // Mostrar estado de error
+          setError("")  // Limpiar error del banner, el error se mostrará en el estado
           setIsLoading(false)
-          setLoginSessionId(null)
-        }
-        // Si está 'waiting', 'pending' o 'in_progress', seguir esperando
-      } catch (err) {
-        const now = Date.now()
-        
-        // Marcar el inicio del primer error si no estaba marcado
-        if (firstErrorTime === null) {
-          firstErrorTime = now
-          console.error("Primer error de conexión detectado, iniciando contador de tiempo:", err)
-        }
-        
-        // Verificar si llevamos más de 1 minuto con errores
-        if (firstErrorTime !== null && now - firstErrorTime > maxErrorTime) {
-          console.error("Demasiado tiempo con errores de conexión, deteniendo polling")
+          setRequiresVerification(false)
+          // Cerrar después de mostrar error
+          setTimeout(() => {
+            setShowLinkedInForm(false)
+            setLoginSessionId(null)
+            setUserEmail("")
+            setShowError(false)
+          }, 3000) // Mostrar error por 3 segundos antes de cerrar
+        } else if (status.status === "error") {
+          // Error que mata Playwright (proceso finalizado) - mostrar error inmediatamente
+          console.log('❌ Error que finaliza el proceso (Playwright cerrado) - mostrando error')
           stopPolling()
-          setError("Error conectando con el servidor. Por favor, intenta de nuevo.")
-        setIsLoading(false)
-        setLoginSessionId(null)
-          return
+          setIsProcessingPin(false)
+          setShowSuccess(false)
+          setShowError(true)  // Mostrar estado de error
+          setError("")  // Limpiar error del banner, el error se mostrará en el estado
+          setIsLoading(false)
+          setRequiresVerification(false)
+          // Cerrar después de mostrar error
+          setTimeout(() => {
+            setShowLinkedInForm(false)
+            setLoginSessionId(null)
+            setUserEmail("")
+            setShowError(false)
+          }, 3000) // Mostrar error por 3 segundos antes de cerrar
+        } else {
+          // Estados desconocidos o no manejados → seguir esperando
+          console.log(`⏳ Estado no manejado: ${status.status} - Continuando polling... (próxima verificación en 2s)`)
         }
-        
-        // Continuar polling si no hemos alcanzado el tiempo máximo de errores
+      } catch (err) {
+        // Errores de conexión temporales - NO mostrar error, solo continuar polling
+        // El error solo se mostrará cuando se cumpla el timeout de 6 minutos
+        console.error(`⚠️ Error temporal en polling #${pollCount} (continuando...):`, err)
+        // NO marcar firstErrorTime ni mostrar error - solo continuar
+        // El timeout de 6 minutos se maneja más abajo
       }
-    }, 2000)
+    }
+
+    // Ejecutar el primer check inmediatamente, luego continuar cada 2 segundos
+    console.log('🚀 Ejecutando primer check inmediatamente...')
+    performCheck()
+    
+    // Continuar con polling cada 2 segundos
+    pollingIntervalRef.current = setInterval(performCheck, 2000)
+    console.log('✅ Polling configurado - se ejecutará cada 2 segundos')
+  }
+
+  const handleVerifyCode = async (code: string) => {
+    if (!loginSessionId) {
+      throw new Error("No hay una sesión de login activa")
+    }
+
+    try {
+      const result = await submitLinkedInPin(loginSessionId, code)
+
+      if (result.success) {
+        // Si el PIN fue correcto, reanudar el polling para verificar que el login se complete
+        // IMPORTANTE: Establecer isProcessingPin PRIMERO para evitar el flash
+        setIsProcessingPin(true) // Mostrar verifying mientras se procesa
+        // NO cambiar requiresVerification todavía - mantenerlo para evitar flash
+        if (result.status === "completed") {
+          // Login completo inmediatamente
+          // CRÍTICO: NO llamar setIsLinkedInConnected(true) ni checkConnectionStatus aquí.
+          // checkConnectionStatus pone isLinkedInConnected=true y cierra el modal al instante.
+          stopPolling()
+          setIsProcessingPin(false)
+          setRequiresVerification(false)
+          setShowSuccess(true)
+          setTimeout(() => {
+            setIsLinkedInConnected(true)
+            setShowLinkedInForm(false)
+            setLoginSessionId(null)
+            setUserEmail("")
+            setShowSuccess(false)
+            if (userId) {
+              checkAutoApplyStatus(userId)
+            }
+          }, 3000)
+        } else {
+          // Continuar polling (mostrará verifying mientras espera)
+          // El polling detectará cuando status sea "completed" y mostrará success
+          // NO cambiar requiresVerification todavía - mantenerlo para evitar flash
+          startPollingLoginStatus(loginSessionId)
+        }
+      } else {
+        // PIN incorrecto - NO mostrar error aquí, solo mostrar en el banner
+        // El error solo se muestra cuando se cumple timeout de 6 minutos o error que mata Playwright
+        setIsProcessingPin(false)
+        const errorMessage = result.error || "Código PIN incorrecto"
+        setError(errorMessage)  // Mostrar error en el banner, NO usar setShowError
+        throw new Error(errorMessage)
+      }
+    } catch (err) {
+      // Error al procesar PIN - NO mostrar error aquí, solo mostrar en el banner
+      // El error solo se muestra cuando se cumple timeout de 6 minutos o error que mata Playwright
+      setIsProcessingPin(false)
+      setShowSuccess(false)
+      const errorMessage = err instanceof Error ? err.message : "Error procesando código"
+      setError(errorMessage)  // Mostrar error en el banner, NO usar setShowError
+      throw err
+    }
   }
 
   const handleDisconnect = async () => {
@@ -317,6 +540,8 @@ export default function PortalsPage() {
     // Detener polling si está activo
     stopPolling()
     setLoginSessionId(null)
+    setRequiresVerification(false)
+    setUserEmail("")
 
     setIsLoading(true)
     setError("")
@@ -369,12 +594,23 @@ export default function PortalsPage() {
             setLoginSessionId(null)
             setIsLoading(false)
             setError("")
+            setRequiresVerification(false)
+            setUserEmail("")
+            setIsProcessingPin(false)
+            setShowSuccess(false)
+            setShowError(false)
           }
         }}
         portalName="LinkedIn"
         portalIcon={<FaLinkedin size={32} />}
         portalColor="#0077B5"
         onConnect={handleLinkedInConnect}
+        onVerifyCode={requiresVerification ? handleVerifyCode : undefined}
+        requiresVerification={requiresVerification}
+        userEmail={userEmail}
+        isProcessingPin={isProcessingPin}
+        showSuccess={showSuccess}
+        showError={showError}
         keepOpenOnSuccess={true}
             />
 
