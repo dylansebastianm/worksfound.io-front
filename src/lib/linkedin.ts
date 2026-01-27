@@ -136,15 +136,22 @@ export async function checkLinkedInLoginStatus(sessionId: string): Promise<Check
   try {
     console.log(`📡 Haciendo request a: ${API_URL}/api/linkedin/check-login-status?session_id=${sessionId}`);
     const response = await fetch(`${API_URL}/api/linkedin/check-login-status?session_id=${sessionId}`);
+    
+    // Si la respuesta no es OK (error de red, 500, etc.), lanzar excepción para que el catch del polling lo capture
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => 'Error desconocido')
+      console.error(`❌ Error HTTP en check-login-status: ${response.status} - ${errorText}`)
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    
     const data = await response.json();
     console.log(`📡 Respuesta recibida:`, data);
     return data;
   } catch (error) {
-    console.error('❌ Error verificando estado de login:', error);
-    return {
-      success: false,
-      error: 'Error conectando con el servidor',
-    };
+    // CRÍTICO: Lanzar la excepción para que el catch del polling la capture
+    // No devolver un objeto con success:false porque el polling no lo detectaría como error
+    console.error('❌ Error verificando estado de login (lanzando excepción):', error);
+    throw error; // Re-lanzar para que el polling lo capture
   }
 }
 

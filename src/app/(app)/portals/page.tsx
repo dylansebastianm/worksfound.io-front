@@ -638,6 +638,9 @@ export default function PortalsPage() {
         setIsProcessingPin(false)
         setRequiresVerification(false)
         setUserEmail("")
+        setLoginSessionId(null)
+        // Verificar estado real del backend para asegurar consistencia
+        checkConnectionStatus(userId)
       } else {
         setError(result.error || "Error desconectando LinkedIn")
       }

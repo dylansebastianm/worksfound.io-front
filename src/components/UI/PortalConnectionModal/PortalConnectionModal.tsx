@@ -114,9 +114,14 @@ export function PortalConnectionModal({
       setStep('success')
       setError("") // Limpiar errores al mostrar success
       console.log('   ✅ Step cambiado a success')
+    } else if (step === 'success' && !showSuccess) {
+      // CRÍTICO: Si showSuccess se vuelve false pero step sigue en 'success', resetear a credentials
+      // Esto evita que el modal muestre success cuando se abre de nuevo después de desvincular
+      console.log('   🔄 [Modal] showSuccess=false pero step=success, reseteando a credentials')
+      setStep(requiresVerification ? 'verification' : 'credentials')
+      setError("")
     }
-    // NO cambiar el step cuando showSuccess se desactiva - el modal se cerrará desde el parent
-  }, [showSuccess, step])
+  }, [showSuccess, step, requiresVerification])
 
   // Manejar showError - mostrar error cuando hay un problema
   useEffect(() => {
@@ -126,6 +131,15 @@ export function PortalConnectionModal({
     }
     // NO cambiar el step cuando showError se desactiva - el modal se cerrará desde el parent
   }, [showError])
+
+  // Resetear step cuando el modal se abre sin showSuccess/showError (evita mostrar success después de desvincular)
+  useEffect(() => {
+    if (isOpen && !showSuccess && !showError && (step === 'success' || step === 'error')) {
+      console.log('   🔄 [Modal] Modal abierto sin showSuccess/showError, reseteando step desde', step)
+      setStep(requiresVerification ? 'verification' : 'credentials')
+      setError("")
+    }
+  }, [isOpen, showSuccess, showError, step, requiresVerification])
 
   // Log para verificar que el componente se renderiza
   useEffect(() => {
