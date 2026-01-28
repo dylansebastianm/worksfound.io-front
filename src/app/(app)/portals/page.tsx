@@ -302,7 +302,7 @@ export default function PortalsPage() {
 
     console.log('🔄 Iniciando polling para sessionId:', sessionId)
 
-    const maxPollingTime = 360000 // 6 minutos máximo de polling total
+    const maxPollingTime = 600000 // 10 minutos máximo de polling total
     const maxErrorTime = 60000 // 1 minuto máximo de errores continuos
     const maxConsecutiveErrors = 5 // Máximo de errores consecutivos antes de considerar backend caído
     const startTime = Date.now()

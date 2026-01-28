@@ -47,15 +47,15 @@ export function PortalConnectionModal({
   const [error, setError] = useState("")
   const [verificationCode, setVerificationCode] = useState(['', '', '', '', '', ''])
   const inputRefs = useRef<(HTMLInputElement | null)[]>([])
-  const [countdown, setCountdown] = useState(300) // 5 min en segundos; solo visual para tranquilizar al usuario
+  const [countdown, setCountdown] = useState(600) // 10 min en segundos; solo visual para tranquilizar al usuario
 
   // Calcular isLoading antes de usarlo en useEffect
   const isLoading = step === 'connecting' || step === 'verifying'
 
-  // Contador regresivo 5 min solo en "Conectando..." (no bloquea nada; informativo)
+  // Contador regresivo 10 min solo en "Conectando..." (no bloquea nada; informativo)
   useEffect(() => {
     if (step !== 'connecting') return
-    setCountdown(300)
+    setCountdown(600)
     const t = setInterval(() => {
       setCountdown((s) => (s <= 0 ? 0 : s - 1))
     }, 1000)
@@ -299,7 +299,7 @@ export function PortalConnectionModal({
               </h3>
               <p className={styles.statusText} style={step === 'connecting' ? { color: portalColor } : undefined}>
                 {step === 'connecting' 
-                  ? `Puede tardar hasta 5 minutos. Estableciendo conexión segura...`
+                  ? `Puede tardar hasta 10 minutos. Estableciendo conexión segura...`
                   : 'Validando tu código de verificación'
                 }
               </p>
