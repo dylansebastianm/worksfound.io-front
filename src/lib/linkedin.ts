@@ -231,29 +231,37 @@ export async function getAutoApplyStatus(userId: string | number): Promise<{ suc
   }
 }
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
 /**
- * Envía el código PIN de verificación de LinkedIn
+ * Envía el código PIN de verificación de LinkedIn.
+ * Reintenta hasta 2 veces si devuelve "Sesión no encontrada" (p. ej. multi-worker).
  */
 export async function submitLinkedInPin(sessionId: string, pin: string): Promise<{ success: boolean; message?: string; error?: string; status?: string }> {
-  try {
-    const response = await fetch(`${API_URL}/api/linkedin/submit-pin`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        session_id: sessionId,
-        pin: pin,
-      }),
-    });
+  const maxRetries = 3
+  let lastData: { success: boolean; message?: string; error?: string; status?: string } | null = null
 
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('Error enviando PIN de LinkedIn:', error);
-    return {
-      success: false,
-      error: 'Error conectando con el servidor',
-    };
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await fetch(`${API_URL}/api/linkedin/submit-pin`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: sessionId, pin }),
+      })
+      const data = await response.json()
+      lastData = data
+
+      if (data.success) return data
+      const isSessionNotFound = data.error?.toLowerCase().includes('sesión no encontrada') ?? false
+      if (!isSessionNotFound || attempt === maxRetries) return data
+
+      console.warn(`[submit-pin] Sesión no encontrada (intento ${attempt}/${maxRetries}), reintentando en 800ms...`)
+      await sleep(800)
+    } catch (error) {
+      console.error('Error enviando PIN de LinkedIn:', error)
+      return lastData ?? { success: false, error: 'Error conectando con el servidor' }
+    }
   }
+
+  return lastData ?? { success: false, error: 'Error conectando con el servidor' }
 }
