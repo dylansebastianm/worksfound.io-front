@@ -18,6 +18,12 @@ export interface CancelScrapeResponse {
   error?: string;
 }
 
+export interface ScrapeStatusResponse {
+  success: boolean;
+  is_running?: boolean;
+  error?: string;
+}
+
 /**
  * Función para realizar ingesta de ofertas de trabajo
  */
@@ -51,6 +57,23 @@ export async function scrapeJobs(
       success: false,
       error: 'Error conectando con el servidor',
     };
+  }
+}
+
+/**
+ * Consulta si hay un scraping en curso para el usuario (para polling).
+ */
+export async function getScrapeStatus(user_id: number): Promise<ScrapeStatusResponse> {
+  try {
+    const response = await fetch(
+      `${API_URL}/api/jobs/scrape/status?user_id=${user_id}`,
+      { method: 'GET', headers: getAuthHeaders() }
+    );
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error consultando estado de scraping:', error);
+    return { success: false, error: 'Error conectando con el servidor' };
   }
 }
 

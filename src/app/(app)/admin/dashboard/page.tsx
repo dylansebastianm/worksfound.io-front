@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { getCurrentUser, type User } from "@/lib/auth"
 import { getAdminStatistics } from "@/lib/admin"
@@ -21,7 +21,7 @@ import { SiIndeed, SiGlassdoor } from "react-icons/si"
 import { FcGoogle } from "react-icons/fc"
 import IngestionConfigModal, { type IngestionConfig } from "@/components/UI/IngestionConfigModal/IngestionConfigModal"
 import { getIngestionConfig, updateIngestionConfig } from "@/lib/ingestion"
-import { scrapeJobs } from "@/lib/jobs"
+import { scrapeJobs, getScrapeStatus } from "@/lib/jobs"
 import { LoadingSpinner } from "@/components/UI/LoadingSpinner/LoadingSpinner"
 import DistributionCard from "@/components/UI/DistributionCard/DistributionCard"
 import { Alert } from "@/components/UI/Alert/Alert"
@@ -54,12 +54,35 @@ export default function AdminDashboardPage() {
       loadIngestionConfig()
       loadAdminStats()
       
-      // Verificar si hay una ingesta en curso desde sessionStorage
+      // Verificar si hay una ingesta en curso desde sessionStorage y reanudar polling
       if (typeof window !== "undefined") {
         const ingestingState = sessionStorage.getItem("ingesting_state")
-        if (ingestingState === "true") {
+        if (ingestingState === "true" && currentUser?.id) {
           setIsIngesting(true)
+          if (ingestPollRef.current) clearInterval(ingestPollRef.current)
+          ingestPollRef.current = setInterval(async () => {
+            const statusRes = await getScrapeStatus(currentUser.id)
+            if (statusRes.success && statusRes.is_running === false) {
+              if (ingestPollRef.current) {
+                clearInterval(ingestPollRef.current)
+                ingestPollRef.current = null
+              }
+              setIsIngesting(false)
+              sessionStorage.removeItem("ingesting_state")
+              loadAdminStats()
+              setAlert({
+                status: "success",
+                message: "Ingesta finalizada. Revisa Logs de ingesta para el resultado.",
+              })
+            }
+          }, 4000)
         }
+      }
+    }
+    return () => {
+      if (ingestPollRef.current) {
+        clearInterval(ingestPollRef.current)
+        ingestPollRef.current = null
       }
     }
   }, [router])
@@ -106,13 +129,11 @@ export default function AdminDashboardPage() {
     if (!user) return
 
     setIsIngesting(true)
-    // Guardar estado en sessionStorage
     if (typeof window !== "undefined") {
       sessionStorage.setItem("ingesting_state", "true")
     }
-    
+
     try {
-      // Usar la configuración guardada
       const response = await scrapeJobs(
         user.id,
         ingestConfig.url,
@@ -120,12 +141,35 @@ export default function AdminDashboardPage() {
       )
 
       if (response.success) {
-        const message = response.message || `Ingesta completada: ${response.jobs_saved || 0} ofertas nuevas guardadas`
         setAlert({
           status: "success",
-          message: message,
+          message: response.message || "Ingesta iniciada. El proceso continúa en segundo plano.",
         })
+        // Polling hasta que el backend termine
+        if (ingestPollRef.current) clearInterval(ingestPollRef.current)
+        ingestPollRef.current = setInterval(async () => {
+          const statusRes = await getScrapeStatus(user.id)
+          if (statusRes.success && statusRes.is_running === false) {
+            if (ingestPollRef.current) {
+              clearInterval(ingestPollRef.current)
+              ingestPollRef.current = null
+            }
+            setIsIngesting(false)
+            if (typeof window !== "undefined") {
+              sessionStorage.removeItem("ingesting_state")
+            }
+            loadAdminStats()
+            setAlert({
+              status: "success",
+              message: "Ingesta finalizada. Revisa Logs de ingesta para el resultado.",
+            })
+          }
+        }, 4000)
       } else {
+        setIsIngesting(false)
+        if (typeof window !== "undefined") {
+          sessionStorage.removeItem("ingesting_state")
+        }
         setAlert({
           status: "error",
           message: `Error en la ingesta: ${response.error || "Error desconocido"}`,
@@ -133,16 +177,14 @@ export default function AdminDashboardPage() {
       }
     } catch (error: any) {
       console.error("Error en ingesta:", error)
+      setIsIngesting(false)
+      if (typeof window !== "undefined") {
+        sessionStorage.removeItem("ingesting_state")
+      }
       setAlert({
         status: "error",
         message: "Error al realizar la ingesta. Por favor, intenta nuevamente.",
       })
-    } finally {
-      setIsIngesting(false)
-      // Eliminar estado de sessionStorage al terminar
-      if (typeof window !== "undefined") {
-        sessionStorage.removeItem("ingesting_state")
-      }
     }
   }
 
