@@ -44,6 +44,25 @@ export default function AdminDashboardPage() {
   const [alert, setAlert] = useState<{ status: "success" | "error"; message: string } | null>(null)
   const router = useRouter()
   const ingestPollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const ingestStartTimeRef = useRef<number | null>(null)
+  const [elapsedDisplay, setElapsedDisplay] = useState("0s")
+
+  function formatElapsed(seconds: number): string {
+    const m = Math.floor(seconds / 60)
+    const s = seconds % 60
+    if (m > 0) return `${m}m ${s}s`
+    return `${s}s`
+  }
+
+  useEffect(() => {
+    if (!isIngesting) return
+    const id = setInterval(() => {
+      const start = ingestStartTimeRef.current
+      if (start == null) return
+      setElapsedDisplay(formatElapsed(Math.floor((Date.now() - start) / 1000)))
+    }, 1000)
+    return () => clearInterval(id)
+  }, [isIngesting])
 
   useEffect(() => {
     const currentUser = getCurrentUser()
@@ -59,6 +78,8 @@ export default function AdminDashboardPage() {
       if (typeof window !== "undefined") {
         const ingestingState = sessionStorage.getItem("ingesting_state")
         if (ingestingState === "true" && currentUser?.id) {
+          const startTs = sessionStorage.getItem("ingest_start_ts")
+          ingestStartTimeRef.current = startTs ? parseInt(startTs, 10) : Date.now()
           setIsIngesting(true)
           if (ingestPollRef.current) clearInterval(ingestPollRef.current)
           ingestPollRef.current = setInterval(async () => {
@@ -68,15 +89,17 @@ export default function AdminDashboardPage() {
                 clearInterval(ingestPollRef.current)
                 ingestPollRef.current = null
               }
-              setIsIngesting(false)
+              ingestStartTimeRef.current = null
               sessionStorage.removeItem("ingesting_state")
+              sessionStorage.removeItem("ingest_start_ts")
+              setIsIngesting(false)
               loadAdminStats()
               setAlert({
                 status: "success",
                 message: "Ingesta finalizada. Revisa Logs de ingesta para el resultado.",
               })
             }
-          }, 4000)
+          }, 60000)
         }
       }
     }
@@ -142,11 +165,17 @@ export default function AdminDashboardPage() {
       )
 
       if (response.success) {
+        if (typeof window !== "undefined") {
+          const now = Date.now()
+          ingestStartTimeRef.current = now
+          sessionStorage.setItem("ingest_start_ts", String(now))
+        }
+        setElapsedDisplay("0s")
         setAlert({
           status: "success",
           message: response.message || "Ingesta iniciada. El proceso continúa en segundo plano.",
         })
-        // Polling hasta que el backend termine
+        // Polling cada 1 minuto hasta que el backend termine
         if (ingestPollRef.current) clearInterval(ingestPollRef.current)
         ingestPollRef.current = setInterval(async () => {
           const statusRes = await getScrapeStatus(user.id)
@@ -155,21 +184,25 @@ export default function AdminDashboardPage() {
               clearInterval(ingestPollRef.current)
               ingestPollRef.current = null
             }
-            setIsIngesting(false)
+            ingestStartTimeRef.current = null
             if (typeof window !== "undefined") {
               sessionStorage.removeItem("ingesting_state")
+              sessionStorage.removeItem("ingest_start_ts")
             }
+            setIsIngesting(false)
             loadAdminStats()
             setAlert({
               status: "success",
               message: "Ingesta finalizada. Revisa Logs de ingesta para el resultado.",
             })
           }
-        }, 4000)
+        }, 60000)
       } else {
+        ingestStartTimeRef.current = null
         setIsIngesting(false)
         if (typeof window !== "undefined") {
           sessionStorage.removeItem("ingesting_state")
+          sessionStorage.removeItem("ingest_start_ts")
         }
         setAlert({
           status: "error",
@@ -178,9 +211,11 @@ export default function AdminDashboardPage() {
       }
     } catch (error: any) {
       console.error("Error en ingesta:", error)
+      ingestStartTimeRef.current = null
       setIsIngesting(false)
       if (typeof window !== "undefined") {
         sessionStorage.removeItem("ingesting_state")
+        sessionStorage.removeItem("ingest_start_ts")
       }
       setAlert({
         status: "error",
@@ -278,7 +313,7 @@ export default function AdminDashboardPage() {
             disabled={isIngesting}
           >
             <FaPlay />
-            {isIngesting ? "Realizando Ingesta..." : "Realizar Ingesta"}
+            {isIngesting ? `Realizando Ingesta... ${elapsedDisplay}` : "Realizar Ingesta"}
           </button>
           <button className={styles.configButton} onClick={() => setShowConfigModal(true)} title="Configurar ingesta">
             <FaCog />
