@@ -16,12 +16,13 @@ import {
   FaLinkedin,
   FaPlay,
   FaCog,
+  FaStop,
 } from "react-icons/fa"
 import { SiIndeed, SiGlassdoor } from "react-icons/si"
 import { FcGoogle } from "react-icons/fc"
 import IngestionConfigModal, { type IngestionConfig } from "@/components/UI/IngestionConfigModal/IngestionConfigModal"
 import { getIngestionConfig, updateIngestionConfig } from "@/lib/ingestion"
-import { scrapeJobs, getScrapeStatus } from "@/lib/jobs"
+import { scrapeJobs, getScrapeStatus, cancelScrapeJobs } from "@/lib/jobs"
 import { LoadingSpinner } from "@/components/UI/LoadingSpinner/LoadingSpinner"
 import DistributionCard from "@/components/UI/DistributionCard/DistributionCard"
 import { Alert } from "@/components/UI/Alert/Alert"
@@ -79,7 +80,9 @@ export default function AdminDashboardPage() {
         const ingestingState = sessionStorage.getItem("ingesting_state")
         if (ingestingState === "true" && currentUser?.id) {
           const startTs = sessionStorage.getItem("ingest_start_ts")
-          ingestStartTimeRef.current = startTs ? parseInt(startTs, 10) : Date.now()
+          const start = startTs ? parseInt(startTs, 10) : Date.now()
+          ingestStartTimeRef.current = start
+          setElapsedDisplay(formatElapsed(Math.floor((Date.now() - start) / 1000)))
           setIsIngesting(true)
           if (ingestPollRef.current) clearInterval(ingestPollRef.current)
           ingestPollRef.current = setInterval(async () => {
@@ -152,9 +155,13 @@ export default function AdminDashboardPage() {
   const handleIngestOffers = async () => {
     if (!user) return
 
+    const startedAt = Date.now()
     setIsIngesting(true)
+    ingestStartTimeRef.current = startedAt
+    setElapsedDisplay("0s")
     if (typeof window !== "undefined") {
       sessionStorage.setItem("ingesting_state", "true")
+      sessionStorage.setItem("ingest_start_ts", String(startedAt))
     }
 
     try {
@@ -165,12 +172,6 @@ export default function AdminDashboardPage() {
       )
 
       if (response.success) {
-        if (typeof window !== "undefined") {
-          const now = Date.now()
-          ingestStartTimeRef.current = now
-          sessionStorage.setItem("ingest_start_ts", String(now))
-        }
-        setElapsedDisplay("0s")
         setAlert({
           status: "success",
           message: response.message || "Ingesta iniciada. El proceso continúa en segundo plano.",
@@ -313,8 +314,19 @@ export default function AdminDashboardPage() {
             disabled={isIngesting}
           >
             <FaPlay />
-            {isIngesting ? `Realizando Ingesta... ${elapsedDisplay}` : "Realizar Ingesta"}
+            {isIngesting ? `Realizando ingesta ${elapsedDisplay}` : "Realizar Ingesta"}
           </button>
+          {isIngesting && (
+            <button
+              type="button"
+              className={styles.stopButton}
+              onClick={handleCancelIngest}
+              title="Detener ingesta"
+            >
+              <FaStop />
+              Detener
+            </button>
+          )}
           <button className={styles.configButton} onClick={() => setShowConfigModal(true)} title="Configurar ingesta">
             <FaCog />
           </button>
