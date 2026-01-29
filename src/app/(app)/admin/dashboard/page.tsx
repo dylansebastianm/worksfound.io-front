@@ -225,6 +225,37 @@ export default function AdminDashboardPage() {
     }
   }
 
+  const handleCancelIngest = async () => {
+    if (!user) return
+    try {
+      const response = await cancelScrapeJobs(user.id)
+      if (ingestPollRef.current) {
+        clearInterval(ingestPollRef.current)
+        ingestPollRef.current = null
+      }
+      ingestStartTimeRef.current = null
+      if (typeof window !== "undefined") {
+        sessionStorage.removeItem("ingesting_state")
+        sessionStorage.removeItem("ingest_start_ts")
+      }
+      setIsIngesting(false)
+      if (response.success) {
+        setAlert({ status: "success", message: "Ingesta detenida correctamente." })
+      } else {
+        setAlert({ status: "error", message: response.error || "No se pudo detener la ingesta." })
+      }
+    } catch (error) {
+      console.error("Error deteniendo ingesta:", error)
+      ingestStartTimeRef.current = null
+      if (typeof window !== "undefined") {
+        sessionStorage.removeItem("ingesting_state")
+        sessionStorage.removeItem("ingest_start_ts")
+      }
+      setIsIngesting(false)
+      setAlert({ status: "error", message: "Error al detener la ingesta." })
+    }
+  }
+
   const handleSaveConfig = async (config: IngestionConfig) => {
     try {
       const response = await updateIngestionConfig({
