@@ -43,6 +43,7 @@ export default function AdminDashboardPage() {
   const [statistics, setStatistics] = useState<any>(null)
   const [alert, setAlert] = useState<{ status: "success" | "error"; message: string } | null>(null)
   const router = useRouter()
+  const ingestPollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
     const currentUser = getCurrentUser()
