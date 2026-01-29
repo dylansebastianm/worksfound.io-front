@@ -113,3 +113,38 @@ export interface GetJobApplicationAttemptsResponse {
   error?: string;
 }
 
+export interface Connection {
+  id: number;
+  userId: number | null;
+  userEmail: string | null;
+  sessionId: string | null;
+  loginSessionId: string | null;
+  loginStatus: string | null;
+  loginErrorMessage: string | null;
+  loginEmail: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+  captchaResolved: boolean | null;
+  hadOtp: boolean | null;
+  connectionDurationSeconds: number | null;
+  portal: string | null;
+  success: boolean | null;
+  errorLog: string | null;
+}
+
+export interface GetConnectionsParams {
+  page?: number;
+  limit?: number;
+  success?: "true" | "false" | "all";
+  portal?: string;
+  sortField?: "created_at" | "updated_at" | "connection_duration_seconds";
+  sortDirection?: "asc" | "desc";
+}
+
+export interface GetConnectionsResponse {
+  success: boolean;
+  connections?: Connection[];
+  pagination?: PaginationInfo;
+  error?: string;
+}
+

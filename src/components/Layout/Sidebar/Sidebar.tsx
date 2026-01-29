@@ -83,6 +83,11 @@ const navItems: NavItem[] = [
         icon: <IoDocumentTextOutline />,
       },
       {
+        label: "Conexiones",
+        href: "/admin/connections",
+        icon: <IoDocumentTextOutline />,
+      },
+      {
         label: "Incidencias globales",
         href: "/admin/incidents-global",
         icon: <IoDocumentTextOutline />,
