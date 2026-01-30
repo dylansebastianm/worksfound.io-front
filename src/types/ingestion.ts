@@ -5,7 +5,7 @@
 export interface IngestionLog {
   id: number;
   startDateTime: string;
-  status: "Exitoso" | "Fallido" | "En Proceso" | "Error" | "Cancelado" | "Desconocido";
+  status: "Exitoso" | "Fallido" | "En Proceso" | "Error" | "Cancelado" | "Incompleto" | "Desconocido";
   executionTime: string;
   url: string;
   offersFound: number;
@@ -19,7 +19,7 @@ export interface IngestionLog {
 export interface GetIngestionLogsParams {
   page?: number;
   limit?: number;
-  status?: "Exitoso" | "Fallido" | "En Proceso" | "Error" | "Cancelado" | "all";
+  status?: "Exitoso" | "Fallido" | "En Proceso" | "Error" | "Cancelado" | "Incompleto" | "all";
   sortField?: "date_time" | "found" | "inserted" | "duplicates";
   sortDirection?: "asc" | "desc";
 }

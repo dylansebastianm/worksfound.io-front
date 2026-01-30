@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import { FiChevronUp, FiChevronDown, FiClock, FiCheckCircle, FiXCircle, FiAlertCircle, FiExternalLink } from "react-icons/fi"
 import { Pagination } from "@/components/UI/Pagination/Pagination"
 import { LoadingSpinner } from "@/components/UI/LoadingSpinner/LoadingSpinner"
@@ -16,11 +16,10 @@ export default function AdminLoggingsPage() {
   const [alert, setAlert] = useState<{ status: "success" | "error"; message: string } | null>(null)
   const [sortField, setSortField] = useState<"date_time" | "found" | null>(null)
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc")
-  const [selectedStatus, setSelectedStatus] = useState<"Exitoso" | "Fallido" | "En Proceso" | "Error" | "Cancelado" | "all">("all")
+  const [selectedStatus, setSelectedStatus] = useState<"Exitoso" | "Fallido" | "En Proceso" | "Error" | "Cancelado" | "Incompleto" | "all">("all")
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
-  const logsPollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const itemsPerPage = 10
 
@@ -28,17 +27,8 @@ export default function AdminLoggingsPage() {
     loadLogs()
   }, [currentPage, selectedStatus, sortField, sortDirection])
 
-  useEffect(() => {
-    return () => {
-      if (logsPollRef.current) {
-        clearInterval(logsPollRef.current)
-        logsPollRef.current = null
-      }
-    }
-  }, [])
-
-  const loadLogs = async (silent = false) => {
-    if (!silent) setIsLoading(true)
+  const loadLogs = async () => {
+    setIsLoading(true)
     try {
       const response = await getIngestionLogs({
         page: currentPage,
@@ -51,11 +41,13 @@ export default function AdminLoggingsPage() {
       if (response.success && response.logs && response.pagination) {
         // Mapear estados de la base de datos a los estados del frontend
         const mappedLogs: IngestionLog[] = response.logs.map((log) => {
-          let mappedStatus: "Exitoso" | "Fallido" | "En Proceso" = "Exitoso"
+          let mappedStatus: "Exitoso" | "Fallido" | "En Proceso" | "Incompleto" = "Exitoso"
           if (log.status === "Exitoso") {
             mappedStatus = "Exitoso"
           } else if (log.status === "Error" || log.status === "Cancelado" || log.status === "Fallido") {
             mappedStatus = "Fallido"
+          } else if (log.status === "Incompleto") {
+            mappedStatus = "Incompleto"
           } else if (log.status === "En Proceso") {
             mappedStatus = "En Proceso"
           }
@@ -67,17 +59,6 @@ export default function AdminLoggingsPage() {
         setLogs(mappedLogs)
         setTotalPages(response.pagination.totalPages)
         setTotalCount(response.pagination.total)
-        const hasInProgress = mappedLogs.some((l) => l.status === "En Proceso")
-        if (hasInProgress) {
-          if (!logsPollRef.current) {
-            logsPollRef.current = setInterval(() => loadLogs(true), 15000)
-          }
-        } else {
-          if (logsPollRef.current) {
-            clearInterval(logsPollRef.current)
-            logsPollRef.current = null
-          }
-        }
       } else {
         setAlert({
           status: "error",
@@ -91,7 +72,7 @@ export default function AdminLoggingsPage() {
         message: "Error al cargar los logs",
       })
     } finally {
-      if (!silent) setIsLoading(false)
+      setIsLoading(false)
     }
   }
 
@@ -120,6 +101,7 @@ export default function AdminLoggingsPage() {
         return styles.statusSuccess
       case "Fallido":
       case "Error":
+      case "Incompleto":
         return styles.statusFailed
       case "En Proceso":
         return styles.statusInProgress
@@ -134,6 +116,7 @@ export default function AdminLoggingsPage() {
         return <FiCheckCircle size={18} />
       case "Fallido":
       case "Error":
+      case "Incompleto":
         return <FiXCircle size={18} />
       case "En Proceso":
         return <FiAlertCircle size={18} />
@@ -163,8 +146,8 @@ export default function AdminLoggingsPage() {
             options={[
               { value: "all", label: "Todos los estados" },
               { value: "Exitoso", label: "Exitoso" },
-              { value: "Fallido", label: "Fallido" },
               { value: "Error", label: "Error" },
+              { value: "Incompleto", label: "Incompleto" },
               { value: "Cancelado", label: "Cancelado" },
               { value: "En Proceso", label: "En Proceso" },
             ]}
