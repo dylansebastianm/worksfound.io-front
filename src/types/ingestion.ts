@@ -14,6 +14,8 @@ export interface IngestionLog {
   targetJobs?: number | null;
   userId?: number | null;
   userName?: string | null;
+  /** Ruta del blob en GCS del screenshot de error (si hubo) */
+  screenshotBlobPath?: string | null;
 }
 
 export interface GetIngestionLogsParams {

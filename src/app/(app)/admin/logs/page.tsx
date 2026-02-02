@@ -1,14 +1,17 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { FiChevronUp, FiChevronDown, FiClock, FiCheckCircle, FiXCircle, FiAlertCircle, FiExternalLink } from "react-icons/fi"
+import { useState, useEffect, useCallback, useRef } from "react"
+import { FiChevronUp, FiChevronDown, FiClock, FiCheckCircle, FiXCircle, FiAlertCircle, FiExternalLink, FiImage, FiX } from "react-icons/fi"
 import { Pagination } from "@/components/UI/Pagination/Pagination"
 import { LoadingSpinner } from "@/components/UI/LoadingSpinner/LoadingSpinner"
 import { Alert } from "@/components/UI/Alert/Alert"
 import { Select } from "@/components/UI/Select/Select"
 import { getIngestionLogs } from "@/lib/ingestion"
+import { getAuthHeaders } from "@/lib/auth"
 import type { IngestionLog } from "@/types/ingestion"
 import styles from "./logs.module.css"
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
 
 export default function AdminLoggingsPage() {
   const [logs, setLogs] = useState<IngestionLog[]>([])
@@ -20,6 +23,12 @@ export default function AdminLoggingsPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
+  const [screenshotModal, setScreenshotModal] = useState<{ open: boolean; blobUrl: string | null; loading: boolean }>({
+    open: false,
+    blobUrl: null,
+    loading: false,
+  })
+  const screenshotBlobUrlRef = useRef<string | null>(null)
 
   const itemsPerPage = 10
 
@@ -130,6 +139,35 @@ export default function AdminLoggingsPage() {
     return url.substring(0, maxLength) + "..."
   }
 
+  // Cargar y mostrar screenshot en modal (usando proxy con auth admin)
+  const openScreenshotModal = useCallback(async (blobPath: string) => {
+    // Revocar URL anterior si existe
+    if (screenshotBlobUrlRef.current) {
+      URL.revokeObjectURL(screenshotBlobUrlRef.current)
+      screenshotBlobUrlRef.current = null
+    }
+    setScreenshotModal({ open: true, blobUrl: null, loading: true })
+    const proxyUrl = `${API_URL}/api/admin/proxy-diagnostic-screenshot?path=${encodeURIComponent(blobPath)}`
+    try {
+      const res = await fetch(proxyUrl, { headers: getAuthHeaders() })
+      if (!res.ok) throw new Error("No se pudo cargar la imagen")
+      const blob = await res.blob()
+      const blobUrl = URL.createObjectURL(blob)
+      screenshotBlobUrlRef.current = blobUrl
+      setScreenshotModal({ open: true, blobUrl, loading: false })
+    } catch {
+      setScreenshotModal({ open: true, blobUrl: null, loading: false })
+    }
+  }, [])
+
+  const closeScreenshotModal = useCallback(() => {
+    if (screenshotBlobUrlRef.current) {
+      URL.revokeObjectURL(screenshotBlobUrlRef.current)
+      screenshotBlobUrlRef.current = null
+    }
+    setScreenshotModal({ open: false, blobUrl: null, loading: false })
+  }, [])
+
   return (
     <div className={styles.container}>
       {isLoading && <LoadingSpinner />}
@@ -190,6 +228,7 @@ export default function AdminLoggingsPage() {
           </div>
           <div className={styles.columnDuplicates}>Duplicadas</div>
           <div className={styles.columnInserted}>Insertadas</div>
+          <div className={styles.columnScreen}>Screen</div>
         </div>
 
         <div className={styles.tableBody}>
@@ -236,6 +275,21 @@ export default function AdminLoggingsPage() {
               <div className={styles.columnInserted}>
                 <span className={styles.insertedCount}>{log.offersInserted}</span>
               </div>
+
+              <div className={styles.columnScreen}>
+                {log.screenshotBlobPath ? (
+                  <button
+                    className={styles.screenButton}
+                    onClick={() => openScreenshotModal(log.screenshotBlobPath!)}
+                    title="Ver captura de error"
+                  >
+                    <FiImage size={18} />
+                    <span>Screen</span>
+                  </button>
+                ) : (
+                  <span className={styles.noScreen}>—</span>
+                )}
+              </div>
             </div>
             ))
           )}
@@ -245,6 +299,33 @@ export default function AdminLoggingsPage() {
           <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
         )}
       </div>
+
+      {/* Modal de Screenshot */}
+      {screenshotModal.open && (
+        <div className={styles.modalOverlay} onClick={closeScreenshotModal}>
+          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <button className={styles.modalClose} onClick={closeScreenshotModal}>
+              <FiX size={24} />
+            </button>
+            <h3 className={styles.modalTitle}>Captura de Error</h3>
+            {screenshotModal.loading ? (
+              <div className={styles.modalLoading}>
+                <LoadingSpinner />
+                <p>Cargando imagen...</p>
+              </div>
+            ) : screenshotModal.blobUrl ? (
+              <div className={styles.modalImageContainer}>
+                <a href={screenshotModal.blobUrl} target="_blank" rel="noopener noreferrer" className={styles.modalImageLink}>
+                  Abrir en nueva pestaña
+                </a>
+                <img src={screenshotModal.blobUrl} alt="Screenshot de error" className={styles.modalImage} />
+              </div>
+            ) : (
+              <p className={styles.modalError}>No se pudo cargar la imagen.</p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -148,3 +148,21 @@ export interface GetConnectionsResponse {
   error?: string;
 }
 
+/** Resultado del diagnóstico de proxy (IP, LinkedIn, screenshot) */
+export interface ProxyDiagnosticResult {
+  proxy_ip: string | null;
+  ip_check_status: string;
+  ip_latency_ms: number;
+  linkedin_status: string;
+  linkedin_latency_ms: number;
+  screenshot_url: string | null;
+  /** Ruta del blob en GCS; usar con GET /api/admin/proxy-diagnostic-screenshot?path=... (auth admin) para ver la imagen */
+  screenshot_blob_path?: string | null;
+  error: string | null;
+}
+
+export interface RunProxyDiagnosticResponse {
+  success: boolean;
+  results?: ProxyDiagnosticResult;
+  error?: string;
+}

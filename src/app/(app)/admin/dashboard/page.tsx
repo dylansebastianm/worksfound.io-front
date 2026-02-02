@@ -16,13 +16,12 @@ import {
   FaLinkedin,
   FaPlay,
   FaCog,
-  FaStop,
 } from "react-icons/fa"
 import { SiIndeed, SiGlassdoor } from "react-icons/si"
 import { FcGoogle } from "react-icons/fc"
 import IngestionConfigModal, { type IngestionConfig } from "@/components/UI/IngestionConfigModal/IngestionConfigModal"
 import { getIngestionConfig, updateIngestionConfig } from "@/lib/ingestion"
-import { scrapeJobs, getScrapeStatus, cancelScrapeJobs } from "@/lib/jobs"
+import { scrapeJobs, getScrapeStatus } from "@/lib/jobs"
 import { LoadingSpinner } from "@/components/UI/LoadingSpinner/LoadingSpinner"
 import DistributionCard from "@/components/UI/DistributionCard/DistributionCard"
 import { Alert } from "@/components/UI/Alert/Alert"
@@ -45,25 +44,6 @@ export default function AdminDashboardPage() {
   const [alert, setAlert] = useState<{ status: "success" | "error"; message: string } | null>(null)
   const router = useRouter()
   const ingestPollRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const ingestStartTimeRef = useRef<number | null>(null)
-  const [elapsedDisplay, setElapsedDisplay] = useState("0s")
-
-  function formatElapsed(seconds: number): string {
-    const m = Math.floor(seconds / 60)
-    const s = seconds % 60
-    if (m > 0) return `${m}m ${s}s`
-    return `${s}s`
-  }
-
-  useEffect(() => {
-    if (!isIngesting) return
-    const id = setInterval(() => {
-      const start = ingestStartTimeRef.current
-      if (start == null) return
-      setElapsedDisplay(formatElapsed(Math.floor((Date.now() - start) / 1000)))
-    }, 1000)
-    return () => clearInterval(id)
-  }, [isIngesting])
 
   useEffect(() => {
     const currentUser = getCurrentUser()
@@ -79,10 +59,6 @@ export default function AdminDashboardPage() {
       if (typeof window !== "undefined") {
         const ingestingState = sessionStorage.getItem("ingesting_state")
         if (ingestingState === "true" && currentUser?.id) {
-          const startTs = sessionStorage.getItem("ingest_start_ts")
-          const start = startTs ? parseInt(startTs, 10) : Date.now()
-          ingestStartTimeRef.current = start
-          setElapsedDisplay(formatElapsed(Math.floor((Date.now() - start) / 1000)))
           setIsIngesting(true)
           if (ingestPollRef.current) clearInterval(ingestPollRef.current)
           ingestPollRef.current = setInterval(async () => {
@@ -92,17 +68,15 @@ export default function AdminDashboardPage() {
                 clearInterval(ingestPollRef.current)
                 ingestPollRef.current = null
               }
-              ingestStartTimeRef.current = null
-              sessionStorage.removeItem("ingesting_state")
-              sessionStorage.removeItem("ingest_start_ts")
               setIsIngesting(false)
+              sessionStorage.removeItem("ingesting_state")
               loadAdminStats()
               setAlert({
                 status: "success",
                 message: "Ingesta finalizada. Revisa Logs de ingesta para el resultado.",
               })
             }
-          }, 60000)
+          }, 4000)
         }
       }
     }
@@ -155,13 +129,9 @@ export default function AdminDashboardPage() {
   const handleIngestOffers = async () => {
     if (!user) return
 
-    const startedAt = Date.now()
     setIsIngesting(true)
-    ingestStartTimeRef.current = startedAt
-    setElapsedDisplay("0s")
     if (typeof window !== "undefined") {
       sessionStorage.setItem("ingesting_state", "true")
-      sessionStorage.setItem("ingest_start_ts", String(startedAt))
     }
 
     try {
@@ -176,7 +146,7 @@ export default function AdminDashboardPage() {
           status: "success",
           message: response.message || "Ingesta iniciada. El proceso continúa en segundo plano.",
         })
-        // Polling cada 1 minuto hasta que el backend termine
+        // Polling hasta que el backend termine
         if (ingestPollRef.current) clearInterval(ingestPollRef.current)
         ingestPollRef.current = setInterval(async () => {
           const statusRes = await getScrapeStatus(user.id)
@@ -185,25 +155,21 @@ export default function AdminDashboardPage() {
               clearInterval(ingestPollRef.current)
               ingestPollRef.current = null
             }
-            ingestStartTimeRef.current = null
+            setIsIngesting(false)
             if (typeof window !== "undefined") {
               sessionStorage.removeItem("ingesting_state")
-              sessionStorage.removeItem("ingest_start_ts")
             }
-            setIsIngesting(false)
             loadAdminStats()
             setAlert({
               status: "success",
               message: "Ingesta finalizada. Revisa Logs de ingesta para el resultado.",
             })
           }
-        }, 60000)
+        }, 4000)
       } else {
-        ingestStartTimeRef.current = null
         setIsIngesting(false)
         if (typeof window !== "undefined") {
           sessionStorage.removeItem("ingesting_state")
-          sessionStorage.removeItem("ingest_start_ts")
         }
         setAlert({
           status: "error",
@@ -212,47 +178,14 @@ export default function AdminDashboardPage() {
       }
     } catch (error: any) {
       console.error("Error en ingesta:", error)
-      ingestStartTimeRef.current = null
       setIsIngesting(false)
       if (typeof window !== "undefined") {
         sessionStorage.removeItem("ingesting_state")
-        sessionStorage.removeItem("ingest_start_ts")
       }
       setAlert({
         status: "error",
         message: "Error al realizar la ingesta. Por favor, intenta nuevamente.",
       })
-    }
-  }
-
-  const handleCancelIngest = async () => {
-    if (!user) return
-    try {
-      const response = await cancelScrapeJobs(user.id)
-      if (ingestPollRef.current) {
-        clearInterval(ingestPollRef.current)
-        ingestPollRef.current = null
-      }
-      ingestStartTimeRef.current = null
-      if (typeof window !== "undefined") {
-        sessionStorage.removeItem("ingesting_state")
-        sessionStorage.removeItem("ingest_start_ts")
-      }
-      setIsIngesting(false)
-      if (response.success) {
-        setAlert({ status: "success", message: "Ingesta detenida correctamente." })
-      } else {
-        setAlert({ status: "error", message: response.error || "No se pudo detener la ingesta." })
-      }
-    } catch (error) {
-      console.error("Error deteniendo ingesta:", error)
-      ingestStartTimeRef.current = null
-      if (typeof window !== "undefined") {
-        sessionStorage.removeItem("ingesting_state")
-        sessionStorage.removeItem("ingest_start_ts")
-      }
-      setIsIngesting(false)
-      setAlert({ status: "error", message: "Error al detener la ingesta." })
     }
   }
 
@@ -345,19 +278,8 @@ export default function AdminDashboardPage() {
             disabled={isIngesting}
           >
             <FaPlay />
-            {isIngesting ? `Realizando ingesta ${elapsedDisplay}` : "Realizar Ingesta"}
+            {isIngesting ? "Realizando Ingesta..." : "Realizar Ingesta"}
           </button>
-          {isIngesting && (
-            <button
-              type="button"
-              className={styles.stopButton}
-              onClick={handleCancelIngest}
-              title="Detener ingesta"
-            >
-              <FaStop />
-              Detener
-            </button>
-          )}
           <button className={styles.configButton} onClick={() => setShowConfigModal(true)} title="Configurar ingesta">
             <FaCog />
           </button>

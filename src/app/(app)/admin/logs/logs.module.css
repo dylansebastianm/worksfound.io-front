@@ -77,7 +77,7 @@
 
 .tableHeader {
   display: grid;
-  grid-template-columns: 1.5fr 1fr 0.8fr 2fr 0.8fr 0.8fr 0.8fr;
+  grid-template-columns: 1.5fr 1fr 0.8fr 2fr 0.8fr 0.8fr 0.8fr 0.5fr;
   gap: 1rem;
   padding: 0.75rem 1rem;
   background: var(--surface);
@@ -104,7 +104,7 @@
 
 .tableRow {
   display: grid;
-  grid-template-columns: 1.5fr 1fr 0.8fr 2fr 0.8fr 0.8fr 0.8fr;
+  grid-template-columns: 1.5fr 1fr 0.8fr 2fr 0.8fr 0.8fr 0.8fr 0.5fr;
   gap: 1rem;
   padding: 1rem;
   border-bottom: 1px solid var(--border);
@@ -247,6 +247,125 @@
   font-size: 1rem;
 }
 
+/* Columna Screen */
+.columnScreen {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.screenButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.6rem;
+  min-width: 80px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--primary-color);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.screenButton:hover {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+.noScreen {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+/* Modal de Screenshot */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 2rem;
+}
+
+.modalContent {
+  position: relative;
+  background: white;
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow: auto;
+  box-shadow: var(--shadow-lg);
+}
+
+.modalClose {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0.25rem;
+  transition: var(--transition-fast);
+}
+
+.modalClose:hover {
+  color: var(--text-primary);
+}
+
+.modalTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+  padding-right: 2rem;
+}
+
+.modalLoading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 2rem;
+  color: var(--text-secondary);
+}
+
+.modalImageContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.modalImageLink {
+  color: var(--primary-color);
+  text-decoration: underline;
+  font-size: 0.9rem;
+}
+
+.modalImage {
+  max-width: 100%;
+  max-height: 70vh;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.modalError {
+  color: #ef4444;
+  text-align: center;
+  padding: 2rem;
+}
+
 /* Sortable headers */
 .sortableHeader {
   display: flex;
@@ -280,7 +399,7 @@
 @media (max-width: 1200px) {
   .tableHeader,
   .tableRow {
-    grid-template-columns: 1.2fr 0.8fr 0.6fr 1.5fr 0.6fr 0.6fr 0.6fr;
+    grid-template-columns: 1.2fr 0.8fr 0.6fr 1.5fr 0.6fr 0.6fr 0.6fr 0.4fr;
     font-size: 0.85rem;
   }
 
@@ -302,7 +421,8 @@
   .columnUrl,
   .columnFound,
   .columnDuplicates,
-  .columnInserted {
+  .columnInserted,
+  .columnScreen {
     justify-content: flex-start;
   }
 

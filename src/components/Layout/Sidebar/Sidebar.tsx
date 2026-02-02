@@ -15,6 +15,7 @@ import {
   IoChatbubblesOutline,
   IoChevronDownOutline,
   IoSettingsOutline,
+  IoFlashOutline,
 } from "react-icons/io5"
 import { logout, isAdmin } from "@/lib/auth"
 import styles from "./Sidebar.module.css"
@@ -101,6 +102,11 @@ const navItems: NavItem[] = [
         label: "CV Prompt",
         href: "/admin/cv-prompt",
         icon: <IoChatbubblesOutline />,
+      },
+      {
+        label: "Diagnóstico de Proxy",
+        href: "/admin/proxy-diagnostic",
+        icon: <IoFlashOutline />,
       },
     ],
   },
