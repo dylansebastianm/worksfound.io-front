@@ -195,25 +195,15 @@ export default function AdminProxyDiagnosticPage() {
               </div>
             )}
           </dl>
-          {(results.screenshot_blob_path || results.screenshot_url || screenshotBlobUrl) && (
+          {(results.screenshot_blob_path || results.screenshot_url || screenshotBlobUrl || results.screenshot_error) && (
             <div className={styles.screenshot}>
               <dt className={styles.screenshotLabel}>Captura LinkedIn</dt>
-              {screenshotBlobUrl ? (
-                <>
-                  <a href={screenshotBlobUrl} target="_blank" rel="noopener noreferrer" className={styles.screenshotLink}>
-                    Abrir en nueva pestaña
-                  </a>
-                  <img src={screenshotBlobUrl} alt="Screenshot LinkedIn" className={styles.screenshotImg} />
-                </>
+              {results.screenshot_error ? (
+                <p className={styles.screenshotError}>No disponible: {results.screenshot_error}</p>
+              ) : screenshotBlobUrl ? (
+                <img src={screenshotBlobUrl} alt="Screenshot LinkedIn" className={styles.screenshotImg} />
               ) : (
-                <>
-                  {results.screenshot_url && (
-                    <a href={results.screenshot_url} target="_blank" rel="noopener noreferrer" className={styles.screenshotLink}>
-                      Abrir en nueva pestaña
-                    </a>
-                  )}
-                  <p className={styles.screenshotLoading}>Cargando imagen…</p>
-                </>
+                <p className={styles.screenshotLoading}>Cargando imagen…</p>
               )}
             </div>
           )}

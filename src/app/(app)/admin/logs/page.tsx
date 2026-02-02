@@ -315,9 +315,6 @@ export default function AdminLoggingsPage() {
               </div>
             ) : screenshotModal.blobUrl ? (
               <div className={styles.modalImageContainer}>
-                <a href={screenshotModal.blobUrl} target="_blank" rel="noopener noreferrer" className={styles.modalImageLink}>
-                  Abrir en nueva pestaña
-                </a>
                 <img src={screenshotModal.blobUrl} alt="Screenshot de error" className={styles.modalImage} />
               </div>
             ) : (

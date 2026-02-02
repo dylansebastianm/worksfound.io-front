@@ -158,6 +158,8 @@ export interface ProxyDiagnosticResult {
   screenshot_url: string | null;
   /** Ruta del blob en GCS; usar con GET /api/admin/proxy-diagnostic-screenshot?path=... (auth admin) para ver la imagen */
   screenshot_blob_path?: string | null;
+  /** Mensaje cuando falló la captura o subida del screenshot */
+  screenshot_error?: string | null;
   error: string | null;
 }
 
