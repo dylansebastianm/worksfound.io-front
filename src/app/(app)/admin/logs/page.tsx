@@ -278,14 +278,12 @@ export default function AdminLoggingsPage() {
 
               <div className={styles.columnScreen}>
                 {log.screenshotBlobPath ? (
-                  <button
-                    className={styles.screenButton}
+                  <FiImage
+                    size={20}
+                    className={styles.screenIcon}
                     onClick={() => openScreenshotModal(log.screenshotBlobPath!)}
                     title="Ver captura de error"
-                  >
-                    <FiImage size={18} />
-                    <span>Screen</span>
-                  </button>
+                  />
                 ) : (
                   <span className={styles.noScreen}>—</span>
                 )}

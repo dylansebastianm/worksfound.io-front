@@ -254,27 +254,15 @@
   align-items: center;
 }
 
-.screenButton {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
-  padding: 0.4rem 0.6rem;
-  min-width: 80px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: var(--surface);
-  color: var(--primary-color);
-  font-size: 0.85rem;
-  font-weight: 500;
+.screenIcon {
   cursor: pointer;
+  color: var(--primary-color);
   transition: var(--transition-fast);
 }
 
-.screenButton:hover {
-  background: var(--primary-color);
-  color: white;
-  border-color: var(--primary-color);
+.screenIcon:hover {
+  color: var(--primary-hover, #2563eb);
+  opacity: 0.85;
 }
 
 .noScreen {
