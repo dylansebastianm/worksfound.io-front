@@ -19,7 +19,18 @@ export interface IngestionConfig {
     results_count: number | null;
     /** Máximo a scrapear por URL (min(results_count, 999)); viene del back */
     scrapeable_count?: number;
-    filters?: { work_type?: string; job_type?: string; experience_level?: string; time_posted?: string };
+    /** Smart Harvest: tipo de URL */
+    type?: "BASE" | "HARVEST";
+    harvest_type?: string;
+    filters?: {
+      work_type?: string;
+      job_type?: string;
+      experience_level?: string;
+      time_posted?: string;
+      keyword?: string;
+      sortBy?: string;
+      harvest?: string;
+    };
   }[] | null;
   /** Suma de results_count de todos los segmentos (para comparar con seed_total_results) */
   segments_total?: number | null;
@@ -37,6 +48,17 @@ export interface UpdateIngestionConfigResponse {
   success: boolean;
   message?: string;
   config?: IngestionConfig;
+  error?: string;
+}
+
+export interface AnalyzeIngestionConfigResponse {
+  success: boolean;
+  seedTotalResults?: number;
+  estimatedBaseCoveragePct?: number;
+  strategyMap?: {
+    base: any[];
+    harvest: any[];
+  };
   error?: string;
 }
 
@@ -116,6 +138,35 @@ export async function updateIngestionConfig(config: Partial<IngestionConfig>): P
       success: false,
       error: 'Error conectando con el servidor',
     };
+  }
+}
+
+/**
+ * Analiza una URL semilla sin persistir (Smart Harvest).
+ */
+export async function analyzeIngestionConfig(url: string): Promise<AnalyzeIngestionConfigResponse> {
+  try {
+    const response = await fetch(`${API_URL}/api/admin/ingestion-config/analyze`, {
+      method: 'POST',
+      headers: {
+        ...getAuthHeaders(),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ url }),
+    });
+
+    if (response.status === 401) {
+      return { success: false, error: 'Token inválido o expirado. Por favor, inicia sesión nuevamente.' };
+    }
+    if (response.status === 403) {
+      return { success: false, error: 'Acceso denegado: Se requieren permisos de administrador.' };
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error analizando URL de ingesta:', error);
+    return { success: false, error: 'Error conectando con el servidor' };
   }
 }
 

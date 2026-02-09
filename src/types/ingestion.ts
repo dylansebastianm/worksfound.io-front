@@ -32,6 +32,45 @@ export interface SearchDetailItem {
   error?: string;
 }
 
+export type SmartHarvestUrlType = "BASE" | "HARVEST";
+
+export interface SmartHarvestExecutionLogItem {
+  type: SmartHarvestUrlType;
+  order: number;
+  url: string;
+  status: "pending" | "processing" | "completed" | "failed";
+  /** Total encontrados en esta URL (raw, puede incluir duplicados) */
+  found_raw?: number;
+  /** Únicos nuevos insertados por esta URL */
+  inserted?: number;
+  /** Duplicados (found_raw - inserted) */
+  duplicates?: number;
+  results_count?: number | null;
+  scrapeable_count?: number | null;
+  filters?: SearchDetailItem["filters"] | null;
+  error?: string;
+}
+
+export interface SmartHarvestSearchDetail {
+  market_stats: {
+    total_market_jobs: number | null;
+    total_coverage_pct: number;
+  };
+  base_performance: {
+    urls_processed: number;
+    offers_found_raw: number;
+    offers_inserted_unique: number;
+    efficiency_pct: number;
+  };
+  harvest_performance: {
+    urls_processed: number;
+    offers_found_raw: number;
+    offers_inserted_unique: number;
+    efficiency_pct: number;
+  };
+  execution_log: SmartHarvestExecutionLogItem[];
+}
+
 export interface IngestionLog {
   id: number;
   startDateTime: string;
@@ -43,12 +82,16 @@ export interface IngestionLog {
   offersInserted: number;
   /** Total semilla al iniciar la ingesta (para calcular cobertura real) */
   seedTotalResults?: number | null;
+  /** Únicos insertados en fase BASE */
+  baseOffersInserted?: number | null;
+  /** Únicos insertados en fase HARVEST */
+  harvestOffersInserted?: number | null;
   targetJobs?: number | null;
   userId?: number | null;
   userName?: string | null;
   screenshotBlobPath?: string | null;
   /** Desglose por URL de la cola (idempotencia/reanudación) */
-  searchDetail?: SearchDetailItem[] | null;
+  searchDetail?: SmartHarvestSearchDetail | SearchDetailItem[] | null;
 }
 
 export interface GetIngestionLogsParams {

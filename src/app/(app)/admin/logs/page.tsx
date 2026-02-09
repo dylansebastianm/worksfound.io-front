@@ -1,14 +1,14 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from "react"
-import { FiChevronUp, FiChevronDown, FiClock, FiCheckCircle, FiXCircle, FiAlertCircle, FiExternalLink, FiImage, FiX } from "react-icons/fi"
+import { FiChevronUp, FiChevronDown, FiClock, FiCheckCircle, FiXCircle, FiAlertCircle, FiExternalLink, FiImage, FiX, FiEye } from "react-icons/fi"
 import { Pagination } from "@/components/UI/Pagination/Pagination"
 import { LoadingSpinner } from "@/components/UI/LoadingSpinner/LoadingSpinner"
 import { Alert } from "@/components/UI/Alert/Alert"
 import { Select } from "@/components/UI/Select/Select"
 import { getIngestionLogs } from "@/lib/ingestion"
 import { getAuthHeaders } from "@/lib/auth"
-import type { IngestionLog } from "@/types/ingestion"
+import type { IngestionLog, SmartHarvestSearchDetail, SmartHarvestExecutionLogItem, SearchDetailItem } from "@/types/ingestion"
 import styles from "./logs.module.css"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
@@ -158,6 +158,18 @@ export default function AdminLoggingsPage() {
     return url.substring(0, maxLength) + "..."
   }
 
+  const getDetailCount = (searchDetail: IngestionLog["searchDetail"]) => {
+    if (!searchDetail) return 0
+    if (Array.isArray(searchDetail)) return searchDetail.length
+    return Array.isArray((searchDetail as SmartHarvestSearchDetail).execution_log) ? (searchDetail as SmartHarvestSearchDetail).execution_log.length : 0
+  }
+
+  const getExecutionLog = (searchDetail: IngestionLog["searchDetail"]): (SmartHarvestExecutionLogItem | SearchDetailItem)[] => {
+    if (!searchDetail) return []
+    if (Array.isArray(searchDetail)) return searchDetail
+    return (searchDetail as SmartHarvestSearchDetail).execution_log || []
+  }
+
   // Cargar y mostrar screenshot en modal (usando proxy con auth admin)
   const openScreenshotModal = useCallback(async (blobPath: string) => {
     // Revocar URL anterior si existe
@@ -285,28 +297,10 @@ export default function AdminLoggingsPage() {
               </div>
 
               <div className={styles.columnUrl}>
-                {log.searchDetail && log.searchDetail.length > 1 ? (
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <button
-                      type="button"
-                      className={styles.clearButton}
-                      onClick={() => openDetailModal(log)}
-                      title="Ver detalle por URL"
-                      style={{ padding: "6px 10px" }}
-                    >
-                      Detalle ({log.searchDetail.length})
-                    </button>
-                    <a href={log.url} target="_blank" rel="noopener noreferrer" className={styles.urlLink} title={log.url}>
-                      <span className={styles.urlText}>{truncateUrl(log.url)}</span>
-                      <FiExternalLink className={styles.externalIcon} size={14} />
-                    </a>
-                  </div>
-                ) : (
-                  <a href={log.url} target="_blank" rel="noopener noreferrer" className={styles.urlLink} title={log.url}>
-                    <span className={styles.urlText}>{truncateUrl(log.url)}</span>
-                    <FiExternalLink className={styles.externalIcon} size={14} />
-                  </a>
-                )}
+                <a href={log.url} target="_blank" rel="noopener noreferrer" className={styles.urlLink} title={log.url}>
+                  <span className={styles.urlText}>{truncateUrl(log.url)}</span>
+                  <FiExternalLink className={styles.externalIcon} size={14} />
+                </a>
               </div>
 
               <div className={styles.columnFound}>
@@ -318,7 +312,25 @@ export default function AdminLoggingsPage() {
               </div>
 
               <div className={styles.columnInserted}>
-                <span className={styles.insertedCount}>{log.offersInserted}</span>
+                {log.baseOffersInserted != null || log.harvestOffersInserted != null ? (
+                  <button
+                    type="button"
+                    className={styles.detailLinkButton}
+                    onClick={() => openDetailModal(log)}
+                    title="Ver detalle Smart Harvest"
+                  >
+                    Ver detalle <FiEye size={16} />
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className={styles.detailLinkButton}
+                    onClick={() => openDetailModal(log)}
+                    title="Ver detalle"
+                  >
+                    Ver detalle <FiEye size={16} />
+                  </button>
+                )}
               </div>
 
               <div className={styles.columnScreen}>
@@ -374,69 +386,189 @@ export default function AdminLoggingsPage() {
             <button className={styles.modalClose} onClick={closeDetailModal}>
               <FiX size={24} />
             </button>
-            <h3 className={styles.modalTitle}>Detalle de ingesta #{detailModal.log.id}</h3>
+            <h3 className={styles.modalTitle}>Detalle Smart Harvest · Ingesta #{detailModal.log.id}</h3>
 
-            <div style={{ marginBottom: 12, color: "var(--text-secondary)", fontSize: 14 }}>
-              <div>
-                <strong>Insertadas (únicas)</strong>: {detailModal.log.offersInserted.toLocaleString("es-ES")} ·{" "}
-                <strong>Encontradas</strong>: {detailModal.log.offersFound.toLocaleString("es-ES")} ·{" "}
-                <strong>Duplicadas</strong>: {detailModal.log.duplicateOffers.toLocaleString("es-ES")}
-              </div>
-              {detailModal.log.seedTotalResults != null && detailModal.log.seedTotalResults > 0 && (
-                <div>
-                  <strong>Total semilla</strong>: {detailModal.log.seedTotalResults.toLocaleString("es-ES")} ·{" "}
-                  <strong>Cobertura (nuevas/semilla)</strong>:{" "}
-                  {((detailModal.log.offersInserted / detailModal.log.seedTotalResults) * 100).toFixed(1)}%
-                </div>
-              )}
-            </div>
+            {(() => {
+              const log = detailModal.log!
+              const sd = log.searchDetail as SmartHarvestSearchDetail | SearchDetailItem[] | null | undefined
+              const isV2 = sd && !Array.isArray(sd) && (sd as SmartHarvestSearchDetail).execution_log
 
-            <div style={{ maxHeight: 420, overflowY: "auto" }}>
-              {(detailModal.log.searchDetail || [])
-                .slice()
-                .sort((a, b) => (a.order || 0) - (b.order || 0))
-                .map((item) => {
-                  const filters = item.filters || undefined
-                  const filterLabels = filters
-                    ? [
-                        filters.work_type,
-                        filters.job_type,
-                        filters.experience_level,
-                        filters.keyword ? `kw:${filters.keyword}` : null,
-                        filters.sortBy ? `sort:${filters.sortBy}` : null,
-                      ]
-                        .filter(Boolean)
-                        .join(" · ")
-                    : null
-                  const jobsFound = item.jobs_found ?? 0
-                  const jobsInserted = item.jobs_inserted ?? 0
-                  const uniqueLabel = `${jobsInserted.toLocaleString("es-ES")}/${jobsFound.toLocaleString("es-ES")} únicas`
-                  const rc = item.results_count
-                  const sc = item.scrapeable_count
-                  const capLabel =
-                    rc != null && sc != null ? `${sc.toLocaleString("es-ES")}/${rc.toLocaleString("es-ES")} resultados` : null
-                  return (
-                    <div key={`${item.order}-${item.url}`} style={{ padding: "10px 0", borderBottom: "1px solid var(--border-color)" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-                        <div style={{ minWidth: 0 }}>
+              const seed = (log.seedTotalResults ?? (isV2 ? (sd as SmartHarvestSearchDetail).market_stats?.total_market_jobs : null)) || null
+              const baseInserted = (log.baseOffersInserted ?? (isV2 ? (sd as SmartHarvestSearchDetail).base_performance?.offers_inserted_unique : null) ?? 0) || 0
+              const harvestInserted = (log.harvestOffersInserted ?? (isV2 ? (sd as SmartHarvestSearchDetail).harvest_performance?.offers_inserted_unique : null) ?? 0) || 0
+              const totalInserted = baseInserted + harvestInserted
+              const totalCov = seed ? (totalInserted / seed) * 100 : null
+              const basePct = seed ? Math.min(100, (baseInserted / seed) * 100) : 0
+              const harvestPct = seed ? Math.min(100, (harvestInserted / seed) * 100) : 0
+
+              const baseCovPct = seed ? (baseInserted / seed) * 100 : null
+              const harvestCovPct = seed ? (harvestInserted / seed) * 100 : null
+
+              const normalizeItem = (item: any) => {
+                const type = item?.type || "BASE"
+                const foundRaw = item?.found_raw ?? item?.jobs_found ?? 0
+                const inserted = item?.inserted ?? item?.jobs_inserted ?? 0
+                const duplicates = item?.duplicates ?? Math.max(Number(foundRaw || 0) - Number(inserted || 0), 0)
+                return {
+                  type,
+                  order: item?.order,
+                  url: item?.url,
+                  status: item?.status,
+                  foundRaw: Number(foundRaw || 0),
+                  inserted: Number(inserted || 0),
+                  duplicates: Number(duplicates || 0),
+                  resultsCount: item?.results_count ?? null,
+                  scrapeableCount: item?.scrapeable_count ?? null,
+                  filters: item?.filters ?? null,
+                  error: item?.error,
+                }
+              }
+
+              const allItems = getExecutionLog(log.searchDetail).map(normalizeItem).sort((a, b) => (a.order || 0) - (b.order || 0))
+              const baseItems = allItems.filter((x) => x.type !== "HARVEST")
+              const harvestItems = allItems.filter((x) => x.type === "HARVEST")
+
+              const baseFoundRaw =
+                (isV2 ? (sd as SmartHarvestSearchDetail).base_performance?.offers_found_raw : null) ??
+                baseItems.filter((x) => x.status === "completed").reduce((acc, x) => acc + (x.foundRaw || 0), 0)
+              const harvestFoundRaw =
+                (isV2 ? (sd as SmartHarvestSearchDetail).harvest_performance?.offers_found_raw : null) ??
+                harvestItems.filter((x) => x.status === "completed").reduce((acc, x) => acc + (x.foundRaw || 0), 0)
+
+              const baseEfficiency =
+                (isV2 ? (sd as SmartHarvestSearchDetail).base_performance?.efficiency_pct : null) ??
+                (baseFoundRaw ? (baseInserted / baseFoundRaw) * 100 : 0)
+              const harvestEfficiency =
+                (isV2 ? (sd as SmartHarvestSearchDetail).harvest_performance?.efficiency_pct : null) ??
+                (harvestFoundRaw ? (harvestInserted / harvestFoundRaw) * 100 : 0)
+
+              const baseUrlsProcessed =
+                (isV2 ? (sd as SmartHarvestSearchDetail).base_performance?.urls_processed : null) ??
+                baseItems.filter((x) => x.status === "completed").length
+              const harvestUrlsProcessed =
+                (isV2 ? (sd as SmartHarvestSearchDetail).harvest_performance?.urls_processed : null) ??
+                harvestItems.filter((x) => x.status === "completed").length
+
+              const renderUrlList = (items: any[], label: string) => {
+                if (!items.length) {
+                  return <div style={{ color: "var(--text-secondary)", fontSize: 13 }}>No hay URLs en {label}.</div>
+                }
+                return (
+                  <div style={{ marginTop: 8 }}>
+                    {items.map((item) => {
+                      const f = item.filters || undefined
+                      const filterLabels = f
+                        ? [
+                            f.work_type,
+                            f.job_type,
+                            f.experience_level,
+                            f.keyword ? `kw:${f.keyword}` : null,
+                            f.sortBy ? `sort:${f.sortBy}` : null,
+                          ]
+                            .filter(Boolean)
+                            .join(" · ")
+                        : null
+                      const uniqueLabel = `${item.inserted.toLocaleString("es-ES")}/${item.foundRaw.toLocaleString("es-ES")} únicas`
+                      const capLabel =
+                        item.resultsCount != null && item.scrapeableCount != null
+                          ? `${Number(item.scrapeableCount).toLocaleString("es-ES")}/${Number(item.resultsCount).toLocaleString("es-ES")} resultados`
+                          : null
+
+                      return (
+                        <div key={`${label}-${item.order}-${item.url}`} style={{ padding: "10px 0", borderBottom: "1px solid var(--border-color)" }}>
                           <div style={{ fontWeight: 600, marginBottom: 4 }}>
                             {item.order}. {filterLabels || "URL"}
                           </div>
                           <a href={item.url} target="_blank" rel="noopener noreferrer" className={styles.urlLink} title={item.url}>
-                            <span className={styles.urlText}>{truncateUrl(item.url, 80)}</span>
+                            <span className={styles.urlText}>{truncateUrl(item.url, 90)}</span>
                             <FiExternalLink className={styles.externalIcon} size={14} />
                           </a>
-                          <div style={{ marginTop: 6, display: "flex", gap: 10, flexWrap: "wrap", color: "var(--text-secondary)" }}>
+                          <div style={{ marginTop: 6, display: "flex", gap: 10, flexWrap: "wrap", color: "var(--text-secondary)", fontSize: 13 }}>
                             <span><strong>Únicas</strong>: {uniqueLabel}</span>
                             {capLabel && <span><strong>Techo</strong>: {capLabel}</span>}
                             <span><strong>Estado</strong>: {item.status}</span>
+                            {item.error && <span style={{ color: "#ef4444" }}><strong>Error</strong>: {item.error}</span>}
                           </div>
                         </div>
+                      )
+                    })}
+                  </div>
+                )
+              }
+
+              return (
+                <div style={{ marginBottom: 12, color: "var(--text-secondary)", fontSize: 14 }}>
+                  {seed != null && seed > 0 && (
+                    <>
+                      <div style={{ marginBottom: 10 }}>
+                        <div style={{ fontWeight: 700, color: "var(--text-primary)", marginBottom: 6 }}>Mercado</div>
+                        <div>
+                          <strong>URL semilla (mercado estimado)</strong>: {seed.toLocaleString("es-ES")} ofertas
+                        </div>
+                        <div>
+                          <strong>Cobertura total</strong>: {totalCov != null ? `${totalCov.toFixed(1)}%` : "—"} ({totalInserted.toLocaleString("es-ES")} únicas)
+                        </div>
+                      </div>
+
+                      <div style={{ marginTop: 10 }}>
+                        <div style={{ fontWeight: 700, color: "var(--text-primary)", marginBottom: 6 }}>Cobertura por fase</div>
+                        <div style={{ height: 14, background: "rgba(255,255,255,0.06)", borderRadius: 8, overflow: "hidden", display: "flex" }}>
+                          <div style={{ width: `${basePct}%`, height: "100%", background: "#22c55e" }} />
+                          <div style={{ width: `${harvestPct}%`, height: "100%", background: "#3b82f6" }} />
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, fontSize: 12 }}>
+                          <span><strong>Base</strong>: {baseInserted.toLocaleString("es-ES")}</span>
+                          <span><strong>Harvest</strong>: {harvestInserted.toLocaleString("es-ES")}</span>
+                          <span><strong>Total</strong>: {totalInserted.toLocaleString("es-ES")}</span>
+                        </div>
+                        <div style={{ marginTop: 8 }}>
+                          Se scrapearon <strong>{baseInserted.toLocaleString("es-ES")}</strong> ofertas de la base +{" "}
+                          <strong>{harvestInserted.toLocaleString("es-ES")}</strong> ofertas rescatadas por harvest.{" "}
+                          <strong>Cobertura Total</strong>: {totalCov != null ? `${totalCov.toFixed(1)}%` : "—"} del mercado estimado.
+                        </div>
+                      </div>
+
+                      <div style={{ marginTop: 14 }}>
+                        <div style={{ fontWeight: 700, color: "var(--text-primary)", marginBottom: 6 }}>BASE (garantizado)</div>
+                        <div>
+                          <strong>Total BASE</strong>: {baseInserted.toLocaleString("es-ES")} únicas ·{" "}
+                          <strong>Cobertura BASE</strong>: {baseCovPct != null ? `${baseCovPct.toFixed(1)}%` : "—"} ·{" "}
+                          <strong>Eficiencia</strong>: {Number(baseEfficiency || 0).toFixed(1)}% ·{" "}
+                          <strong>URLs procesadas</strong>: {Number(baseUrlsProcessed || 0).toLocaleString("es-ES")}
+                        </div>
+                        {renderUrlList(baseItems, "BASE")}
+                      </div>
+
+                      <div style={{ marginTop: 14 }}>
+                        <div style={{ fontWeight: 700, color: "var(--text-primary)", marginBottom: 6 }}>HARVEST (pesca excedente)</div>
+                        <div>
+                          <strong>Total HARVEST</strong>: {harvestInserted.toLocaleString("es-ES")} únicas ·{" "}
+                          <strong>Cobertura HARVEST</strong>: {harvestCovPct != null ? `${harvestCovPct.toFixed(1)}%` : "—"} ·{" "}
+                          <strong>Eficiencia</strong>: {Number(harvestEfficiency || 0).toFixed(1)}% ·{" "}
+                          <strong>URLs procesadas</strong>: {Number(harvestUrlsProcessed || 0).toLocaleString("es-ES")}
+                        </div>
+                        {renderUrlList(harvestItems, "HARVEST")}
+                      </div>
+                    </>
+                  )}
+
+                  {!(seed != null && seed > 0) && (
+                    <div>
+                      <div style={{ fontWeight: 700, color: "var(--text-primary)", marginBottom: 6 }}>Resumen</div>
+                      <div>
+                        <strong>Insertadas (únicas)</strong>: {totalInserted.toLocaleString("es-ES")} ·{" "}
+                        <strong>Encontradas</strong>: {log.offersFound.toLocaleString("es-ES")} ·{" "}
+                        <strong>Duplicadas</strong>: {log.duplicateOffers.toLocaleString("es-ES")}
+                      </div>
+                      <div style={{ marginTop: 8 }}>
+                        <div style={{ fontWeight: 700, color: "var(--text-primary)", marginBottom: 6 }}>URLs</div>
+                        {renderUrlList(allItems, "URLs")}
                       </div>
                     </div>
-                  )
-                })}
-            </div>
+                  )}
+                </div>
+              )
+            })()}
           </div>
         </div>
       )}

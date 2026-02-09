@@ -66,6 +66,32 @@
   color: var(--primary-color);
 }
 
+/* Link/button sin borde para abrir detalle */
+.detailLinkButton {
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  color: var(--primary-color);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: var(--transition-fast);
+}
+
+.detailLinkButton:hover {
+  color: var(--primary-hover);
+  text-decoration: underline;
+}
+
+.detailLinkButton:focus {
+  outline: none;
+  text-decoration: underline;
+}
+
 /* Tabla */
 .tableCard {
   background: white;
