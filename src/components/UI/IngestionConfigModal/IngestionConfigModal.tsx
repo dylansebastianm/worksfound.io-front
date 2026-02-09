@@ -16,7 +16,15 @@ export interface GeneratedQueueItem {
   /** Máximo a scrapear por esta URL (min(results_count, 999)) */
   scrapeable_count?: number
   /** Filtros aplicados (modalidad, tipo empleo, experiencia, fecha publicación) */
-  filters?: { work_type?: string; job_type?: string; experience_level?: string; time_posted?: string }
+  filters?: {
+    work_type?: string
+    job_type?: string
+    experience_level?: string
+    time_posted?: string
+    keyword?: string
+    sortBy?: string
+    harvest?: string
+  }
 }
 
 export interface IngestionConfig {
@@ -131,7 +139,15 @@ export default function IngestionConfigModal({
                       const scrapeable = typeof item === "object" ? item.scrapeable_count : undefined
                       const filters = typeof item === "object" && item?.filters ? item.filters : undefined
                       const filterLabels = filters
-                        ? [filters.work_type, filters.job_type, filters.experience_level, filters.time_posted].filter(Boolean).join(" · ")
+                        ? [
+                            filters.work_type,
+                            filters.job_type,
+                            filters.experience_level,
+                            filters.keyword ? `kw:${filters.keyword}` : null,
+                            filters.sortBy ? `sort:${filters.sortBy}` : null,
+                          ]
+                            .filter(Boolean)
+                            .join(" · ")
                         : null
                       const countLabel =
                         count != null

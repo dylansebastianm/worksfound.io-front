@@ -28,6 +28,10 @@ export default function AdminLoggingsPage() {
     blobUrl: null,
     loading: false,
   })
+  const [detailModal, setDetailModal] = useState<{ open: boolean; log: IngestionLog | null }>({
+    open: false,
+    log: null,
+  })
   const screenshotBlobUrlRef = useRef<string | null>(null)
   const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
@@ -183,6 +187,14 @@ export default function AdminLoggingsPage() {
     setScreenshotModal({ open: false, blobUrl: null, loading: false })
   }, [])
 
+  const openDetailModal = useCallback((log: IngestionLog) => {
+    setDetailModal({ open: true, log })
+  }, [])
+
+  const closeDetailModal = useCallback(() => {
+    setDetailModal({ open: false, log: null })
+  }, [])
+
   return (
     <div className={styles.container}>
       {isLoading && <LoadingSpinner />}
@@ -273,10 +285,28 @@ export default function AdminLoggingsPage() {
               </div>
 
               <div className={styles.columnUrl}>
-                <a href={log.url} target="_blank" rel="noopener noreferrer" className={styles.urlLink} title={log.url}>
-                  <span className={styles.urlText}>{truncateUrl(log.url)}</span>
-                  <FiExternalLink className={styles.externalIcon} size={14} />
-                </a>
+                {log.searchDetail && log.searchDetail.length > 1 ? (
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <button
+                      type="button"
+                      className={styles.clearButton}
+                      onClick={() => openDetailModal(log)}
+                      title="Ver detalle por URL"
+                      style={{ padding: "6px 10px" }}
+                    >
+                      Detalle ({log.searchDetail.length})
+                    </button>
+                    <a href={log.url} target="_blank" rel="noopener noreferrer" className={styles.urlLink} title={log.url}>
+                      <span className={styles.urlText}>{truncateUrl(log.url)}</span>
+                      <FiExternalLink className={styles.externalIcon} size={14} />
+                    </a>
+                  </div>
+                ) : (
+                  <a href={log.url} target="_blank" rel="noopener noreferrer" className={styles.urlLink} title={log.url}>
+                    <span className={styles.urlText}>{truncateUrl(log.url)}</span>
+                    <FiExternalLink className={styles.externalIcon} size={14} />
+                  </a>
+                )}
               </div>
 
               <div className={styles.columnFound}>
@@ -333,6 +363,80 @@ export default function AdminLoggingsPage() {
             ) : (
               <p className={styles.modalError}>No se pudo cargar la imagen.</p>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Modal de detalle por URL */}
+      {detailModal.open && detailModal.log && (
+        <div className={styles.modalOverlay} onClick={closeDetailModal}>
+          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <button className={styles.modalClose} onClick={closeDetailModal}>
+              <FiX size={24} />
+            </button>
+            <h3 className={styles.modalTitle}>Detalle de ingesta #{detailModal.log.id}</h3>
+
+            <div style={{ marginBottom: 12, color: "var(--text-secondary)", fontSize: 14 }}>
+              <div>
+                <strong>Insertadas (únicas)</strong>: {detailModal.log.offersInserted.toLocaleString("es-ES")} ·{" "}
+                <strong>Encontradas</strong>: {detailModal.log.offersFound.toLocaleString("es-ES")} ·{" "}
+                <strong>Duplicadas</strong>: {detailModal.log.duplicateOffers.toLocaleString("es-ES")}
+              </div>
+              {detailModal.log.seedTotalResults != null && detailModal.log.seedTotalResults > 0 && (
+                <div>
+                  <strong>Total semilla</strong>: {detailModal.log.seedTotalResults.toLocaleString("es-ES")} ·{" "}
+                  <strong>Cobertura (nuevas/semilla)</strong>:{" "}
+                  {((detailModal.log.offersInserted / detailModal.log.seedTotalResults) * 100).toFixed(1)}%
+                </div>
+              )}
+            </div>
+
+            <div style={{ maxHeight: 420, overflowY: "auto" }}>
+              {(detailModal.log.searchDetail || [])
+                .slice()
+                .sort((a, b) => (a.order || 0) - (b.order || 0))
+                .map((item) => {
+                  const filters = item.filters || undefined
+                  const filterLabels = filters
+                    ? [
+                        filters.work_type,
+                        filters.job_type,
+                        filters.experience_level,
+                        filters.keyword ? `kw:${filters.keyword}` : null,
+                        filters.sortBy ? `sort:${filters.sortBy}` : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")
+                    : null
+                  const jobsFound = item.jobs_found ?? 0
+                  const jobsInserted = item.jobs_inserted ?? 0
+                  const uniqueLabel = `${jobsInserted.toLocaleString("es-ES")}/${jobsFound.toLocaleString("es-ES")} únicas`
+                  const rc = item.results_count
+                  const sc = item.scrapeable_count
+                  const capLabel =
+                    rc != null && sc != null ? `${sc.toLocaleString("es-ES")}/${rc.toLocaleString("es-ES")} resultados` : null
+                  return (
+                    <div key={`${item.order}-${item.url}`} style={{ padding: "10px 0", borderBottom: "1px solid var(--border-color)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontWeight: 600, marginBottom: 4 }}>
+                            {item.order}. {filterLabels || "URL"}
+                          </div>
+                          <a href={item.url} target="_blank" rel="noopener noreferrer" className={styles.urlLink} title={item.url}>
+                            <span className={styles.urlText}>{truncateUrl(item.url, 80)}</span>
+                            <FiExternalLink className={styles.externalIcon} size={14} />
+                          </a>
+                          <div style={{ marginTop: 6, display: "flex", gap: 10, flexWrap: "wrap", color: "var(--text-secondary)" }}>
+                            <span><strong>Únicas</strong>: {uniqueLabel}</span>
+                            {capLabel && <span><strong>Techo</strong>: {capLabel}</span>}
+                            <span><strong>Estado</strong>: {item.status}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+            </div>
           </div>
         </div>
       )}
