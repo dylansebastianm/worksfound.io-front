@@ -2,6 +2,15 @@
  * Tipos globales para el módulo de ingestion logs
  */
 
+/** Estado de una URL dentro de la cola de una ejecución */
+export interface SearchDetailItem {
+  url: string;
+  order: number;
+  status: "pending" | "processing" | "completed" | "failed";
+  jobs_found?: number;
+  error?: string;
+}
+
 export interface IngestionLog {
   id: number;
   startDateTime: string;
@@ -14,8 +23,9 @@ export interface IngestionLog {
   targetJobs?: number | null;
   userId?: number | null;
   userName?: string | null;
-  /** Ruta del blob en GCS del screenshot de error (si hubo) */
   screenshotBlobPath?: string | null;
+  /** Desglose por URL de la cola (idempotencia/reanudación) */
+  searchDetail?: SearchDetailItem[] | null;
 }
 
 export interface GetIngestionLogsParams {

@@ -29,15 +29,30 @@ export default function AdminLoggingsPage() {
     loading: false,
   })
   const screenshotBlobUrlRef = useRef<string | null>(null)
+  const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const itemsPerPage = 10
 
+  // Carga inicial y al cambiar filtros/página
   useEffect(() => {
     loadLogs()
   }, [currentPage, selectedStatus, sortField, sortDirection])
 
-  const loadLogs = async () => {
-    setIsLoading(true)
+  // Polling cada 1 minuto para actualizar logs (p. ej. ingesta "En Proceso" → contadores y estado)
+  useEffect(() => {
+    pollingIntervalRef.current = setInterval(() => {
+      loadLogs(true) // silent: no mostrar spinner en cada refresco
+    }, 60_000) // 1 minuto
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current)
+        pollingIntervalRef.current = null
+      }
+    }
+  }, [currentPage, selectedStatus, sortField, sortDirection])
+
+  const loadLogs = async (silent = false) => {
+    if (!silent) setIsLoading(true)
     try {
       const response = await getIngestionLogs({
         page: currentPage,
@@ -81,7 +96,7 @@ export default function AdminLoggingsPage() {
         message: "Error al cargar los logs",
       })
     } finally {
-      setIsLoading(false)
+      if (!silent) setIsLoading(false)
     }
   }
 

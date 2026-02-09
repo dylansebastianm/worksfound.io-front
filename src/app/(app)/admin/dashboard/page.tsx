@@ -33,12 +33,17 @@ export default function AdminDashboardPage() {
   const [isIngesting, setIsIngesting] = useState(false)
   const [showConfigModal, setShowConfigModal] = useState(false)
   const [ingestConfig, setIngestConfig] = useState<IngestionConfig>({
-    url: "https://www.linkedin.com/jobs/search/?currentJobId=4348975976&f_TPR=r2592000&geoId=92000000&keywords=fullstack%20developer&origin=JOB_SEARCH_PAGE_LOCATION_AUTOCOMPLETE&refresh=true",
+    url: "https://www.linkedin.com/jobs/search",
     limit: 200,
     scheduledTime: "",
     autoSchedule: false,
+    seedTotalResults: null,
+    generatedQueue: null,
+    segmentsTotal: null,
+    coveragePercent: null,
   })
   const [isLoadingConfig, setIsLoadingConfig] = useState(false)
+  const [isSavingConfig, setIsSavingConfig] = useState(false)
   const [isLoadingStats, setIsLoadingStats] = useState(true)
   const [statsError, setStatsError] = useState<string | null>(null)
   const [statistics, setStatistics] = useState<any>(null)
@@ -71,7 +76,6 @@ export default function AdminDashboardPage() {
       router.push("/login")
     } else {
       setUser(currentUser)
-      // Cargar configuración de ingesta al montar el componente
       loadIngestionConfig()
       loadAdminStats()
       
@@ -143,6 +147,10 @@ export default function AdminDashboardPage() {
           limit: response.config.max_jobs,
           scheduledTime: response.config.scheduled_time || "",
           autoSchedule: response.config.auto_schedule_enabled,
+          seedTotalResults: response.config.seed_total_results ?? null,
+          generatedQueue: response.config.generated_queue ?? null,
+          segmentsTotal: response.config.segments_total ?? null,
+          coveragePercent: response.config.coverage_percent ?? null,
         })
       }
     } catch (error) {
@@ -257,6 +265,7 @@ export default function AdminDashboardPage() {
   }
 
   const handleSaveConfig = async (config: IngestionConfig) => {
+    setIsSavingConfig(true)
     try {
       const response = await updateIngestionConfig({
         url: config.url,
@@ -265,12 +274,23 @@ export default function AdminDashboardPage() {
         auto_schedule_enabled: config.autoSchedule,
       })
 
-      if (response.success) {
-        setIngestConfig(config)
+      if (response.success && response.config) {
+        setIngestConfig({
+          url: config.url,
+          limit: config.limit,
+          scheduledTime: config.scheduledTime,
+          autoSchedule: config.autoSchedule,
+          seedTotalResults: response.config.seed_total_results ?? null,
+          generatedQueue: response.config.generated_queue ?? null,
+          segmentsTotal: response.config.segments_total ?? null,
+          coveragePercent: response.config.coverage_percent ?? null,
+        })
         setShowConfigModal(false)
         setAlert({
           status: "success",
-          message: "Configuración guardada exitosamente",
+          message: response.config.generated_queue?.length
+            ? `Configuración guardada. Plan de ingesta: ${response.config.generated_queue.length} URL(s).`
+            : "Configuración guardada exitosamente",
         })
       } else {
         setAlert({
@@ -284,6 +304,8 @@ export default function AdminDashboardPage() {
         status: "error",
         message: "Error al guardar la configuración. Por favor, intenta nuevamente.",
       })
+    } finally {
+      setIsSavingConfig(false)
     }
   }
 
@@ -369,6 +391,7 @@ export default function AdminDashboardPage() {
         onClose={() => setShowConfigModal(false)}
         onSave={handleSaveConfig}
         initialConfig={ingestConfig}
+        isSaving={isSavingConfig}
       />
 
       <div className={styles.usersGrid}>

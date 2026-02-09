@@ -11,6 +11,20 @@ export interface IngestionConfig {
   auto_schedule_enabled: boolean;
   created_at: string | null;
   updated_at: string | null;
+  /** Total de resultados en la URL semilla (lo que muestra LinkedIn) */
+  seed_total_results?: number | null;
+  /** Lista de segmentos: { url, results_count, scrapeable_count?, filters? } */
+  generated_queue?: {
+    url: string;
+    results_count: number | null;
+    /** Máximo a scrapear por URL (min(results_count, 999)); viene del back */
+    scrapeable_count?: number;
+    filters?: { work_type?: string; job_type?: string; experience_level?: string; time_posted?: string };
+  }[] | null;
+  /** Suma de results_count de todos los segmentos (para comparar con seed_total_results) */
+  segments_total?: number | null;
+  /** Porcentaje de cobertura: (segments_total / seed_total_results) * 100 */
+  coverage_percent?: number | null;
 }
 
 export interface GetIngestionConfigResponse {
