@@ -47,7 +47,7 @@ export default function AdminDashboardPage() {
   const [isLoadingStats, setIsLoadingStats] = useState(true)
   const [statsError, setStatsError] = useState<string | null>(null)
   const [statistics, setStatistics] = useState<any>(null)
-  const [alert, setAlert] = useState<{ status: "success" | "error"; message: string } | null>(null)
+  const [alert, setAlert] = useState<{ status: "success" | "error" | "warning"; message: string } | null>(null)
   const router = useRouter()
   const ingestPollRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const ingestStartTimeRef = useRef<number | null>(null)
@@ -316,11 +316,14 @@ export default function AdminDashboardPage() {
           coveragePercent: response.config.coverage_percent ?? null,
         })
         setShowConfigModal(false)
-        setAlert({
-          status: "success",
-          message: response.config.generated_queue?.length
+        const message =
+          response.message ||
+          (response.config.generated_queue?.length
             ? `Configuración guardada. Plan de ingesta: ${response.config.generated_queue.length} URL(s).`
-            : "Configuración guardada exitosamente",
+            : "Configuración guardada exitosamente")
+        setAlert({
+          status: response.explorer_ran === false ? "warning" : "success",
+          message,
         })
       } else {
         setAlert({

@@ -47,6 +47,7 @@ export interface GetIngestionConfigResponse {
 export interface UpdateIngestionConfigResponse {
   success: boolean;
   message?: string;
+  explorer_ran?: boolean;
   config?: IngestionConfig;
   error?: string;
 }
