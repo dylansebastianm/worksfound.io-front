@@ -78,8 +78,52 @@ export default function AdminDashboardPage() {
       setUser(currentUser)
       loadIngestionConfig()
       loadAdminStats()
-      
-      // Verificar si hay una ingesta en curso desde sessionStorage y reanudar polling
+
+      // Comprobar en BD si ya hay una ingesta en curso (p. ej. Job corriendo, otra pestaña, o recarga)
+      const checkExistingIngest = async () => {
+        if (!currentUser?.id) return
+        try {
+          const statusRes = await getScrapeStatus(currentUser.id)
+          if (statusRes.success && statusRes.is_running === true) {
+            const startTs = typeof window !== "undefined" ? sessionStorage.getItem("ingest_start_ts") : null
+            const start = startTs ? parseInt(startTs, 10) : Date.now()
+            if (typeof window !== "undefined") {
+              sessionStorage.setItem("ingesting_state", "true")
+              if (!startTs) sessionStorage.setItem("ingest_start_ts", String(start))
+            }
+            ingestStartTimeRef.current = start
+            setElapsedDisplay(formatElapsed(Math.floor((Date.now() - start) / 1000)))
+            setIsIngesting(true)
+            if (ingestPollRef.current) clearInterval(ingestPollRef.current)
+            ingestPollRef.current = setInterval(pollStatus, 4000)
+          }
+        } catch {
+          // ignore
+        }
+      }
+
+      const pollStatus = async () => {
+        if (!currentUser?.id) return
+        const statusRes = await getScrapeStatus(currentUser.id)
+        if (statusRes.success && statusRes.is_running === false) {
+          if (ingestPollRef.current) {
+            clearInterval(ingestPollRef.current)
+            ingestPollRef.current = null
+          }
+          ingestStartTimeRef.current = null
+          if (typeof window !== "undefined") {
+            sessionStorage.removeItem("ingesting_state")
+            sessionStorage.removeItem("ingest_start_ts")
+          }
+          setIsIngesting(false)
+          loadAdminStats()
+          setAlert({
+            status: "success",
+            message: "Ingesta finalizada. Revisa Logs de ingesta para el resultado.",
+          })
+        }
+      }
+
       if (typeof window !== "undefined") {
         const ingestingState = sessionStorage.getItem("ingesting_state")
         if (ingestingState === "true" && currentUser?.id) {
@@ -89,24 +133,10 @@ export default function AdminDashboardPage() {
           setElapsedDisplay(formatElapsed(Math.floor((Date.now() - start) / 1000)))
           setIsIngesting(true)
           if (ingestPollRef.current) clearInterval(ingestPollRef.current)
-          ingestPollRef.current = setInterval(async () => {
-            const statusRes = await getScrapeStatus(currentUser.id)
-            if (statusRes.success && statusRes.is_running === false) {
-              if (ingestPollRef.current) {
-                clearInterval(ingestPollRef.current)
-                ingestPollRef.current = null
-              }
-              ingestStartTimeRef.current = null
-              sessionStorage.removeItem("ingesting_state")
-              sessionStorage.removeItem("ingest_start_ts")
-              setIsIngesting(false)
-              loadAdminStats()
-              setAlert({
-                status: "success",
-                message: "Ingesta finalizada. Revisa Logs de ingesta para el resultado.",
-              })
-            }
-          }, 4000)
+          ingestPollRef.current = setInterval(pollStatus, 4000)
+        } else {
+          // Siempre consultar al backend por si hay Job en curso (BD "En Proceso")
+          checkExistingIngest()
         }
       }
     }
