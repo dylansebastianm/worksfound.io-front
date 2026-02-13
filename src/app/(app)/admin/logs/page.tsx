@@ -158,6 +158,73 @@ export default function AdminLoggingsPage() {
     return url.substring(0, maxLength) + "..."
   }
 
+  const formatDateTimeArgentina = (raw: string): string => {
+    const value = (raw || "").trim()
+    if (!value) return raw
+
+    // Esperado: "dd/mm/yyyy HH:MM:SS" (backend)
+    const m = value.match(
+      /^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2}):(\d{2})$/
+    )
+    if (!m) return raw
+
+    const day = Number(m[1])
+    const month = Number(m[2])
+    const year = Number(m[3])
+    const hour = Number(m[4])
+    const minute = Number(m[5])
+    const second = Number(m[6])
+
+    if ([day, month, year, hour, minute, second].some((n) => Number.isNaN(n))) return raw
+
+    // Normalizamos como UTC y mostramos en horario Argentina
+    const dtUtc = new Date(Date.UTC(year, month - 1, day, hour, minute, second))
+    if (Number.isNaN(dtUtc.getTime())) return raw
+
+    return new Intl.DateTimeFormat("es-AR", {
+      timeZone: "America/Argentina/Buenos_Aires",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+    }).format(dtUtc)
+  }
+
+  const formatExecutionTimeDisplay = (raw: string): string => {
+    const value = (raw || "").trim()
+    if (!value) return raw
+
+    // Si ya viene en formato con horas (ej: "1hs 30m 55s"), no tocar.
+    if (/\d+\s*hs\b/i.test(value)) return value
+
+    // Soporta "639m 26s", "26s", "2h 5m 1s", etc.
+    const hourMatch = value.match(/(\d+)\s*h\b/i)
+    const minMatch = value.match(/(\d+)\s*m\b/i)
+    const secMatch = value.match(/(\d+)\s*s\b/i)
+
+    const hoursParsed = hourMatch ? Number(hourMatch[1]) : 0
+    const minsParsed = minMatch ? Number(minMatch[1]) : 0
+    const secsParsed = secMatch ? Number(secMatch[1]) : 0
+
+    if (!Number.isFinite(hoursParsed) || !Number.isFinite(minsParsed) || !Number.isFinite(secsParsed)) {
+      return raw
+    }
+
+    const totalSeconds = (hoursParsed * 3600) + (minsParsed * 60) + secsParsed
+    if (totalSeconds <= 0) return raw
+
+    const h = Math.floor(totalSeconds / 3600)
+    const m = Math.floor((totalSeconds % 3600) / 60)
+    const s = totalSeconds % 60
+
+    if (h > 0) return `${h}hs ${m}m ${s}s`
+    if (m > 0) return `${m}m ${s}s`
+    return `${s}s`
+  }
+
   const getDetailCount = (searchDetail: IngestionLog["searchDetail"]) => {
     if (!searchDetail) return 0
     if (Array.isArray(searchDetail)) return searchDetail.length
@@ -281,7 +348,7 @@ export default function AdminLoggingsPage() {
               <div className={styles.columnDateTime}>
                 <div className={styles.dateTimeWrapper}>
                   <FiClock className={styles.clockIcon} />
-                  <span className={styles.dateTime}>{log.startDateTime}</span>
+                  <span className={styles.dateTime}>{formatDateTimeArgentina(log.startDateTime)}</span>
                 </div>
               </div>
 
@@ -293,7 +360,7 @@ export default function AdminLoggingsPage() {
               </div>
 
               <div className={styles.columnTime}>
-                <span className={styles.executionTime}>{log.executionTime}</span>
+                <span className={styles.executionTime}>{formatExecutionTimeDisplay(log.executionTime)}</span>
               </div>
 
               <div className={styles.columnUrl}>
