@@ -54,12 +54,21 @@ export interface UpdateIngestionConfigResponse {
 
 export interface AnalyzeIngestionConfigResponse {
   success: boolean;
+  cancelled?: boolean;
   seedTotalResults?: number;
   estimatedBaseCoveragePct?: number;
   strategyMap?: {
     base: any[];
     harvest: any[];
   };
+  error?: string;
+}
+
+export interface CancelExplorerResponse {
+  success: boolean;
+  message?: string;
+  cancel_requested?: boolean;
+  was_running?: boolean;
   error?: string;
 }
 
@@ -167,6 +176,32 @@ export async function analyzeIngestionConfig(url: string): Promise<AnalyzeIngest
     return data;
   } catch (error) {
     console.error('Error analizando URL de ingesta:', error);
+    return { success: false, error: 'Error conectando con el servidor' };
+  }
+}
+
+/**
+ * Cancela inmediatamente el explorador activo (análisis/segmentación) del admin actual.
+ */
+export async function cancelIngestionExplorer(): Promise<CancelExplorerResponse> {
+  try {
+    const response = await fetch(`${API_URL}/api/admin/ingestion-config/explorer/cancel`, {
+      method: 'POST',
+      headers: {
+        ...getAuthHeaders(),
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (response.status === 401) {
+      return { success: false, error: 'Token inválido o expirado. Por favor, inicia sesión nuevamente.' };
+    }
+    if (response.status === 403) {
+      return { success: false, error: 'Acceso denegado: Se requieren permisos de administrador.' };
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Error cancelando explorador:', error);
     return { success: false, error: 'Error conectando con el servidor' };
   }
 }

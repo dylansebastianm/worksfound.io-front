@@ -1,7 +1,7 @@
 "use client"
 import { useState, useEffect } from "react"
 import styles from "./IngestionConfigModal.module.css"
-import { analyzeIngestionConfig } from "@/lib/ingestion"
+import { analyzeIngestionConfig, cancelIngestionExplorer } from "@/lib/ingestion"
 
 interface IngestionConfigModalProps {
   isOpen: boolean
@@ -65,6 +65,7 @@ export default function IngestionConfigModal({
   const [autoSchedule, setAutoSchedule] = useState(initialConfig.autoSchedule)
   const [analysis, setAnalysis] = useState<any | null>(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [isCancellingExplorer, setIsCancellingExplorer] = useState(false)
 
   // Al abrir el modal, sincronizar estado con la config actual para mostrar siempre la URL/config guardada
   useEffect(() => {
@@ -129,6 +130,29 @@ export default function IngestionConfigModal({
     }
   }
 
+  const handleCancelExplorer = async () => {
+    setIsCancellingExplorer(true)
+    try {
+      const res = await cancelIngestionExplorer()
+      if (res.success) {
+        setAnalysis({
+          success: false,
+          cancelled: true,
+          error: res.was_running
+            ? "Explorador cancelado correctamente."
+            : "No había un explorador corriendo en este momento.",
+        })
+      } else {
+        setAnalysis({
+          success: false,
+          error: res.error || "No se pudo cancelar el explorador.",
+        })
+      }
+    } finally {
+      setIsCancellingExplorer(false)
+    }
+  }
+
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
@@ -154,10 +178,19 @@ export default function IngestionConfigModal({
                 type="button"
                 className={styles.cancelButton}
                 onClick={handleAnalyze}
-                disabled={isAnalyzing || isSaving || !ingestUrl}
+                disabled={isAnalyzing || isSaving || isCancellingExplorer || !ingestUrl}
                 style={{ padding: "8px 12px" }}
               >
                 {isAnalyzing ? "Analizando…" : "Analizar (Smart Harvest)"}
+              </button>
+              <button
+                type="button"
+                className={styles.cancelButton}
+                onClick={handleCancelExplorer}
+                disabled={isCancellingExplorer}
+                style={{ padding: "8px 12px" }}
+              >
+                {isCancellingExplorer ? "Cancelando explorador…" : "Cancelar Explorador"}
               </button>
             </div>
           </div>
