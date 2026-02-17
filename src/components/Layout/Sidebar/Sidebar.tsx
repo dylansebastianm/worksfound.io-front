@@ -45,6 +45,11 @@ const navItems: NavItem[] = [
     icon: <IoSearchOutline />,
   },
   {
+    label: "Ofertas laborales",
+    href: "/job-offers",
+    icon: <IoBriefcaseOutline />,
+  },
+  {
     label: "Ofertas Aplicadas",
     href: "/applied-jobs",
     icon: <IoBriefcaseOutline />,
