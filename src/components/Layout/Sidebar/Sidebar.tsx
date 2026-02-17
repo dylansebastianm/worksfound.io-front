@@ -79,7 +79,7 @@ const navItems: NavItem[] = [
         icon: <IoPersonOutline />,
       },
       {
-        label: "Logs",
+        label: "Ingestas",
         href: "/admin/logs",
         icon: <IoDocumentTextOutline />,
       },

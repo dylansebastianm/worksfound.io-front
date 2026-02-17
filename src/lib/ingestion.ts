@@ -254,3 +254,83 @@ export async function getIngestionLogs(params: GetIngestionLogsParams = {}): Pro
   }
 }
 
+
+// ----------------------------
+// Nuevo reporting (batches)
+// ----------------------------
+
+export interface IngestionSummaryRow {
+  execution_id: string
+  country: string
+  start_date: string | null
+  duration: string
+  status: "En Progreso" | "Revisar" | "Finalizado" | string
+  audit_total: number
+  segmentation_total: number
+  inserted_total: number
+  exploration_coverage_pct: number
+  final_coverage_pct: number
+}
+
+export interface IngestionDetailBatchRow {
+  batch_id: number
+  status: string
+  filters_readable: string[]
+  original_url: string
+  expected_count: number
+  inserted_count: number
+  efficiency_pct: number
+  updated_at: string
+}
+
+export interface IngestionCountryDetailResponse {
+  header: {
+    country: string
+    audit_total: number
+    inserted_total: number
+  }
+  batches: IngestionDetailBatchRow[]
+}
+
+export async function getIngestionsSummary(): Promise<{ success: boolean; rows?: IngestionSummaryRow[]; error?: string }> {
+  try {
+    const response = await fetch(`${API_URL}/api/ingestions/summary`, {
+      method: "GET",
+      headers: getAuthHeaders(),
+    })
+
+    if (response.status === 401) return { success: false, error: "Token inválido o expirado. Por favor, inicia sesión nuevamente." }
+    if (response.status === 403) return { success: false, error: "Acceso denegado: Se requieren permisos de administrador." }
+
+    const data = await response.json()
+    if (!Array.isArray(data)) return { success: false, error: "Respuesta inválida del servidor." }
+    return { success: true, rows: data as IngestionSummaryRow[] }
+  } catch (error) {
+    console.error("Error obteniendo resumen de ingestas:", error)
+    return { success: false, error: "Error conectando con el servidor" }
+  }
+}
+
+export async function getIngestionCountryDetail(
+  executionId: string,
+  country: string
+): Promise<{ success: boolean; detail?: IngestionCountryDetailResponse; error?: string }> {
+  try {
+    const response = await fetch(`${API_URL}/api/ingestions/${encodeURIComponent(executionId)}/${encodeURIComponent(country)}/detail`, {
+      method: "GET",
+      headers: getAuthHeaders(),
+    })
+
+    if (response.status === 401) return { success: false, error: "Token inválido o expirado. Por favor, inicia sesión nuevamente." }
+    if (response.status === 403) return { success: false, error: "Acceso denegado: Se requieren permisos de administrador." }
+    if (!response.ok) return { success: false, error: "Error obteniendo detalle." }
+
+    const data = await response.json()
+    if (!data || typeof data !== "object") return { success: false, error: "Respuesta inválida del servidor." }
+    return { success: true, detail: data as IngestionCountryDetailResponse }
+  } catch (error) {
+    console.error("Error obteniendo detalle de ingesta:", error)
+    return { success: false, error: "Error conectando con el servidor" }
+  }
+}
+
