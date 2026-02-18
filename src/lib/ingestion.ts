@@ -103,6 +103,9 @@ export interface GetIngestionExplorerStatusResponse {
   finished_at?: string | null
   error?: string | null
   seed_url?: string | null
+  rows_count?: number
+  stalled?: boolean
+  stalled_reason?: string | null
   totals?: {
     countries_seen: number
     countries_limit?: number | null
@@ -251,12 +254,16 @@ export async function cancelIngestionExplorer(): Promise<CancelExplorerResponse>
   }
 }
 
-export async function getIngestionExplorerStatus(limit = 100): Promise<GetIngestionExplorerStatusResponse> {
+export async function getIngestionExplorerStatus(
+  limit = 100,
+  opts?: { signal?: AbortSignal }
+): Promise<GetIngestionExplorerStatusResponse> {
   try {
     const url = `${API_URL}/api/admin/ingestion-config/explorer/status?limit=${encodeURIComponent(String(limit))}`
     const response = await fetch(url, {
       method: "GET",
       headers: getAuthHeaders(),
+      signal: opts?.signal,
     })
 
     if (response.status === 401) return { success: false, error: "Token inválido o expirado. Por favor, inicia sesión nuevamente." }

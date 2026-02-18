@@ -84,6 +84,7 @@ export default function IngestionConfigModal({
   const [countryDetail, setCountryDetail] = useState<IngestionCountryDetailResponse | null>(null)
   const [isLoadingDetail, setIsLoadingDetail] = useState(false)
   const [detailError, setDetailError] = useState<string | null>(null)
+  const [pollError, setPollError] = useState<string | null>(null)
 
   // Al abrir el modal, sincronizar estado con la config actual para mostrar siempre la URL/config guardada
   useEffect(() => {
@@ -100,15 +101,31 @@ export default function IngestionConfigModal({
   useEffect(() => {
     if (!isOpen) return
     let cancelled = false
+    let inflight = false
+    let aborter: AbortController | null = null
     const load = async () => {
-      const res = await getIngestionExplorerStatus(200)
-      if (cancelled) return
-      setLive(res)
+      if (cancelled || inflight) return
+      inflight = true
+      try:
+        // Cancelar el request anterior si sigue colgado.
+        if (aborter) aborter.abort()
+        aborter = new AbortController()
+        const res = await getIngestionExplorerStatus(200, { signal: aborter.signal })
+        if (cancelled) return
+        setLive(res)
+        setPollError(null)
+      } catch (e: any) {
+        if (cancelled) return
+        setPollError("El polling al backend no está respondiendo (request colgado).")
+      } finally {
+        inflight = false
+      }
     }
     load()
     const id = setInterval(load, 4000)
     return () => {
       cancelled = true
+      if (aborter) aborter.abort()
       clearInterval(id)
     }
   }, [isOpen])
@@ -456,6 +473,12 @@ export default function IngestionConfigModal({
             {live?.success && !live.execution_id && <p className={styles.helpText}>No hay un explorador activo en este momento.</p>}
             {live?.success && live.execution_id && (
               <div className={styles.liveWrap}>
+                {pollError && <div className={styles.liveError}>{pollError}</div>}
+                {live.stalled && (
+                  <div className={styles.liveError}>
+                    {live.stalled_reason || "El explorador parece trabado (sin progreso)."}
+                  </div>
+                )}
                 <div className={styles.liveStats}>
                   <div>
                     <div className={styles.liveK}>execution_id</div>
