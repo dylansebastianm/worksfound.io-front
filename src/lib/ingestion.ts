@@ -36,6 +36,12 @@ export interface IngestionConfig {
   segments_total?: number | null;
   /** Porcentaje de cobertura: (segments_total / seed_total_results) * 100 */
   coverage_percent?: number | null;
+  /** Explorador (productor) */
+  explorer_execution_id?: string | null;
+  explorer_status?: string | null;
+  explorer_started_at?: string | null;
+  explorer_finished_at?: string | null;
+  explorer_error?: string | null;
 }
 
 export interface GetIngestionConfigResponse {
@@ -48,6 +54,7 @@ export interface UpdateIngestionConfigResponse {
   success: boolean;
   message?: string;
   explorer_ran?: boolean;
+  explorer_started?: boolean;
   config?: IngestionConfig;
   error?: string;
 }
@@ -70,6 +77,44 @@ export interface CancelExplorerResponse {
   cancel_requested?: boolean;
   was_running?: boolean;
   error?: string;
+}
+
+export interface ExplorerCountryProgressRow {
+  country: string
+  first_seen_at: string | null
+  audit_total: number
+  audit_url?: string | null
+  segments_count: number
+  segments_expected_sum: number
+  segments_budget_sum: number
+  segments_pending: number
+  segments_processing: number
+  segments_completed: number
+  segments_failed: number
+  segmentation_coverage_pct?: number | null
+}
+
+export interface GetIngestionExplorerStatusResponse {
+  success: boolean
+  running?: boolean
+  execution_id?: string | null
+  status?: string | null
+  started_at?: string | null
+  finished_at?: string | null
+  error?: string | null
+  seed_url?: string | null
+  totals?: {
+    countries_seen: number
+    countries_limit?: number | null
+    seed_url_total_results?: number
+    audit_total_sum: number
+    segments_count_sum: number
+    segments_budget_sum: number
+    coverage_vs_audit_sum_pct?: number | null
+    global_coverage_vs_seed_pct?: number | null
+    scrapeable_cap_per_url: number
+  }
+  countries?: ExplorerCountryProgressRow[]
 }
 
 /**
@@ -206,6 +251,23 @@ export async function cancelIngestionExplorer(): Promise<CancelExplorerResponse>
   }
 }
 
+export async function getIngestionExplorerStatus(limit = 100): Promise<GetIngestionExplorerStatusResponse> {
+  try {
+    const url = `${API_URL}/api/admin/ingestion-config/explorer/status?limit=${encodeURIComponent(String(limit))}`
+    const response = await fetch(url, {
+      method: "GET",
+      headers: getAuthHeaders(),
+    })
+
+    if (response.status === 401) return { success: false, error: "Token inválido o expirado. Por favor, inicia sesión nuevamente." }
+    if (response.status === 403) return { success: false, error: "Acceso denegado: Se requieren permisos de administrador." }
+    return await response.json()
+  } catch (error) {
+    console.error("Error obteniendo estado del explorador:", error)
+    return { success: false, error: "Error conectando con el servidor" }
+  }
+}
+
 /**
  * Obtiene los logs de ingesta (requiere permisos de administrador)
  * 
@@ -287,6 +349,7 @@ export interface IngestionCountryDetailResponse {
   header: {
     country: string
     audit_total: number
+    audit_url?: string | null
     inserted_total: number
   }
   batches: IngestionDetailBatchRow[]

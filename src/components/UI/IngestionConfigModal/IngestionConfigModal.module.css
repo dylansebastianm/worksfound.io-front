@@ -16,7 +16,7 @@
   background: white;
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
-  max-width: 500px;
+  max-width: 980px;
   width: 100%;
   max-height: 90vh;
   display: flex;
@@ -248,4 +248,154 @@
 
 .queueLink:hover {
   text-decoration: underline;
+}
+
+.liveWrap {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.liveStats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.liveK {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.liveV {
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  word-break: break-word;
+}
+
+.liveError {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  background: rgba(239, 68, 68, 0.06);
+  border-radius: var(--radius-md);
+  color: var(--danger);
+  font-size: 0.85rem;
+}
+
+.countryTabs {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+}
+
+.countryTab {
+  flex: 0 0 auto;
+  min-width: 160px;
+  text-align: left;
+  border: 1px solid var(--border-color);
+  background: white;
+  border-radius: var(--radius-md);
+  padding: 0.5rem 0.6rem;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.countryTab:hover {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(0, 0, 0, 0.15);
+}
+
+.countryTabActive {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(255, 112, 41, 0.1);
+}
+
+.countryName {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+
+.countryMeta {
+  margin-top: 2px;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.liveDetail {
+  border-top: 1px solid var(--border-color);
+  padding-top: 0.75rem;
+}
+
+.detailHeaderRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.detailHeaderMeta {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-left: 0.35rem;
+}
+
+.batchList {
+  margin-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.batchRow {
+  border: 1px solid var(--border-color);
+  background: white;
+  border-radius: var(--radius-md);
+  padding: 0.6rem 0.75rem;
+}
+
+.batchTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.batchStatus {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+}
+
+.batchCounts {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.batchUrl {
+  margin-top: 0.35rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  word-break: break-all;
+}
+
+.batchFilters {
+  margin-top: 0.35rem;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 720px) {
+  .liveStats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }

@@ -41,6 +41,11 @@ export default function AdminDashboardPage() {
     generatedQueue: null,
     segmentsTotal: null,
     coveragePercent: null,
+    explorerExecutionId: null,
+    explorerStatus: null,
+    explorerError: null,
+    explorerStartedAt: null,
+    explorerFinishedAt: null,
   })
   const [isLoadingConfig, setIsLoadingConfig] = useState(false)
   const [isSavingConfig, setIsSavingConfig] = useState(false)
@@ -183,6 +188,11 @@ export default function AdminDashboardPage() {
           generatedQueue: response.config.generated_queue ?? null,
           segmentsTotal: response.config.segments_total ?? null,
           coveragePercent: response.config.coverage_percent ?? null,
+          explorerExecutionId: response.config.explorer_execution_id ?? null,
+          explorerStatus: response.config.explorer_status ?? null,
+          explorerError: response.config.explorer_error ?? null,
+          explorerStartedAt: response.config.explorer_started_at ?? null,
+          explorerFinishedAt: response.config.explorer_finished_at ?? null,
         })
       }
     } catch (error) {
@@ -316,8 +326,17 @@ export default function AdminDashboardPage() {
           generatedQueue: response.config.generated_queue ?? null,
           segmentsTotal: response.config.segments_total ?? null,
           coveragePercent: response.config.coverage_percent ?? null,
+          explorerExecutionId: response.config.explorer_execution_id ?? null,
+          explorerStatus: response.config.explorer_status ?? null,
+          explorerError: response.config.explorer_error ?? null,
+          explorerStartedAt: response.config.explorer_started_at ?? null,
+          explorerFinishedAt: response.config.explorer_finished_at ?? null,
         })
-        setShowConfigModal(false)
+        // Si el backend inició el explorador en background, dejamos el modal abierto
+        // para que el admin vea el progreso en vivo por país/batch.
+        if (!response.explorer_started) {
+          setShowConfigModal(false)
+        }
         const message =
           response.message ||
           (response.config.generated_queue?.length
