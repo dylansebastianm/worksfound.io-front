@@ -106,7 +106,7 @@ export default function IngestionConfigModal({
     const load = async () => {
       if (cancelled || inflight) return
       inflight = true
-      try:
+      try {
         // Cancelar el request anterior si sigue colgado.
         if (aborter) aborter.abort()
         aborter = new AbortController()
