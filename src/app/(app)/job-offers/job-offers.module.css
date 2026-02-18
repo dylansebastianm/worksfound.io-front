@@ -53,6 +53,16 @@
   font-size: 0.8rem;
   font-weight: 600;
   white-space: nowrap;
+  background: var(--surface);
+  border: 1px solid #e5e7eb;
+  color: var(--text-primary);
+}
+
+.portalLogoImg {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 
 .portalCount {
@@ -151,6 +161,13 @@
   cursor: pointer;
   transition: all 0.2s;
   white-space: nowrap;
+}
+
+.filterPortalImg {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 
 .filterChip:hover {
@@ -254,6 +271,13 @@
   min-height: calc(100vh - 340px);
 }
 
+/* Left column wrapper (list + pagination) */
+.listColumn {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 340px);
+}
+
 /* Left Panel - List */
 .listPanel {
   display: flex;
@@ -262,6 +286,12 @@
   overflow-y: auto;
   max-height: calc(100vh - 340px);
   padding-right: 0.25rem;
+}
+
+.paginationWrap {
+  display: flex;
+  justify-content: center;
+  padding: 0.5rem 0 0;
 }
 
 .listPanel::-webkit-scrollbar {
@@ -394,6 +424,14 @@
   border-radius: 4px;
   font-size: 0.7rem;
   font-weight: 600;
+  border: 1px solid #e5e7eb;
+}
+
+.portalBadgeImg {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 
 .redirectArrow {
@@ -651,11 +689,94 @@
 }
 
 /* Description */
+.descriptionBlock {
+  /* Mantener consistencia con JobDetailModal (Ofertas aplicadas) */
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  padding: 16px;
+}
+
+.detailLabel {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #9ca3af;
+  margin-bottom: 0.5rem;
+}
+
 .description {
-  font-size: 0.9rem;
-  line-height: 1.7;
-  color: #374151;
-  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-primary);
+  word-wrap: break-word;
+}
+
+/* Copiado de JobDetailModal: estilos para elementos HTML dentro de la descripción */
+.description h1,
+.description h2,
+.description h3,
+.description h4,
+.description h5,
+.description h6 {
+  margin: 16px 0 8px 0;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.description h2 {
+  font-size: 20px;
+}
+
+.description h3 {
+  font-size: 18px;
+}
+
+.description p {
+  margin: 8px 0;
+}
+
+.description ul,
+.description ol {
+  margin: 8px 0;
+  padding-left: 24px;
+}
+
+.description li {
+  margin: 4px 0;
+}
+
+.description strong,
+.description b {
+  font-weight: 600;
+}
+
+.description em,
+.description i {
+  font-style: italic;
+}
+
+.description br {
+  line-height: 1.5;
+}
+
+.description span {
+  display: inline;
+}
+
+.description .white-space-pre {
+  white-space: pre;
+}
+
+.description .mt4 {
+  margin-top: 16px;
+}
+
+.description .text-heading-large {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 16px 0 8px 0;
+  color: var(--text-primary);
 }
 
 /* Hiring Team */

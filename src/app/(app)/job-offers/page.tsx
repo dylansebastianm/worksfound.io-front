@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import type { ReactNode } from "react"
 import {
   FiSearch,
@@ -20,33 +20,37 @@ import { FaLinkedin } from "react-icons/fa"
 import { SiIndeed, SiGlassdoor, SiTeamviewer } from "react-icons/si"
 import { IoLogoGoogle } from "react-icons/io5"
 import { Button } from "@/components/UI/Button/Button"
+import { LoadingSpinner } from "@/components/UI/LoadingSpinner/LoadingSpinner"
+import { Alert } from "@/components/UI/Alert/Alert"
+import { Pagination } from "@/components/UI/Pagination/Pagination"
+import { getJobOffers } from "@/lib/jobOffers"
+import type { JobOffer } from "@/types/jobOffers"
 import styles from "./job-offers.module.css"
 
-interface JobOffer {
-  id: number
-  title: string
-  company: string
-  company_logo: string | null
-  company_industry: string
-  company_employees_count: string
-  company_followers: number
-  company_url: string
-  offer_location: string
-  countryFlag: string
-  modality: string
-  work_schedule_type: string
-  salary: string
-  posted_time_ago: string
-  applications_count: number
-  easy_apply: boolean
-  portal: string
-  redirect_portal: string | null
-  offer_url: string
-  job_description: string
-  skills: string[]
-  tech_stack: string[]
-  hiring_team: Array<{ name: string; profile_url?: string }>
-  scraped_at: string
+type ApplyPortalKey = "Teamtailor" | "AshbyHQ" | "BreezyHR" | "JobDiva" | "Greenhouse"
+
+const applyPortalImageMap: Record<ApplyPortalKey, { src: string; alt: string }> = {
+  Teamtailor: { src: "/Images/ATS/teamtailor.png", alt: "Teamtailor" },
+  AshbyHQ: { src: "/Images/ATS/ashbyhq.png", alt: "AshbyHQ" },
+  BreezyHR: { src: "/Images/ATS/breezyhr.png", alt: "BreezyHR" },
+  JobDiva: { src: "/Images/ATS/jobdiva.png", alt: "JobDiva" },
+  Greenhouse: { src: "/Images/ATS/greenhouse.png", alt: "Greenhouse" },
+}
+
+// Orden fijo: son los ATS donde hoy podemos postular (aunque haya 0 ofertas en la vista).
+const APPLY_PORTAL_ORDER: ApplyPortalKey[] = ["BreezyHR", "Greenhouse", "JobDiva", "Teamtailor", "AshbyHQ"]
+
+const normalizeApplyPortal = (offer: JobOffer): ApplyPortalKey | null => {
+  // Preferimos el portal donde realmente se aplica (redirect).
+  const p = (offer.redirect_portal || "").trim()
+  if (!p) return null
+  const k = p.toLowerCase().replace(/\s+/g, "")
+  if (k.includes("teamtailor")) return "Teamtailor"
+  if (k.includes("ashby")) return "AshbyHQ"
+  if (k.includes("breezy")) return "BreezyHR"
+  if (k.includes("jobdiva")) return "JobDiva"
+  if (k.includes("greenhouse")) return "Greenhouse"
+  return null
 }
 
 const portalConfig: Record<string, { icon: ReactNode; color: string; bg: string }> = {
@@ -57,262 +61,97 @@ const portalConfig: Record<string, { icon: ReactNode; color: string; bg: string 
   Teamtailor: { icon: <SiTeamviewer size={14} />, color: "#E91E63", bg: "#FCE4EC" },
 }
 
-// TODO: reemplazar por API real cuando el backend esté listo.
-const mockOffers: JobOffer[] = [
-  {
-    id: 1,
-    title: "Junior Software Engineer (LATAM)",
-    company: "Sezzle",
-    company_logo: null,
-    company_industry: "Servicios financieros",
-    company_employees_count: "201-500 empleados",
-    company_followers: 80545,
-    company_url: "https://www.linkedin.com/company/sezzle",
-    offer_location: "America Latina",
-    countryFlag: "🌎",
-    modality: "Remoto",
-    work_schedule_type: "Jornada completa",
-    salary: "$1,500 - $2,700/mes",
-    posted_time_ago: "Hace 4 horas",
-    applications_count: 100,
-    easy_apply: true,
-    portal: "LinkedIn",
-    redirect_portal: null,
-    offer_url: "https://www.linkedin.com/jobs/view/4229334006/",
-    job_description:
-      "Con la mision de empoderar financieramente a la proxima generacion, Sezzle esta revolucionando la experiencia de compra. Buscamos un Junior Software Engineer talentoso y motivado para unirse a nuestro equipo de desarrollo. Responsabilidades incluyen disenar, desarrollar y mantener software de alta calidad, participar en revisiones de codigo y colaborar con equipos multifuncionales.",
-    skills: ["Python", "AWS", "PostgreSQL", "Django"],
-    tech_stack: ["Python", "Django", "PostgreSQL", "AWS", "Docker"],
-    hiring_team: [{ name: "Fernando Sanches", profile_url: "https://linkedin.com/in/fernandosanches" }],
-    scraped_at: "2025-12-20",
-  },
-  {
-    id: 2,
-    title: "Senior Frontend Developer - React",
-    company: "Spotify",
-    company_logo: null,
-    company_industry: "Entretenimiento / Streaming",
-    company_employees_count: "5,001-10,000 empleados",
-    company_followers: 11000000,
-    company_url: "https://www.linkedin.com/company/spotify",
-    offer_location: "Espana",
-    countryFlag: "🇪🇸",
-    modality: "Hibrido",
-    work_schedule_type: "Jornada completa",
-    salary: "$4,000 - $6,500/mes",
-    posted_time_ago: "Hace 2 dias",
-    applications_count: 340,
-    easy_apply: false,
-    portal: "LinkedIn",
-    redirect_portal: "Teamtailor",
-    offer_url: "https://www.linkedin.com/jobs/view/4229334007/",
-    job_description:
-      "Estamos buscando un Senior Frontend Developer para unirse a nuestro equipo de producto. Seras responsable de disenar e implementar interfaces de usuario de alta calidad utilizando React y TypeScript. Trabajaras en colaboracion con disenadores, product managers e ingenieros backend para crear experiencias musicales de clase mundial.",
-    skills: ["React", "TypeScript", "GraphQL", "CSS-in-JS"],
-    tech_stack: ["React", "TypeScript", "Next.js", "GraphQL", "Styled Components"],
-    hiring_team: [
-      { name: "Elena Martinez", profile_url: "https://linkedin.com/in/elenamartinez" },
-      { name: "James Wilson" },
-    ],
-    scraped_at: "2025-12-19",
-  },
-  {
-    id: 3,
-    title: "Full Stack Engineer",
-    company: "Stripe",
-    company_logo: null,
-    company_industry: "Tecnologia financiera",
-    company_employees_count: "1,001-5,000 empleados",
-    company_followers: 950000,
-    company_url: "https://stripe.com",
-    offer_location: "Estados Unidos",
-    countryFlag: "🇺🇸",
-    modality: "Remoto",
-    work_schedule_type: "Jornada completa",
-    salary: "$8,000 - $12,000/mes",
-    posted_time_ago: "Hace 1 dia",
-    applications_count: 520,
-    easy_apply: false,
-    portal: "Indeed",
-    redirect_portal: null,
-    offer_url: "https://indeed.com/jobs/view/stripe-fullstack",
-    job_description:
-      "Stripe busca un Full Stack Engineer para construir las APIs de pago del futuro. Trabajaras con Ruby, JavaScript y Go para crear sistemas distribuidos de alta disponibilidad. Se requiere experiencia en sistemas de pagos, APIs REST y bases de datos distribuidas.",
-    skills: ["Ruby", "JavaScript", "Go", "Distributed Systems"],
-    tech_stack: ["Ruby", "Go", "React", "PostgreSQL", "Redis", "Kafka"],
-    hiring_team: [{ name: "David Park" }],
-    scraped_at: "2025-12-21",
-  },
-  {
-    id: 4,
-    title: "DevOps Engineer - Cloud Infrastructure",
-    company: "Mercado Libre",
-    company_logo: null,
-    company_industry: "Comercio electronico",
-    company_employees_count: "10,001+ empleados",
-    company_followers: 5000000,
-    company_url: "https://mercadolibre.com",
-    offer_location: "Argentina",
-    countryFlag: "🇦🇷",
-    modality: "Hibrido",
-    work_schedule_type: "Jornada completa",
-    salary: "$3,500 - $5,500/mes",
-    posted_time_ago: "Hace 6 horas",
-    applications_count: 78,
-    easy_apply: true,
-    portal: "LinkedIn",
-    redirect_portal: null,
-    offer_url: "https://linkedin.com/jobs/view/meli-devops",
-    job_description:
-      "Sumate al equipo de infraestructura de Mercado Libre. Buscamos un DevOps Engineer con experiencia en AWS, Kubernetes y CI/CD para escalar nuestra plataforma que atiende a millones de usuarios en Latinoamerica.",
-    skills: ["AWS", "Kubernetes", "Terraform", "CI/CD"],
-    tech_stack: ["AWS", "Kubernetes", "Terraform", "Jenkins", "Docker", "Go"],
-    hiring_team: [{ name: "Martin Gonzalez", profile_url: "https://linkedin.com/in/martingonzalez" }],
-    scraped_at: "2025-12-22",
-  },
-  {
-    id: 5,
-    title: "Backend Developer - Node.js",
-    company: "Globant",
-    company_logo: null,
-    company_industry: "Consultoria IT",
-    company_employees_count: "10,001+ empleados",
-    company_followers: 2000000,
-    company_url: "https://globant.com",
-    offer_location: "Colombia",
-    countryFlag: "🇨🇴",
-    modality: "Remoto",
-    work_schedule_type: "Jornada completa",
-    salary: "$2,800 - $4,200/mes",
-    posted_time_ago: "Hace 3 dias",
-    applications_count: 210,
-    easy_apply: true,
-    portal: "Glassdoor",
-    redirect_portal: null,
-    offer_url: "https://glassdoor.com/jobs/view/globant-backend",
-    job_description:
-      "Globant busca un Backend Developer con experiencia en Node.js para trabajar en proyectos de clientes Fortune 500. El candidato ideal tiene experiencia con APIs REST, microservicios y bases de datos NoSQL.",
-    skills: ["Node.js", "Express", "MongoDB", "Microservices"],
-    tech_stack: ["Node.js", "Express", "MongoDB", "Redis", "RabbitMQ"],
-    hiring_team: [{ name: "Sofia Reyes" }],
-    scraped_at: "2025-12-18",
-  },
-  {
-    id: 6,
-    title: "React Native Developer",
-    company: "Rappi",
-    company_logo: null,
-    company_industry: "Delivery / Logistica",
-    company_employees_count: "5,001-10,000 empleados",
-    company_followers: 800000,
-    company_url: "https://rappi.com",
-    offer_location: "Mexico",
-    countryFlag: "🇲🇽",
-    modality: "Hibrido",
-    work_schedule_type: "Jornada completa",
-    salary: "$3,000 - $4,800/mes",
-    posted_time_ago: "Hace 1 semana",
-    applications_count: 165,
-    easy_apply: false,
-    portal: "Google Jobs",
-    redirect_portal: "Teamtailor",
-    offer_url: "https://careers.google.com/jobs/rappi-rn",
-    job_description:
-      "Buscamos un React Native Developer experimentado para desarrollar y mantener nuestras aplicaciones moviles que millones de usuarios utilizan diariamente. Trabajaras en features de real-time tracking, pagos y experiencia de usuario.",
-    skills: ["React Native", "TypeScript", "Redux", "Mobile"],
-    tech_stack: ["React Native", "TypeScript", "Redux", "Firebase", "GraphQL"],
-    hiring_team: [{ name: "Carlos Mendoza", profile_url: "https://linkedin.com/in/carlosmendoza" }],
-    scraped_at: "2025-12-15",
-  },
-  {
-    id: 7,
-    title: "Data Engineer - Big Data",
-    company: "Nubank",
-    company_logo: null,
-    company_industry: "Fintech / Banca digital",
-    company_employees_count: "5,001-10,000 empleados",
-    company_followers: 1200000,
-    company_url: "https://nubank.com.br",
-    offer_location: "Brasil",
-    countryFlag: "🇧🇷",
-    modality: "Remoto",
-    work_schedule_type: "Jornada completa",
-    salary: "$4,500 - $7,000/mes",
-    posted_time_ago: "Hace 5 horas",
-    applications_count: 92,
-    easy_apply: true,
-    portal: "LinkedIn",
-    redirect_portal: null,
-    offer_url: "https://linkedin.com/jobs/view/nubank-data",
-    job_description:
-      "Nubank esta buscando un Data Engineer para disenar y construir pipelines de datos escalables. Trabajaras con Spark, Kafka y nuestro data lake en AWS para procesar millones de transacciones diarias y alimentar modelos de machine learning.",
-    skills: ["Spark", "Kafka", "Python", "SQL", "AWS"],
-    tech_stack: ["Apache Spark", "Kafka", "Python", "AWS", "Airflow", "dbt"],
-    hiring_team: [{ name: "Lucas Oliveira" }],
-    scraped_at: "2025-12-22",
-  },
-  {
-    id: 8,
-    title: "Senior iOS Developer",
-    company: "Pedidos Ya",
-    company_logo: null,
-    company_industry: "Delivery / Tecnologia",
-    company_employees_count: "1,001-5,000 empleados",
-    company_followers: 450000,
-    company_url: "https://pedidosya.com",
-    offer_location: "Uruguay",
-    countryFlag: "🇺🇾",
-    modality: "Hibrido",
-    work_schedule_type: "Jornada completa",
-    salary: "$3,200 - $5,000/mes",
-    posted_time_ago: "Hace 12 horas",
-    applications_count: 45,
-    easy_apply: false,
-    portal: "Indeed",
-    redirect_portal: "Teamtailor",
-    offer_url: "https://indeed.com/jobs/view/pedidosya-ios",
-    job_description:
-      "Estamos buscando un Senior iOS Developer para liderar el desarrollo de nuestra app de delivery. El candidato ideal tiene experiencia con Swift, SwiftUI y arquitectura limpia. Seras parte del equipo mobile que impacta a millones de usuarios en Latinoamerica.",
-    skills: ["Swift", "SwiftUI", "UIKit", "CI/CD"],
-    tech_stack: ["Swift", "SwiftUI", "Combine", "CoreData", "Fastlane"],
-    hiring_team: [
-      { name: "Valentina Perez", profile_url: "https://linkedin.com/in/valentinaperez" },
-      { name: "Diego Fernandez" },
-    ],
-    scraped_at: "2025-12-21",
-  },
-]
+const portalBadgeStyle: Record<string, { color: string; bg: string; border?: string }> = {
+  LinkedIn: { color: "#0077B5", bg: "#E8F4FD", border: "#CFE8FA" },
+  Indeed: { color: "#2164F3", bg: "#E8EFFE", border: "#C9D9FD" },
+  Glassdoor: { color: "#0CAA41", bg: "#E6F9ED", border: "#C7F1D6" },
+  "Google Jobs": { color: "#4285F4", bg: "#E8F0FE", border: "#C8DAFD" },
+  Teamtailor: { color: "#E91E63", bg: "#FCE4EC", border: "#F8BBD0" },
+  AshbyHQ: { color: "#111827", bg: "#F3F4F6", border: "#E5E7EB" },
+  BreezyHR: { color: "#6D28D9", bg: "#EDE9FE", border: "#D9D6FE" },
+  JobDiva: { color: "#2563EB", bg: "#EFF6FF", border: "#CFE2FF" },
+  Greenhouse: { color: "#16A34A", bg: "#ECFDF5", border: "#CFF7E5" },
+}
 
-const allPortals = ["Todos", "LinkedIn", "Indeed", "Glassdoor", "Google Jobs"]
+const resolveBadgeRender = (
+  name: string,
+): { label: string; icon?: ReactNode; imgSrc?: string; style?: { color?: string; background?: string; border?: string } } => {
+  const label = name || "Portal"
+  const applyKey = (["Teamtailor", "AshbyHQ", "BreezyHR", "JobDiva", "Greenhouse"] as string[]).includes(label)
+    ? (label as ApplyPortalKey)
+    : null
+  if (applyKey) {
+    const s = portalBadgeStyle[applyKey] || { color: "#666", bg: "#f3f4f6", border: "#e5e7eb" }
+    return { label: applyPortalImageMap[applyKey].alt, imgSrc: applyPortalImageMap[applyKey].src, style: { color: s.color, background: s.bg, border: s.border } }
+  }
+  const cfg = portalConfig[label]
+  const s = portalBadgeStyle[label] || (cfg ? { color: cfg.color, bg: cfg.bg, border: "#e5e7eb" } : { color: "#666", bg: "#f3f4f6", border: "#e5e7eb" })
+  return { label, icon: cfg?.icon, style: { color: s.color, background: s.bg, border: s.border } }
+}
+
 const allModalities = ["Todas", "Remoto", "Hibrido", "Presencial"]
 
 export default function JobOffersPage() {
+  const [offers, setOffers] = useState<JobOffer[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [alert, setAlert] = useState<{ status: "success" | "error"; message: string } | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(0)
+  const [totalCount, setTotalCount] = useState(0)
+  const itemsPerPage = 20
+
   const [search, setSearch] = useState("")
   const [selectedPortal, setSelectedPortal] = useState("Todos")
   const [selectedModality, setSelectedModality] = useState("Todas")
-  const [selectedOffer, setSelectedOffer] = useState<JobOffer | null>(mockOffers[0] || null)
+  const [selectedOffer, setSelectedOffer] = useState<JobOffer | null>(null)
   const [showFilters, setShowFilters] = useState(false)
 
+  useEffect(() => {
+    const load = async () => {
+      setIsLoading(true)
+      setAlert(null)
+      const res = await getJobOffers({
+        q: search || undefined,
+        portal: selectedPortal !== "Todos" ? selectedPortal : undefined,
+        modality: selectedModality !== "Todas" ? selectedModality : undefined,
+        page: currentPage,
+        limit: itemsPerPage,
+      })
+      const offersArr: JobOffer[] = res.success && Array.isArray(res.offers) ? res.offers : []
+      if (res.success && Array.isArray(res.offers)) {
+        setOffers(offersArr)
+        setTotalPages(res.pagination?.total_pages || 0)
+        setTotalCount(res.pagination?.total || 0)
+        setSelectedOffer((prev) => {
+          if (prev && offersArr.some((o) => o.id === prev.id)) return prev
+          return offersArr[0] || null
+        })
+      } else {
+        setOffers([])
+        setTotalPages(0)
+        setTotalCount(0)
+        setSelectedOffer(null)
+        setAlert({ status: "error", message: res.error || "Error al cargar ofertas" })
+      }
+      setIsLoading(false)
+    }
+    load()
+  }, [search, selectedPortal, selectedModality, currentPage])
+
   const filteredOffers = useMemo(() => {
-    return mockOffers.filter((offer) => {
-      const matchesSearch =
-        search === "" ||
-        offer.title.toLowerCase().includes(search.toLowerCase()) ||
-        offer.company.toLowerCase().includes(search.toLowerCase()) ||
-        offer.skills.some((s) => s.toLowerCase().includes(search.toLowerCase()))
-      const matchesPortal = selectedPortal === "Todos" || offer.portal === selectedPortal
-      const matchesModality = selectedModality === "Todas" || offer.modality === selectedModality
-      return matchesSearch && matchesPortal && matchesModality
-    })
-  }, [search, selectedPortal, selectedModality])
+    // El backend ya filtra por q/portal/modality. En el cliente solo usamos el resultado paginado.
+    return offers
+  }, [offers])
 
   const portalCounts = useMemo(() => {
     const counts: Record<string, number> = {}
-    for (const offer of mockOffers) {
-      counts[offer.portal] = (counts[offer.portal] || 0) + 1
+    for (const offer of offers) {
+      const k = normalizeApplyPortal(offer)
+      if (!k) continue
+      counts[k] = (counts[k] || 0) + 1
     }
     return counts
-  }, [])
+  }, [offers])
 
   return (
     <div className={styles.container}>
@@ -322,13 +161,17 @@ export default function JobOffersPage() {
           <p className={styles.heroSubtitle}>Todas tus ofertas centralizadas desde multiples portales en un solo lugar</p>
         </div>
         <div className={styles.portalLogos}>
-          {Object.entries(portalConfig).map(([name, config]) => (
-            <div key={name} className={styles.portalLogoChip} style={{ background: config.bg, color: config.color }}>
-              {config.icon}
-              <span>{name}</span>
-              {portalCounts[name] ? <span className={styles.portalCount}>{portalCounts[name]}</span> : null}
-            </div>
-          ))}
+          {APPLY_PORTAL_ORDER.map((name) => {
+            const img = applyPortalImageMap[name]
+            const count = portalCounts[name] || 0
+            return (
+              <div key={name} className={styles.portalLogoChip}>
+                <img className={styles.portalLogoImg} src={img.src} alt={img.alt} title={img.alt} />
+                <span>{img.alt}</span>
+                {count ? <span className={styles.portalCount}>{count}</span> : null}
+              </div>
+            )
+          })}
         </div>
       </div>
 
@@ -339,35 +182,45 @@ export default function JobOffersPage() {
             type="text"
             placeholder="Buscar por puesto, empresa o tecnologia..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value)
+              setCurrentPage(1)
+            }}
             className={styles.searchInput}
           />
           {search ? (
-            <button type="button" className={styles.clearSearch} onClick={() => setSearch("")}>
+            <button
+              type="button"
+              className={styles.clearSearch}
+              onClick={() => {
+                setSearch("")
+                setCurrentPage(1)
+              }}
+            >
               <FiX size={16} />
             </button>
           ) : null}
         </div>
 
         <div className={styles.filterChips}>
-          {allPortals.map((portal) => (
+          {(["Todos", ...APPLY_PORTAL_ORDER] as Array<string | ApplyPortalKey>).map((portal) => (
             <button
               key={portal}
               type="button"
               className={`${styles.filterChip} ${selectedPortal === portal ? styles.filterChipActive : ""}`}
-              onClick={() => setSelectedPortal(portal)}
-              style={
-                selectedPortal === portal && portal !== "Todos"
-                  ? {
-                      background: portalConfig[portal]?.bg,
-                      color: portalConfig[portal]?.color,
-                      borderColor: portalConfig[portal]?.color,
-                    }
-                  : undefined
-              }
+              onClick={() => {
+                setSelectedPortal(portal)
+                setCurrentPage(1)
+              }}
             >
-              {portal !== "Todos" ? portalConfig[portal]?.icon : null}
-              {portal}
+              {portal !== "Todos" ? (
+                <img
+                  className={styles.filterPortalImg}
+                  src={applyPortalImageMap[portal as ApplyPortalKey].src}
+                  alt={applyPortalImageMap[portal as ApplyPortalKey].alt}
+                />
+              ) : null}
+              {portal === "Todos" ? "Todos" : applyPortalImageMap[portal as ApplyPortalKey].alt}
             </button>
           ))}
         </div>
@@ -388,7 +241,10 @@ export default function JobOffersPage() {
                   key={mod}
                   type="button"
                   className={`${styles.filterOption} ${selectedModality === mod ? styles.filterOptionActive : ""}`}
-                  onClick={() => setSelectedModality(mod)}
+                  onClick={() => {
+                    setSelectedModality(mod)
+                    setCurrentPage(1)
+                  }}
                 >
                   {mod}
                 </button>
@@ -399,12 +255,21 @@ export default function JobOffersPage() {
       ) : null}
 
       <div className={styles.resultsInfo}>
-        <span className={styles.resultsCount}>{filteredOffers.length} ofertas encontradas</span>
+        <span className={styles.resultsCount}>{totalCount || filteredOffers.length} ofertas encontradas</span>
       </div>
 
+      {alert ? <Alert status={alert.status} message={alert.message} onClose={() => setAlert(null)} /> : null}
+      {isLoading ? (
+        <div style={{ padding: "1rem" }}>
+          <LoadingSpinner />
+        </div>
+      ) : null}
+
       <div className={styles.splitPanel}>
-        <div className={styles.listPanel}>
+        <div className={styles.listColumn}>
+          <div className={styles.listPanel}>
           {filteredOffers.map((offer) => (
+              // Badges: usar estilos/logos por portal como "Ofertas aplicadas".
             <div
               key={offer.id}
               className={`${styles.offerCard} ${selectedOffer?.id === offer.id ? styles.offerCardActive : ""}`}
@@ -437,26 +302,35 @@ export default function JobOffersPage() {
               </div>
 
               <div className={styles.offerCardFooter}>
-                <div
-                  className={styles.portalBadge}
-                  style={{ background: portalConfig[offer.portal]?.bg, color: portalConfig[offer.portal]?.color }}
-                >
-                  {portalConfig[offer.portal]?.icon}
-                  <span>{offer.portal}</span>
-                </div>
-                {offer.redirect_portal ? (
-                  <>
-                    <span className={styles.redirectArrow}>{">"}</span>
+                {(() => {
+                  const b = resolveBadgeRender(offer.portal)
+                  return (
                     <div
                       className={styles.portalBadge}
-                      style={{
-                        background: portalConfig[offer.redirect_portal]?.bg || "#f3f4f6",
-                        color: portalConfig[offer.redirect_portal]?.color || "#666",
-                      }}
+                      style={{ background: b.style?.background, color: b.style?.color, border: b.style?.border ? `1px solid ${b.style?.border}` : undefined }}
                     >
-                      {portalConfig[offer.redirect_portal]?.icon}
-                      <span>{offer.redirect_portal}</span>
+                      {b.imgSrc ? <img className={styles.portalBadgeImg} src={b.imgSrc} alt={b.label} /> : null}
+                      {b.icon}
+                      <span>{b.label}</span>
                     </div>
+                  )
+                })()}
+                {offer.redirect_portal && offer.redirect_portal !== offer.portal ? (
+                  <>
+                    <span className={styles.redirectArrow}>{">"}</span>
+                    {(() => {
+                      const b = resolveBadgeRender(offer.redirect_portal || "")
+                      return (
+                        <div
+                          className={styles.portalBadge}
+                          style={{ background: b.style?.background, color: b.style?.color, border: b.style?.border ? `1px solid ${b.style?.border}` : undefined }}
+                        >
+                          {b.imgSrc ? <img className={styles.portalBadgeImg} src={b.imgSrc} alt={b.label} /> : null}
+                          {b.icon}
+                          <span>{b.label}</span>
+                        </div>
+                      )
+                    })()}
                   </>
                 ) : null}
                 <span className={styles.offerTime}>
@@ -471,6 +345,20 @@ export default function JobOffersPage() {
             <div className={styles.emptyList}>
               <FiBriefcase size={40} />
               <p>No se encontraron ofertas con los filtros seleccionados</p>
+            </div>
+          ) : null}
+          </div>
+
+          {totalPages > 1 ? (
+            <div className={styles.paginationWrap}>
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={(p) => {
+                  const next = Math.max(1, Math.min(totalPages, p))
+                  setCurrentPage(next)
+                }}
+              />
             </div>
           ) : null}
         </div>
@@ -496,17 +384,24 @@ export default function JobOffersPage() {
                 </div>
 
                 <div className={styles.detailActions}>
-                  <a href={selectedOffer.offer_url} target="_blank" rel="noopener noreferrer">
+                  <a
+                    href={(selectedOffer.redirect_url || selectedOffer.offer_url) as string}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
                     <Button variant="primary" size="small">
                       <FiExternalLink size={16} />
-                      Ver en {selectedOffer.redirect_portal || selectedOffer.portal}
+                      Ver en{" "}
+                      {selectedOffer.redirect_portal && selectedOffer.redirect_portal !== selectedOffer.portal
+                        ? selectedOffer.redirect_portal
+                        : selectedOffer.portal}
                     </Button>
                   </a>
                   {selectedOffer.easy_apply ? <span className={styles.easyApplyBadge}>Easy Apply</span> : null}
                 </div>
               </div>
 
-              {selectedOffer.redirect_portal ? (
+              {selectedOffer.redirect_portal && selectedOffer.redirect_portal !== selectedOffer.portal ? (
                 <div className={styles.portalFlow}>
                   <FiGlobe size={14} />
                   <span>Encontrada en</span>
@@ -613,7 +508,14 @@ export default function JobOffersPage() {
 
                 <div className={styles.section}>
                   <h3 className={styles.sectionTitle}>Descripcion del puesto</h3>
-                  <p className={styles.description}>{selectedOffer.job_description}</p>
+                  <div className={styles.descriptionBlock}>
+                    <div className={styles.detailLabel}>Descripción del Puesto</div>
+                    <div
+                      className={styles.description}
+                      // Mantener consistencia con "Ofertas aplicadas": render del HTML tal cual.
+                      dangerouslySetInnerHTML={{ __html: selectedOffer.job_description || "" }}
+                    />
+                  </div>
                 </div>
 
                 {selectedOffer.hiring_team?.length ? (

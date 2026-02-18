@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import {
@@ -126,7 +126,15 @@ export const Sidebar: React.FC = () => {
   const pathname = usePathname()
   const router = useRouter()
   const [expandedMenus, setExpandedMenus] = useState<string[]>(["Admin"])
-  const userIsAdmin = isAdmin()
+  // Importante para evitar hydration mismatch:
+  // - En SSR no hay sessionStorage, isAdmin() devuelve false.
+  // - En el cliente sí existe y puede devolver true, lo cual cambia el árbol del Sidebar.
+  // Hacemos que el primer render sea estable (false) y luego actualizamos post-mount.
+  const [userIsAdmin, setUserIsAdmin] = useState(false)
+
+  useEffect(() => {
+    setUserIsAdmin(isAdmin())
+  }, [])
 
   const handleLogout = () => {
     logout()
