@@ -85,6 +85,7 @@ export default function IngestionConfigModal({
   const [isLoadingDetail, setIsLoadingDetail] = useState(false)
   const [detailError, setDetailError] = useState<string | null>(null)
   const [pollError, setPollError] = useState<string | null>(null)
+  const exploringNow = Boolean(live?.success && live.execution_id && (live.running || live.status === "RUNNING"))
 
   // Al abrir el modal, sincronizar estado con la config actual para mostrar siempre la URL/config guardada
   useEffect(() => {
@@ -479,6 +480,9 @@ export default function IngestionConfigModal({
                     {live.stalled_reason || "El explorador parece trabado (sin progreso)."}
                   </div>
                 )}
+                {exploringNow && (live.rows_count ?? 0) === 0 && (
+                  <p className={styles.helpText}>Realizando exploración… (aún sin resultados)</p>
+                )}
                 <div className={styles.liveStats}>
                   <div>
                     <div className={styles.liveK}>execution_id</div>
@@ -652,8 +656,8 @@ export default function IngestionConfigModal({
           <button className={styles.cancelButton} onClick={onClose} disabled={isSaving}>
             Cancelar
           </button>
-          <button className={styles.saveButton} onClick={handleSave} disabled={isSaving}>
-            {isSaving ? "Analizando y guardando…" : "Guardar Configuración"}
+          <button className={styles.saveButton} onClick={handleSave} disabled={isSaving || exploringNow}>
+            {isSaving ? "Analizando y guardando…" : exploringNow ? "Realizando exploración…" : "Guardar Configuración"}
           </button>
         </div>
       </div>
