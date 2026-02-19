@@ -229,6 +229,18 @@ export default function IngestionConfigModal({
     try {
       const res = await cancelIngestionExplorer()
       if (res.success) {
+        // Optimista: reflejar cancelación inmediatamente en UI.
+        setLive((prev) => {
+          if (!prev || !prev.execution_id) return prev
+          return {
+            ...prev,
+            running: false,
+            status: "CANCELLED",
+            error: "Explorador cancelado por el usuario.",
+            stalled: false,
+            stalled_reason: null,
+          }
+        })
         setAnalysis({
           success: false,
           cancelled: true,
