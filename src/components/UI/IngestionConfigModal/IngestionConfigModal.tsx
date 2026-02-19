@@ -236,6 +236,13 @@ export default function IngestionConfigModal({
             ? "Explorador cancelado correctamente."
             : "No había un explorador corriendo en este momento.",
         })
+        // Refrescar estado en vivo inmediatamente para que el UI deje de mostrar RUNNING.
+        try {
+          const liveNow = await getIngestionExplorerStatus(200)
+          setLive(liveNow)
+        } catch {
+          // ignore
+        }
       } else {
         setAnalysis({
           success: false,
