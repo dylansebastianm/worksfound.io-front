@@ -85,6 +85,8 @@ export default function IngestionConfigModal({
   const [isLoadingDetail, setIsLoadingDetail] = useState(false)
   const [detailError, setDetailError] = useState<string | null>(null)
   const [pollError, setPollError] = useState<string | null>(null)
+  /** Orden de la lista de URLs de segmentación: por defecto como se generó (remoto, híbrido, presencial, etc.) o por ofertas mayor a menor */
+  const [segmentSortBy, setSegmentSortBy] = useState<"segmentacion" | "ofertas">("segmentacion")
   const exploringNow = Boolean(live?.success && live.execution_id && (live.running || live.status === "RUNNING"))
 
   // Al abrir el modal, sincronizar estado con la config actual para mostrar siempre la URL/config guardada
@@ -98,7 +100,11 @@ export default function IngestionConfigModal({
     }
   }, [isOpen, initialConfig.url, initialConfig.limit, initialConfig.scheduledTime, initialConfig.autoSchedule])
 
-  // Polling del explorador (productor) para actualizar por país/batch.
+  // Polling del explorador solo cuando hay una ejecución en curso.
+  const explorerRunning = Boolean(
+    live?.running || live?.status === "RUNNING" || initialConfig?.explorerStatus === "RUNNING"
+  )
+
   useEffect(() => {
     if (!isOpen) return
     let cancelled = false
@@ -108,7 +114,6 @@ export default function IngestionConfigModal({
       if (cancelled || inflight) return
       inflight = true
       try {
-        // Cancelar el request anterior si sigue colgado.
         if (aborter) aborter.abort()
         aborter = new AbortController()
         const res = await getIngestionExplorerStatus(200, { signal: aborter.signal })
@@ -122,14 +127,21 @@ export default function IngestionConfigModal({
         inflight = false
       }
     }
+    // Una carga al abrir para mostrar el último estado (ej. última ejecución).
     load()
+    if (!explorerRunning) {
+      return () => {
+        cancelled = true
+        if (aborter) aborter.abort()
+      }
+    }
     const id = setInterval(load, 4000)
     return () => {
       cancelled = true
       if (aborter) aborter.abort()
       clearInterval(id)
     }
-  }, [isOpen])
+  }, [isOpen, explorerRunning])
 
   // Elegir país activo (por defecto: el último visto).
   useEffect(() => {
@@ -524,7 +536,15 @@ export default function IngestionConfigModal({
                   </div>
                   <div>
                     <div className={styles.liveK}>URL semilla (global)</div>
-                    <div className={styles.liveV}>{live.seed_url ? "Disponible" : "—"}</div>
+                    <div className={styles.liveV}>
+                      {live.seed_url ? (
+                        <a className={styles.miniLink} href={live.seed_url} target="_blank" rel="noopener noreferrer">
+                          {live.seed_url.length > 90 ? live.seed_url.slice(0, 90) + "…" : live.seed_url}
+                        </a>
+                      ) : (
+                        "—"
+                      )}
+                    </div>
                   </div>
                   <div>
                     <div className={styles.liveK}>total URL semilla (global)</div>
@@ -535,20 +555,20 @@ export default function IngestionConfigModal({
                     </div>
                   </div>
                   <div>
-                    <div className={styles.liveK}>total semilla (sum)</div>
+                    <div className={styles.liveK}>total audit (sum países)</div>
                     <div className={styles.liveV}>{Number(live.totals?.audit_total_sum ?? 0).toLocaleString("es-ES")}</div>
                   </div>
                   <div>
-                    <div className={styles.liveK}>budget (cap 999)</div>
+                    <div className={styles.liveK}>Budget total (suma de toda la segmentación)</div>
                     <div className={styles.liveV}>{Number(live.totals?.segments_budget_sum ?? 0).toLocaleString("es-ES")}</div>
                   </div>
                   <div>
-                    <div className={styles.liveK}>% cobertura</div>
+                    <div className={styles.liveK}>Budget total vs URL semilla</div>
                     <div className={styles.liveV}>
-                      {live.totals?.global_coverage_vs_seed_pct != null
-                        ? `${Number(live.totals.global_coverage_vs_seed_pct).toFixed(1)}% (global vs URL semilla)`
-                        : live.totals?.coverage_vs_audit_sum_pct != null
-                          ? `${Number(live.totals.coverage_vs_audit_sum_pct).toFixed(1)}% (sum países vs sum audits)`
+                      {live.totals?.seed_url_total_results != null && Number(live.totals.seed_url_total_results) > 0 && live.totals?.segments_budget_sum != null
+                        ? `${Number((Number(live.totals.segments_budget_sum) / Number(live.totals.seed_url_total_results) * 100).toFixed(1))}%`
+                        : live.totals?.global_coverage_vs_seed_pct != null
+                          ? `${Number(live.totals.global_coverage_vs_seed_pct).toFixed(1)}%`
                           : "—"}
                     </div>
                   </div>
@@ -559,8 +579,9 @@ export default function IngestionConfigModal({
                 <div className={styles.countryTabs} role="tablist" aria-label="Países explorados">
                   {(live.countries || []).map((c) => {
                     const active = c.country === selectedCountry
-                    const cov = c.segmentation_coverage_pct != null ? `${Number(c.segmentation_coverage_pct).toFixed(1)}%` : "—"
-                    const subtitle = `${Number(c.audit_total || 0).toLocaleString("es-ES")} · ${c.segments_count || 0} seg · cov ${cov}`
+                    const audit = Number(c.audit_total || 0)
+                    const sumaSeg = Number(c.segments_budget_sum || 0)
+                    const coberturaPct = audit > 0 ? ((sumaSeg / audit) * 100).toFixed(1) : "—"
                     return (
                       <button
                         key={c.country}
@@ -569,9 +590,14 @@ export default function IngestionConfigModal({
                         onClick={() => setSelectedCountry(c.country)}
                       >
                         <div className={styles.countryName}>{c.country}</div>
-                        <div className={styles.countryMeta}>{subtitle}</div>
                         <div className={styles.countryMeta}>
-                          P:{c.segments_pending} · Pr:{c.segments_processing} · C:{c.segments_completed} · F:{c.segments_failed}
+                          Audit: {audit.toLocaleString("es-ES")}
+                        </div>
+                        <div className={styles.countryMeta}>
+                          Suma segmentación: {sumaSeg.toLocaleString("es-ES")}
+                        </div>
+                        <div className={styles.countryMeta}>
+                          Cobertura: {coberturaPct === "—" ? "—" : `${coberturaPct}%`}
                         </div>
                       </button>
                     )
@@ -592,8 +618,18 @@ export default function IngestionConfigModal({
                         <div>
                           <strong>{countryDetail.header.country}</strong>
                           <span className={styles.detailHeaderMeta}>
-                            {" "}· audit {Number(countryDetail.header.audit_total || 0).toLocaleString("es-ES")}
-                            {" "}· insertado {Number(countryDetail.header.inserted_total || 0).toLocaleString("es-ES")}
+                            {" "}· Audit: {Number(countryDetail.header.audit_total || 0).toLocaleString("es-ES")}
+                            {" "}· Suma segmentación: {(() => {
+                              const row = (live.countries || []).find((r) => r.country === selectedCountry)
+                              return Number(row?.segments_budget_sum ?? 0).toLocaleString("es-ES")
+                            })()}
+                            {" "}· Cobertura: {(() => {
+                              const row = (live.countries || []).find((r) => r.country === selectedCountry)
+                              const a = Number(row?.audit_total ?? 0)
+                              const s = Number(row?.segments_budget_sum ?? 0)
+                              return a > 0 ? `${((s / a) * 100).toFixed(1)}%` : "—"
+                            })()}
+                            {" "}· Insertado: {Number(countryDetail.header.inserted_total || 0).toLocaleString("es-ES")}
                           </span>
                           {countryDetail.header.audit_url && (
                             <div className={styles.countryMeta} style={{ marginTop: 6 }}>
@@ -604,10 +640,32 @@ export default function IngestionConfigModal({
                             </div>
                           )}
                         </div>
-                        <div className={styles.queueCount}>{countryDetail.batches?.length || 0} batch(es)</div>
+                        <div className={styles.queueCount}>{countryDetail.batches?.length ?? 0} URLs de segmentación</div>
+                      </div>
+                      <div className={styles.batchSortRow}>
+                        <span className={styles.batchSortLabel}>Ordenar:</span>
+                        <button
+                          type="button"
+                          className={segmentSortBy === "segmentacion" ? styles.batchSortBtnActive : styles.batchSortBtn}
+                          onClick={() => setSegmentSortBy("segmentacion")}
+                        >
+                          Segmentación (remoto, híbrido, presencial…)
+                        </button>
+                        <button
+                          type="button"
+                          className={segmentSortBy === "ofertas" ? styles.batchSortBtnActive : styles.batchSortBtn}
+                          onClick={() => setSegmentSortBy("ofertas")}
+                        >
+                          Ofertas (mayor a menor)
+                        </button>
                       </div>
                       <div className={styles.batchList}>
-                        {(countryDetail.batches || []).map((b) => (
+                        {(segmentSortBy === "ofertas"
+                          ? [...(countryDetail.batches || [])].sort(
+                              (a, b) => Number(b.expected_count || 0) - Number(a.expected_count || 0)
+                            )
+                          : countryDetail.batches || []
+                        ).map((b) => (
                           <div key={b.batch_id} className={styles.batchRow}>
                             <div className={styles.batchTop}>
                               <div className={styles.batchStatus}>{b.status}</div>
@@ -615,7 +673,12 @@ export default function IngestionConfigModal({
                                 exp {Number(b.expected_count || 0).toLocaleString("es-ES")} · ins {Number(b.inserted_count || 0).toLocaleString("es-ES")} · eff {Number(b.efficiency_pct || 0).toFixed(1)}%
                               </div>
                             </div>
-                            <div className={styles.batchUrl}>{b.original_url}</div>
+                            <div className={styles.batchUrl}>
+                              URL:{" "}
+                              <a className={styles.miniLink} href={b.original_url} target="_blank" rel="noopener noreferrer">
+                                {b.original_url.length > 140 ? b.original_url.slice(0, 140) + "…" : b.original_url}
+                              </a>
+                            </div>
                             {Array.isArray(b.filters_readable) && b.filters_readable.length > 0 && (
                               <div className={styles.batchFilters}>{b.filters_readable.join(" · ")}</div>
                             )}
