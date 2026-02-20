@@ -198,6 +198,11 @@
   color: #92400e;
 }
 
+.statusCanceled {
+  background: #e5e7eb;
+  color: #4b5563;
+}
+
 .columnTime {
   display: flex;
   justify-content: center;

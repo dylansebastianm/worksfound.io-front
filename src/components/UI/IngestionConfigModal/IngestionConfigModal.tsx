@@ -1,5 +1,5 @@
 "use client"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import styles from "./IngestionConfigModal.module.css"
 import {
   analyzeIngestionConfig,
@@ -87,6 +87,8 @@ export default function IngestionConfigModal({
   const [pollError, setPollError] = useState<string | null>(null)
   /** Orden de la lista de URLs de segmentación: por defecto como se generó (remoto, híbrido, presencial, etc.) o por ofertas mayor a menor */
   const [segmentSortBy, setSegmentSortBy] = useState<"segmentacion" | "ofertas">("segmentacion")
+  /** Evita que el polling sobrescriba el estado "cancelado" justo después de pulsar Cancelar. */
+  const cancelRequestedRef = useRef(false)
   const exploringNow = Boolean(live?.success && live.execution_id && (live.running || live.status === "RUNNING"))
 
   // Al abrir el modal, sincronizar estado con la config actual para mostrar siempre la URL/config guardada
@@ -118,6 +120,8 @@ export default function IngestionConfigModal({
         aborter = new AbortController()
         const res = await getIngestionExplorerStatus(200, { signal: aborter.signal })
         if (cancelled) return
+        // No sobrescribir con "running" si el usuario acaba de pedir cancelar (cancelación inmediata en UI).
+        if (cancelRequestedRef.current && (res.running || res.status === "RUNNING")) return
         setLive(res)
         setPollError(null)
       } catch (e: any) {
@@ -211,22 +215,24 @@ export default function IngestionConfigModal({
   }
 
   const handleCancelExplorer = async () => {
+    cancelRequestedRef.current = true
+    // Optimista: mostrar cancelado en la UI al instante, sin esperar la respuesta.
+    setLive((prev) => {
+      if (!prev || !prev.execution_id) return prev
+      return {
+        ...prev,
+        running: false,
+        status: "CANCELLED",
+        error: "Explorador cancelado por el usuario.",
+        stalled: false,
+        stalled_reason: null,
+      }
+    })
+    setAnalysis({ success: false, cancelled: true, error: "Cancelando…" })
     setIsCancellingExplorer(true)
     try {
       const res = await cancelIngestionExplorer()
       if (res.success) {
-        // Optimista: reflejar cancelación inmediatamente en UI.
-        setLive((prev) => {
-          if (!prev || !prev.execution_id) return prev
-          return {
-            ...prev,
-            running: false,
-            status: "CANCELLED",
-            error: "Explorador cancelado por el usuario.",
-            stalled: false,
-            stalled_reason: null,
-          }
-        })
         setAnalysis({
           success: false,
           cancelled: true,
@@ -234,7 +240,6 @@ export default function IngestionConfigModal({
             ? "Explorador cancelado correctamente."
             : "No había un explorador corriendo en este momento.",
         })
-        // Refrescar estado en vivo inmediatamente para que el UI deje de mostrar RUNNING.
         try {
           const liveNow = await getIngestionExplorerStatus(200)
           setLive(liveNow)
@@ -244,10 +249,18 @@ export default function IngestionConfigModal({
       } else {
         setAnalysis({
           success: false,
+          cancelled: true,
           error: res.error || "No se pudo cancelar el explorador.",
         })
+        try {
+          const liveNow = await getIngestionExplorerStatus(200)
+          setLive(liveNow)
+        } catch {
+          // ignore
+        }
       }
     } finally {
+      cancelRequestedRef.current = false
       setIsCancellingExplorer(false)
     }
   }

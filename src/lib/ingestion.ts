@@ -329,11 +329,13 @@ export async function getIngestionLogs(params: GetIngestionLogsParams = {}): Pro
 // ----------------------------
 
 export interface IngestionSummaryRow {
+  /** Identificador del run de ingesta (cada ejecución del scraper = un registro único). */
+  ingestion_log_id?: number | null
   execution_id: string
   country: string
   start_date: string | null
   duration: string
-  status: "En Progreso" | "Revisar" | "Finalizado" | string
+  status: "En Progreso" | "Finalizado" | "Fallido" | "Cancelado" | string
   audit_total: number
   segmentation_total: number
   inserted_total: number
@@ -400,6 +402,30 @@ export async function getIngestionCountryDetail(
     return { success: true, detail: data as IngestionCountryDetailResponse }
   } catch (error) {
     console.error("Error obteniendo detalle de ingesta:", error)
+    return { success: false, error: "Error conectando con el servidor" }
+  }
+}
+
+/** Detalle por run (ingestion_log_id) y país. Muestra solo los batches de ese run. */
+export async function getIngestionDetailByLog(
+  ingestionLogId: number,
+  country: string
+): Promise<{ success: boolean; detail?: IngestionCountryDetailResponse; error?: string }> {
+  try {
+    const response = await fetch(
+      `${API_URL}/api/ingestions/log/${ingestionLogId}/${encodeURIComponent(country)}/detail`,
+      { method: "GET", headers: getAuthHeaders() }
+    )
+
+    if (response.status === 401) return { success: false, error: "Token inválido o expirado. Por favor, inicia sesión nuevamente." }
+    if (response.status === 403) return { success: false, error: "Acceso denegado: Se requieren permisos de administrador." }
+    if (!response.ok) return { success: false, error: "Error obteniendo detalle." }
+
+    const data = await response.json()
+    if (!data || typeof data !== "object") return { success: false, error: "Respuesta inválida del servidor." }
+    return { success: true, detail: data as IngestionCountryDetailResponse }
+  } catch (error) {
+    console.error("Error obteniendo detalle de ingesta por log:", error)
     return { success: false, error: "Error conectando con el servidor" }
   }
 }

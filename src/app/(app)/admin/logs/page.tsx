@@ -5,14 +5,14 @@ import { FiClock, FiCheckCircle, FiXCircle, FiAlertCircle, FiExternalLink, FiX, 
 import { LoadingSpinner } from "@/components/UI/LoadingSpinner/LoadingSpinner"
 import { Alert } from "@/components/UI/Alert/Alert"
 import { Select } from "@/components/UI/Select/Select"
-import { getIngestionsSummary, getIngestionCountryDetail, type IngestionSummaryRow, type IngestionCountryDetailResponse } from "@/lib/ingestion"
+import { getIngestionsSummary, getIngestionCountryDetail, getIngestionDetailByLog, type IngestionSummaryRow, type IngestionCountryDetailResponse } from "@/lib/ingestion"
 import styles from "./logs.module.css"
 
 export default function AdminLoggingsPage() {
   const [rows, setRows] = useState<IngestionSummaryRow[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [alert, setAlert] = useState<{ status: "success" | "error"; message: string } | null>(null)
-  const [selectedStatus, setSelectedStatus] = useState<"all" | "En Progreso" | "Revisar" | "Finalizado">("all")
+  const [selectedStatus, setSelectedStatus] = useState<"all" | "En Progreso" | "Finalizado" | "Fallido" | "Cancelado">("all")
   const [detailModal, setDetailModal] = useState<{ open: boolean; row: IngestionSummaryRow | null; loading: boolean; detail: IngestionCountryDetailResponse | null }>({
     open: false,
     row: null,
@@ -74,8 +74,10 @@ export default function AdminLoggingsPage() {
     switch (status) {
       case "Finalizado":
         return styles.statusSuccess
-      case "Revisar":
+      case "Fallido":
         return styles.statusFailed
+      case "Cancelado":
+        return styles.statusCanceled
       case "En Progreso":
         return styles.statusInProgress
       default:
@@ -87,8 +89,10 @@ export default function AdminLoggingsPage() {
     switch (status) {
       case "Finalizado":
         return <FiCheckCircle size={18} />
-      case "Revisar":
+      case "Fallido":
         return <FiXCircle size={18} />
+      case "Cancelado":
+        return <FiClock size={18} />
       case "En Progreso":
         return <FiAlertCircle size={18} />
       default:
@@ -98,7 +102,10 @@ export default function AdminLoggingsPage() {
 
   const openDetailModal = useCallback(async (row: IngestionSummaryRow) => {
     setDetailModal({ open: true, row, loading: true, detail: null })
-    const res = await getIngestionCountryDetail(row.execution_id, row.country)
+    const res =
+      row.ingestion_log_id != null
+        ? await getIngestionDetailByLog(row.ingestion_log_id, row.country)
+        : await getIngestionCountryDetail(row.execution_id, row.country)
     if (res.success && res.detail) {
       setDetailModal({ open: true, row, loading: false, detail: res.detail })
     } else {
@@ -127,8 +134,9 @@ export default function AdminLoggingsPage() {
             options={[
               { value: "all", label: "Todos los estados" },
               { value: "En Progreso", label: "En Progreso" },
-              { value: "Revisar", label: "Revisar" },
               { value: "Finalizado", label: "Finalizado" },
+              { value: "Fallido", label: "Fallido" },
+              { value: "Cancelado", label: "Cancelado" },
             ]}
             value={selectedStatus}
             onChange={(value: string) => handleStatusChange(value)}
@@ -165,7 +173,7 @@ export default function AdminLoggingsPage() {
             </div>
           ) : (
             rows.map((row) => (
-            <div key={`${row.execution_id}-${row.country}`} className={styles.tableRow}>
+            <div key={`${row.ingestion_log_id ?? row.execution_id}-${row.country}`} className={styles.tableRow}>
               <div className={styles.columnDateTime}>
                 <div className={styles.dateTimeWrapper}>
                   <FiClock className={styles.clockIcon} />
@@ -186,7 +194,10 @@ export default function AdminLoggingsPage() {
 
               <div className={styles.columnUrl}>
                 <span className={styles.urlText} title={row.execution_id}>
-                  {row.country} <span style={{ color: "var(--text-secondary)" }}>· {row.execution_id.slice(0, 8)}…</span>
+                  {row.country}{" "}
+                  <span style={{ color: "var(--text-secondary)" }}>
+                    · {row.ingestion_log_id != null ? `run #${row.ingestion_log_id}` : `${row.execution_id.slice(0, 8)}…`}
+                  </span>
                 </span>
               </div>
 
@@ -226,7 +237,10 @@ export default function AdminLoggingsPage() {
               <FiX size={24} />
             </button>
             <h3 className={styles.modalTitle}>
-              Detalle · {detailModal.row.country} · {detailModal.row.execution_id.slice(0, 8)}…
+              Detalle · {detailModal.row.country}
+              {detailModal.row.ingestion_log_id != null
+                ? ` · run #${detailModal.row.ingestion_log_id}`
+                : ` · ${detailModal.row.execution_id.slice(0, 8)}…`}
             </h3>
 
             {detailModal.loading ? (
