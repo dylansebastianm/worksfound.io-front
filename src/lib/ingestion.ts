@@ -82,6 +82,10 @@ export interface CancelExplorerResponse {
 export interface ExplorerCountryProgressRow {
   country: string
   first_seen_at: string | null
+  /** Cuando terminó de recopilar toda la info del país (último batch creado) */
+  last_seen_at?: string | null
+  /** Tiempo de ejecución hasta terminar de recopilar la info del país (segundos) */
+  execution_time_seconds?: number | null
   audit_total: number
   audit_url?: string | null
   segments_count: number

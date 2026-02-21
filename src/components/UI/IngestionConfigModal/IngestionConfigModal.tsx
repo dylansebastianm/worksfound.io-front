@@ -429,6 +429,10 @@ export default function IngestionConfigModal({
                     const audit = Number(c.audit_total || 0)
                     const sumaSeg = Number(c.segments_budget_sum || 0)
                     const coberturaPct = audit > 0 ? ((sumaSeg / audit) * 100).toFixed(1) : "—"
+                    const execSec = c.execution_time_seconds
+                    const timeStr = execSec != null && execSec > 0
+                      ? (execSec < 60 ? `${Math.round(execSec)}s` : `${Math.floor(execSec / 60)}m ${Math.round(execSec % 60)}s`)
+                      : "—"
                     return (
                       <button
                         key={c.country}
@@ -445,6 +449,9 @@ export default function IngestionConfigModal({
                         </div>
                         <div className={styles.countryMeta}>
                           Cobertura: {coberturaPct === "—" ? "—" : `${coberturaPct}%`}
+                        </div>
+                        <div className={styles.countryMeta}>
+                          Tiempo recopilación: {timeStr}
                         </div>
                       </button>
                     )
@@ -475,6 +482,12 @@ export default function IngestionConfigModal({
                               const a = Number(row?.audit_total ?? 0)
                               const s = Number(row?.segments_budget_sum ?? 0)
                               return a > 0 ? `${((s / a) * 100).toFixed(1)}%` : "—"
+                            })()}
+                            {" "}· Tiempo recopilación: {(() => {
+                              const row = (live.countries || []).find((r) => r.country === selectedCountry)
+                              const sec = row?.execution_time_seconds
+                              if (sec == null || sec <= 0) return "—"
+                              return sec < 60 ? `${Math.round(sec)}s` : `${Math.floor(sec / 60)}m ${Math.round(sec % 60)}s`
                             })()}
                             {" "}· Insertado: {Number(countryDetail.header.inserted_total || 0).toLocaleString("es-ES")}
                           </span>
