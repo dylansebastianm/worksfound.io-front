@@ -351,6 +351,8 @@ export interface IngestionDetailBatchRow {
   expected_count: number
   inserted_count: number
   efficiency_pct: number
+  /** Tiempo de ejecución del batch en segundos */
+  execution_time_seconds?: number | null
   updated_at: string
 }
 
@@ -360,6 +362,8 @@ export interface IngestionCountryDetailResponse {
     audit_total: number
     audit_url?: string | null
     inserted_total: number
+    /** Suma de tiempos de ejecución de todos los batches del país (segundos) */
+    total_execution_seconds?: number | null
   }
   batches: IngestionDetailBatchRow[]
 }

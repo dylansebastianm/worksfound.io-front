@@ -85,6 +85,14 @@ export default function AdminLoggingsPage() {
     }
   }
 
+  const formatDurationSeconds = (seconds: number): string => {
+    const s = Math.round(seconds)
+    if (s < 60) return `${s}s`
+    const m = Math.floor(s / 60)
+    const sec = s % 60
+    return sec > 0 ? `${m}m ${sec}s` : `${m}m`
+  }
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "Finalizado":
@@ -159,6 +167,7 @@ export default function AdminLoggingsPage() {
           <div className={styles.columnDateTime}>Inicio</div>
           <div className={styles.columnStatus}>Estado</div>
           <div className={styles.columnTime}>Duración</div>
+          <div className={styles.columnExecutionId}>ID ejecución</div>
           <div className={styles.columnUrl}>País</div>
           <div className={styles.columnFound}>Audit</div>
           <div className={styles.columnDuplicates}>Segmentado</div>
@@ -192,12 +201,18 @@ export default function AdminLoggingsPage() {
                 <span className={styles.executionTime}>{row.duration}</span>
               </div>
 
+              <div className={styles.columnExecutionId}>
+                <span className={styles.executionIdText} title={row.execution_id}>
+                  {row.execution_id ? `${row.execution_id.slice(0, 8)}…` : "—"}
+                </span>
+              </div>
+
               <div className={styles.columnUrl}>
-                <span className={styles.urlText} title={row.execution_id}>
-                  {row.country}{" "}
-                  <span style={{ color: "var(--text-secondary)" }}>
-                    · {row.ingestion_log_id != null ? `run #${row.ingestion_log_id}` : `${row.execution_id.slice(0, 8)}…`}
-                  </span>
+                <span className={styles.urlText}>
+                  {row.country}
+                  {row.ingestion_log_id != null && (
+                    <span style={{ color: "var(--text-secondary)" }}> · run #{row.ingestion_log_id}</span>
+                  )}
                 </span>
               </div>
 
@@ -238,10 +253,13 @@ export default function AdminLoggingsPage() {
             </button>
             <h3 className={styles.modalTitle}>
               Detalle · {detailModal.row.country}
-              {detailModal.row.ingestion_log_id != null
-                ? ` · run #${detailModal.row.ingestion_log_id}`
-                : ` · ${detailModal.row.execution_id.slice(0, 8)}…`}
+              {detailModal.row.ingestion_log_id != null && ` · run #${detailModal.row.ingestion_log_id}`}
             </h3>
+            {detailModal.row.execution_id && (
+              <p className={styles.modalExecutionId} title={detailModal.row.execution_id}>
+                ID ejecución (explorador): <code>{detailModal.row.execution_id}</code>
+              </p>
+            )}
 
             {detailModal.loading ? (
               <div className={styles.modalLoading}>
@@ -257,6 +275,14 @@ export default function AdminLoggingsPage() {
                   <div>
                     <strong>Insertadas</strong>: {detailModal.detail.header.inserted_total}
                   </div>
+                  {(() => {
+                    const totalSec = detailModal.detail.header.total_execution_seconds ?? detailModal.detail.batches.reduce((acc, b) => acc + (b.execution_time_seconds ?? 0), 0)
+                    return totalSec > 0 ? (
+                      <div>
+                        <strong>Tiempo de ejecución (país)</strong>: {formatDurationSeconds(totalSec)}
+                      </div>
+                    ) : null
+                  })()}
                 </div>
 
                 <div>
@@ -281,6 +307,9 @@ export default function AdminLoggingsPage() {
                         <span><strong>Expected</strong>: {b.expected_count}</span>
                         <span><strong>Inserted</strong>: {b.inserted_count}</span>
                         <span><strong>Eficiencia</strong>: {Number(b.efficiency_pct || 0).toFixed(1)}%</span>
+                        {b.execution_time_seconds != null && b.execution_time_seconds > 0 && (
+                          <span><strong>Tiempo</strong>: {formatDurationSeconds(b.execution_time_seconds)}</span>
+                        )}
                       </div>
                     </div>
                   ))}
