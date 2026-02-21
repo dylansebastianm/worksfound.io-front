@@ -290,7 +290,10 @@ export default function AdminDashboardPage() {
       }
       setIsIngesting(false)
       if (response.success) {
-        setAlert({ status: "success", message: "Ingesta detenida correctamente." })
+        setAlert({
+          status: "success",
+          message: response.message || "Ingesta detenida correctamente.",
+        })
       } else {
         setAlert({ status: "error", message: response.error || "No se pudo detener la ingesta." })
       }

@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { Input } from "@/components/UI/Input/Input"
 import { Checkbox } from "@/components/UI/Checkbox/Checkbox"
