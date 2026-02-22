@@ -355,6 +355,16 @@ export interface IngestionDetailBatchRow {
   expected_count: number
   inserted_count: number
   efficiency_pct: number
+  /** Ofertas scrapeadas en esta URL (raw) */
+  scraped_count?: number | null
+  /** Duplicados detectados contra BD antes de insertar */
+  duplicates_db?: number | null
+  /** Duplicados detectados en memoria (misma sesión) */
+  duplicates_memory?: number | null
+  /** Duplicados detectados al intentar guardar */
+  duplicates_at_save?: number | null
+  /** Suma de los tres tipos de duplicados */
+  duplicates_total?: number | null
   /** Tiempo de ejecución del batch en segundos */
   execution_time_seconds?: number | null
   updated_at: string
@@ -368,6 +378,15 @@ export interface IngestionCountryDetailResponse {
     inserted_total: number
     /** Suma de tiempos de ejecución de todos los batches del país (segundos) */
     total_execution_seconds?: number | null
+    /** Total ofertas scrapeadas (suma batches) */
+    total_scraped?: number | null
+    /** No insertadas = segmentación - insertadas */
+    not_inserted?: number | null
+    /** Duplicados por tipo (explica la diferencia) */
+    total_duplicates_db?: number | null
+    total_duplicates_memory?: number | null
+    total_duplicates_at_save?: number | null
+    total_duplicates?: number | null
   }
   batches: IngestionDetailBatchRow[]
 }

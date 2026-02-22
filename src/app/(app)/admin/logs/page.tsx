@@ -275,6 +275,14 @@ export default function AdminLoggingsPage() {
                   <div>
                     <strong>Insertadas</strong>: {detailModal.detail.header.inserted_total}
                   </div>
+                  {detailModal.detail.header.not_inserted != null && detailModal.detail.header.not_inserted > 0 && (
+                    <div style={{ marginTop: 6, padding: "6px 8px", background: "var(--surface)", borderRadius: 6, fontSize: 13 }}>
+                      <strong>No insertadas</strong>: {detailModal.detail.header.not_inserted}
+                      {((detailModal.detail.header.total_duplicates_db ?? 0) + (detailModal.detail.header.total_duplicates_memory ?? 0) + (detailModal.detail.header.total_duplicates_at_save ?? 0)) > 0 && (
+                        <> — Duplicados: BD {(detailModal.detail.header.total_duplicates_db ?? 0)}, memoria {(detailModal.detail.header.total_duplicates_memory ?? 0)}, al guardar {(detailModal.detail.header.total_duplicates_at_save ?? 0)}</>
+                      )}
+                    </div>
+                  )}
                   {(() => {
                     const totalSec = detailModal.detail.header.total_execution_seconds ?? detailModal.detail.batches.reduce((acc, b) => acc + (b.execution_time_seconds ?? 0), 0)
                     return totalSec > 0 ? (
@@ -311,6 +319,24 @@ export default function AdminLoggingsPage() {
                           <span><strong>Tiempo</strong>: {formatDurationSeconds(b.execution_time_seconds)}</span>
                         )}
                       </div>
+                      {(b.scraped_count != null || (b.duplicates_db ?? b.duplicates_memory ?? b.duplicates_at_save) != null) && (
+                        <div style={{ marginTop: 8, padding: "8px 10px", background: "var(--surface)", borderRadius: 6, fontSize: 12 }}>
+                          <div style={{ fontWeight: 600, marginBottom: 4 }}>Por qué no se insertaron todas</div>
+                          {b.scraped_count != null && (
+                            <div><strong>Scrapeado</strong>: {b.scraped_count} ofertas obtenidas de LinkedIn</div>
+                          )}
+                          <div style={{ marginTop: 4 }}>
+                            <strong>Diferencia</strong> (Expected − Inserted): {Math.max(0, (b.expected_count ?? 0) - (b.inserted_count ?? 0))}
+                            {((b.duplicates_db ?? 0) + (b.duplicates_memory ?? 0) + (b.duplicates_at_save ?? 0)) > 0 && (
+                              <> →
+                                {(b.duplicates_db ?? 0) > 0 && <span> Duplicados BD: {(b.duplicates_db ?? 0)}</span>}
+                                {(b.duplicates_memory ?? 0) > 0 && <span> Duplicados memoria: {(b.duplicates_memory ?? 0)}</span>}
+                                {(b.duplicates_at_save ?? 0) > 0 && <span> Duplicados al guardar: {(b.duplicates_at_save ?? 0)}</span>}
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
