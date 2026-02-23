@@ -45,6 +45,8 @@ interface CVData {
     cloud: string
     specialties: string
   }
+  /** Orden y etiquetas de las secciones de skills; si falta, se usa el default. Permite eliminar o renombrar. */
+  skillCategories?: Array<{ key: string; label: string }>
   certifications: Array<{
     title: string
     institution: string
@@ -420,6 +422,15 @@ function parseCVFromOpenAI(cvText: string, userProfile?: UserProfile | null): CV
     }
   }
 
+  const skillCategories: CVData['skillCategories'] = [
+    { key: 'frontend', label: 'Frontend' },
+    { key: 'backend', label: 'Backend' },
+    { key: 'languages', label: 'Languages' },
+    { key: 'databases', label: 'Databases' },
+    { key: 'cloud', label: 'Cloud' },
+    { key: 'specialties', label: 'Specialties' },
+  ];
+
   return {
     header,
     profile,
@@ -427,10 +438,20 @@ function parseCVFromOpenAI(cvText: string, userProfile?: UserProfile | null): CV
     strengths,
     experience,
     skills,
+    skillCategories,
     certifications,
     education,
   };
 }
+
+const DEFAULT_SKILL_CATEGORIES: Array<{ key: string; label: string }> = [
+  { key: 'frontend', label: 'Frontend' },
+  { key: 'backend', label: 'Backend' },
+  { key: 'languages', label: 'Languages' },
+  { key: 'databases', label: 'Databases' },
+  { key: 'cloud', label: 'Cloud' },
+  { key: 'specialties', label: 'Specialties' },
+]
 
 // Función simple para detectar el idioma del CV basándose en palabras comunes
 function detectLanguage(cvText: string): "es" | "en" {
@@ -451,6 +472,32 @@ function detectLanguage(cvText: string): "es" | "en" {
   
   // Si hay más palabras en español, es español, sino inglés
   return spanishCount > englishCount ? "es" : "en";
+}
+
+/** Si la URL no tiene protocolo (ej. linkedin.com/in/xxx), añade https:// para que el enlace funcione. */
+function normalizeLinkedInUrl(url: string): string {
+  const t = (url || "").trim();
+  if (!t) return "";
+  if (t.startsWith("http://") || t.startsWith("https://")) return t;
+  return "https://" + t.replace(/^\/+/, "");
+}
+
+/** Obtiene en mm la posición del texto del email y del link LinkedIn respecto al contenedor (para enlaces quirúrgicos en el PDF). */
+function getPdfLinkBounds(container: HTMLElement): { email: { x: number; y: number; w: number; h: number } | null; linkedin: { x: number; y: number; w: number; h: number } | null } {
+  const containerRect = container.getBoundingClientRect();
+  const scale = 210 / containerRect.width; // ancho A4 en mm
+  const toMm = (left: number, top: number, width: number, height: number) => ({
+    x: (left - containerRect.left) * scale,
+    y: (top - containerRect.top) * scale,
+    w: width * scale,
+    h: height * scale,
+  });
+  const emailEl = container.querySelector("[data-pdf-link=\"email\"]");
+  const linkedinEl = container.querySelector("[data-pdf-link=\"linkedin\"]");
+  return {
+    email: emailEl ? (() => { const r = emailEl.getBoundingClientRect(); return toMm(r.left, r.top, r.width, r.height); })() : null,
+    linkedin: linkedinEl ? (() => { const r = linkedinEl.getBoundingClientRect(); return toMm(r.left, r.top, r.width, r.height); })() : null,
+  };
 }
 
 export default function EditCvPage() {
@@ -512,6 +559,7 @@ export default function EditCvPage() {
               cloud: '',
               specialties: '',
             },
+            skillCategories: undefined,
             certifications: [],
             education: [],
           });
@@ -539,6 +587,7 @@ export default function EditCvPage() {
             cloud: '',
             specialties: '',
           },
+          skillCategories: undefined,
           certifications: [],
           education: [],
         });
@@ -562,18 +611,18 @@ export default function EditCvPage() {
     if (!cvData || !cvContainerRef.current) return;
 
     try {
-      // Importar dinámicamente las librerías
       const html2canvas = (await import('html2canvas')).default;
       const { jsPDF } = await import('jspdf');
+      const container = cvContainerRef.current;
 
-      // Ocultar el botón "Guardar en Perfil" antes de capturar
-      const saveButtonContainer = cvContainerRef.current.querySelector(`.${styles.saveButtonContainer}`);
+      const linkBounds = getPdfLinkBounds(container);
+
+      const saveButtonContainer = container.querySelector(`.${styles.saveButtonContainer}`);
       if (saveButtonContainer) {
         saveButtonContainer.classList.add(styles.hidden);
       }
 
-      // Capturar el CV como imagen
-      const canvas = await html2canvas(cvContainerRef.current, {
+      const canvas = await html2canvas(container, {
         scale: 2,
         useCORS: true,
         logging: false,
@@ -602,8 +651,18 @@ export default function EditCvPage() {
       
       // Agregar la primera página
       pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-      
-      // Agregar páginas adicionales solo si hay contenido significativo
+      try {
+        if (linkBounds.email && (cvData.header.email || "").trim()) {
+          pdf.link(linkBounds.email.x, linkBounds.email.y, linkBounds.email.w, linkBounds.email.h, { url: `mailto:${(cvData.header.email || "").trim()}` });
+        }
+        if (linkBounds.linkedin) {
+          const linkUrl = normalizeLinkedInUrl(cvData.header.linkedin || "");
+          if (linkUrl) {
+            pdf.link(linkBounds.linkedin.x, linkBounds.linkedin.y, linkBounds.linkedin.w, linkBounds.linkedin.h, { url: linkUrl });
+          }
+        }
+      } catch (_) {}
+
       for (let i = 1; i < totalPages; i++) {
         const yPosition = -(i * pageHeight);
         // Solo agregar página si hay al menos 20mm de contenido visible
@@ -633,18 +692,18 @@ export default function EditCvPage() {
     setIsSaving(true);
 
     try {
-      // Importar dinámicamente las librerías
       const html2canvas = (await import('html2canvas')).default;
       const { jsPDF } = await import('jspdf');
+      const container = cvContainerRef.current;
 
-      // Ocultar el botón "Guardar en Perfil" antes de capturar
-      const saveButtonContainer = cvContainerRef.current.querySelector(`.${styles.saveButtonContainer}`);
+      const linkBounds = getPdfLinkBounds(container);
+
+      const saveButtonContainer = container.querySelector(`.${styles.saveButtonContainer}`);
       if (saveButtonContainer) {
         saveButtonContainer.classList.add(styles.hidden);
       }
 
-      // Capturar el CV como imagen
-      const canvas = await html2canvas(cvContainerRef.current, {
+      const canvas = await html2canvas(container, {
         scale: 2,
         useCORS: true,
         logging: false,
@@ -673,7 +732,18 @@ export default function EditCvPage() {
       
       // Agregar la primera página
       pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-      
+      try {
+        if (linkBounds.email && (cvData.header.email || "").trim()) {
+          pdf.link(linkBounds.email.x, linkBounds.email.y, linkBounds.email.w, linkBounds.email.h, { url: `mailto:${(cvData.header.email || "").trim()}` });
+        }
+        if (linkBounds.linkedin) {
+          const linkUrlSave = normalizeLinkedInUrl(cvData.header.linkedin || "");
+          if (linkUrlSave) {
+            pdf.link(linkBounds.linkedin.x, linkBounds.linkedin.y, linkBounds.linkedin.w, linkBounds.linkedin.h, { url: linkUrlSave });
+          }
+        }
+      } catch (_) {}
+
       // Agregar páginas adicionales solo si hay contenido significativo
       for (let i = 1; i < totalPages; i++) {
         const yPosition = -(i * pageHeight);
@@ -944,8 +1014,8 @@ export default function EditCvPage() {
                 <>
                   <span>{cvData.header.location}</span>
                   <span>{cvData.header.phone}</span>
-                  <span>{cvData.header.email}</span>
-                  <a href={cvData.header.linkedin} target="_blank" rel="noopener noreferrer">
+                  <span data-pdf-link="email">{cvData.header.email}</span>
+                  <a href={normalizeLinkedInUrl(cvData.header.linkedin)} target="_blank" rel="noopener noreferrer" data-pdf-link="linkedin">
                     {cvData.header.linkedin}
                   </a>
                 </>
@@ -1070,33 +1140,52 @@ export default function EditCvPage() {
           <section className={styles.section}>
             <h2 className={styles.sectionTitle}>SKILLS</h2>
             <div className={styles.skillsGrid}>
-              {Object.entries(cvData.skills).map(([category, value]) => {
-                // Capitalizar correctamente los nombres de las categorías
-                const categoryLabels: Record<string, string> = {
-                  frontend: 'Frontend',
-                  backend: 'Backend',
-                  languages: 'Languages',
-                  databases: 'Databases',
-                  cloud: 'Cloud',
-                  specialties: 'Specialties',
-                };
-                const categoryLabel = categoryLabels[category] || category.charAt(0).toUpperCase() + category.slice(1);
-                
+              {(cvData.skillCategories ?? DEFAULT_SKILL_CATEGORIES).map(({ key: category, label }) => {
+                const value = (cvData.skills as Record<string, string>)[category] ?? '';
                 return (
                   <div key={category} className={styles.skillCategory}>
-                    <strong className={styles.skillLabel}>{categoryLabel}:</strong>
                     {isEditing ? (
-                      <input
-                        type="text"
-                        value={value || ''}
-                        onChange={(e) => updateField(`skills.${category}`, e.target.value)}
-                        className={styles.skillInput}
-                      />
+                      <>
+                        <input
+                          type="text"
+                          value={label}
+                          onChange={(e) => {
+                            const newLabels = (cvData.skillCategories ?? DEFAULT_SKILL_CATEGORIES).map((c) =>
+                              c.key === category ? { ...c, label: e.target.value } : c
+                            )
+                            setCvData({ ...cvData, skillCategories: newLabels })
+                          }}
+                          className={styles.skillLabelInput}
+                          placeholder="Nombre de sección"
+                        />
+                        <span className={styles.skillLabelColon}>:</span>
+                        <input
+                          type="text"
+                          value={value}
+                          onChange={(e) => updateField(`skills.${category}`, e.target.value)}
+                          className={styles.skillInput}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const next = (cvData.skillCategories ?? DEFAULT_SKILL_CATEGORIES).filter((c) => c.key !== category)
+                            setCvData({ ...cvData, skillCategories: next.length ? next : undefined })
+                          }}
+                          className={styles.deleteCertButton}
+                          aria-label="Eliminar sección"
+                          title="Eliminar esta sección de skills"
+                        >
+                          <FiTrash2 />
+                        </button>
+                      </>
                     ) : (
-                      <span className={styles.skillValue}>{value || ''}</span>
+                      <>
+                        <strong className={styles.skillLabel}>{label}:</strong>
+                        <span className={styles.skillValue}>{value || ''}</span>
+                      </>
                     )}
                   </div>
-                );
+                )
               })}
             </div>
           </section>
@@ -1130,7 +1219,8 @@ export default function EditCvPage() {
             </section>
           )}
 
-          {/* CERTIFICACIONES */}
+          {/* CERTIFICACIONES — solo se muestra si hay al menos una */}
+          {cvData.certifications.length > 0 && (
           <section className={styles.section}>
             <h2 className={styles.sectionTitle}>CERTIFICACIONES</h2>
             <ul className={styles.certificationList}>
@@ -1193,49 +1283,76 @@ export default function EditCvPage() {
               ))}
             </ul>
           </section>
+          )}
 
-          {/* EDUCACIÓN */}
+          {/* EDUCACIÓN — solo se muestra si hay al menos un ítem; en edición se puede eliminar la sección */}
+          {cvData.education.length > 0 && (
           <section className={styles.section}>
-            <h2 className={styles.sectionTitle}>EDUCACIÓN</h2>
+            <div className={styles.sectionTitleRow}>
+              <h2 className={styles.sectionTitle}>EDUCACIÓN</h2>
+              {isEditing && (
+                <button
+                  type="button"
+                  onClick={() => setCvData({ ...cvData, education: [] })}
+                  className={styles.removeSectionButton}
+                  title="Eliminar toda la sección Educación"
+                >
+                  <FiTrash2 /> Eliminar sección
+                </button>
+              )}
+            </div>
             {cvData.education.map((edu, index) => (
               <div key={index} className={styles.educationItem}>
                 {isEditing ? (
-                  <>
-                    <input
-                      type="text"
-                      value={edu.degree}
-                      onChange={(e) => {
-                        const newEdu = [...cvData.education]
-                        newEdu[index].degree = e.target.value
-                        setCvData({ ...cvData, education: newEdu })
-                      }}
-                      className={styles.degreeInput}
-                    />
-                    <input
-                      type="text"
-                      value={`${edu.institution} — ${edu.dates}`}
-                      onChange={(e) => {
-                        const [inst, dates] = e.target.value.split(" — ")
-                        const newEdu = [...cvData.education]
-                        newEdu[index].institution = inst
-                        newEdu[index].dates = dates || ""
-                        setCvData({ ...cvData, education: newEdu })
-                      }}
-                      className={styles.eduDetailsInput}
-                    />
-                    {edu.description && (
-                      <textarea
-                        value={edu.description}
+                  <div className={styles.educationInputsRow}>
+                    <div className={styles.educationInputs}>
+                      <input
+                        type="text"
+                        value={edu.degree}
                         onChange={(e) => {
                           const newEdu = [...cvData.education]
-                          newEdu[index].description = e.target.value
+                          newEdu[index].degree = e.target.value
                           setCvData({ ...cvData, education: newEdu })
                         }}
-                        className={styles.eduDescTextarea}
-                        rows={2}
+                        className={styles.degreeInput}
                       />
-                    )}
-                  </>
+                      <input
+                        type="text"
+                        value={`${edu.institution} — ${edu.dates}`}
+                        onChange={(e) => {
+                          const [inst, dates] = e.target.value.split(" — ")
+                          const newEdu = [...cvData.education]
+                          newEdu[index].institution = inst ?? ''
+                          newEdu[index].dates = dates ?? ""
+                          setCvData({ ...cvData, education: newEdu })
+                        }}
+                        className={styles.eduDetailsInput}
+                      />
+                      {edu.description && (
+                        <textarea
+                          value={edu.description}
+                          onChange={(e) => {
+                            const newEdu = [...cvData.education]
+                            newEdu[index].description = e.target.value
+                            setCvData({ ...cvData, education: newEdu })
+                          }}
+                          className={styles.eduDescTextarea}
+                          rows={2}
+                        />
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newEdu = cvData.education.filter((_, i) => i !== index)
+                        setCvData({ ...cvData, education: newEdu })
+                      }}
+                      className={styles.deleteCertButton}
+                      aria-label="Eliminar educación"
+                    >
+                      <FiTrash2 />
+                    </button>
+                  </div>
                 ) : (
                   <>
                     <h3 className={styles.degree}>{edu.degree}</h3>
@@ -1248,6 +1365,7 @@ export default function EditCvPage() {
               </div>
             ))}
           </section>
+          )}
         </div>
       </div>
     </div>

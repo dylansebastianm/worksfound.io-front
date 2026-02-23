@@ -92,7 +92,9 @@
 /* HEADER */
 .header {
   margin-bottom: 20px;
-  border-bottom: 2px solid #000;
+  /* box-shadow para evitar que la línea se dibuje mal al exportar PDF */
+  border-bottom: none;
+  box-shadow: 0 2px 0 0 #000;
   padding-bottom: 12px;
 }
 
@@ -155,11 +157,14 @@
   font-size: 10pt;
 }
 
-/* SECTIONS */
+/* SECTIONS — evitar que se corten por la división de página (imprimir / Guardar como PDF) */
 .section {
   margin-bottom: 18px;
   break-inside: avoid;
   page-break-inside: avoid;
+  /* No empezar una sección al final de la página (evitar título huérfano) */
+  break-before: avoid;
+  page-break-before: avoid;
   orphans: 3;
   widows: 3;
 }
@@ -170,8 +175,49 @@
   text-transform: uppercase;
   margin: 0 0 10px 0;
   padding-bottom: 4px;
-  border-bottom: 1px solid #000;
+  /* box-shadow en lugar de border-bottom para que la línea no se desplace al exportar PDF */
+  border-bottom: none;
+  box-shadow: 0 1px 0 0 #000;
   color: #000;
+  /* Mantener título y contenido de la sección juntos; no cortar entre ellos */
+  break-after: avoid;
+  page-break-after: avoid;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.sectionTitleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.sectionTitleRow .sectionTitle {
+  margin: 0;
+  padding-bottom: 4px;
+}
+
+.removeSectionButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 11pt;
+  background: #fee;
+  border: 1px solid #fcc;
+  border-radius: var(--radius-sm);
+  color: #c33;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.removeSectionButton:hover {
+  background: #fcc;
+  border-color: #f99;
+  color: #a00;
 }
 
 /* PROFILE */
@@ -296,11 +342,29 @@
 .skillCategory {
   display: flex;
   gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
 .skillLabel {
   font-weight: 700;
   min-width: 140px;
+  color: #000;
+}
+
+.skillLabelInput {
+  min-width: 100px;
+  max-width: 160px;
+  border: 1px solid var(--border);
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 11pt;
+  font-weight: 600;
+}
+
+.skillLabelColon {
+  flex-shrink: 0;
+  font-weight: 700;
   color: #000;
 }
 
@@ -325,6 +389,8 @@
 
 .certificationItem {
   margin-bottom: 6px;
+  break-inside: avoid;
+  page-break-inside: avoid;
 }
 
 .certificationInputs {
@@ -385,6 +451,21 @@
 /* EDUCATION */
 .educationItem {
   margin-bottom: 10px;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.educationInputsRow {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.educationInputs {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .degree,
@@ -462,8 +543,14 @@
 
   .section {
     page-break-inside: avoid;
+    page-break-before: avoid;
     orphans: 3;
     widows: 3;
+  }
+
+  .sectionTitle {
+    page-break-after: avoid;
+    page-break-inside: avoid;
   }
 
   .experienceItem {
@@ -472,7 +559,19 @@
     widows: 2;
   }
 
+  .bulletList {
+    page-break-inside: avoid;
+  }
+
   .bulletItem {
+    page-break-inside: avoid;
+  }
+
+  .educationItem {
+    page-break-inside: avoid;
+  }
+
+  .certificationItem {
     page-break-inside: avoid;
   }
 }

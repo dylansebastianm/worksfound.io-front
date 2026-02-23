@@ -39,6 +39,10 @@
   margin-bottom: var(--spacing-sm);
 }
 
+.puestoOtroInput {
+  margin-top: var(--spacing-md);
+}
+
 .hint {
   font-size: 13px;
   color: var(--text-secondary);

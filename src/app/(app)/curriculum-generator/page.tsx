@@ -18,11 +18,14 @@ export default function CurriculumGeneratorPage() {
   const router = useRouter()
   const [sector, setSector] = useState("IT")
   const [puesto, setPuesto] = useState("")
+  const [puestoOtro, setPuestoOtro] = useState("")
   const [cvFile, setCvFile] = useState<File | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
   const [currentStep, setCurrentStep] = useState(0)
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  const puestoFinal = puesto === "Otro" ? puestoOtro.trim() : puesto
 
   // Cargar perfil del usuario al montar el componente
   useEffect(() => {
@@ -39,7 +42,7 @@ export default function CurriculumGeneratorPage() {
     "Leyendo tu CV actual",
     "Mejorando redacción",
     "Aplicando ATS optimizaciones",
-    `Personalizando para el puesto ${puesto || "objetivo"}`,
+    `Personalizando para el puesto ${puestoFinal || "objetivo"}`,
   ]
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -58,7 +61,7 @@ export default function CurriculumGeneratorPage() {
   }
 
   const handleGenerate = async () => {
-    if (!puesto || !cvFile) {
+    if (!puestoFinal || !cvFile) {
       alert("Por favor, completa el puesto y sube tu CV")
       return
     }
@@ -84,7 +87,7 @@ export default function CurriculumGeneratorPage() {
       // Llamar a OpenAI
       const result = await generateCVWithOpenAI({
         cvFile,
-        jobTitle: puesto,
+        jobTitle: puestoFinal,
         userProfile: {
           name: userProfile.name,
           lastName: userProfile.lastName,
@@ -170,11 +173,22 @@ export default function CurriculumGeneratorPage() {
               { value: "Frontend Developer", label: "Frontend Developer" },
               { value: "Backend Developer", label: "Backend Developer" },
               { value: "Full Stack Developer", label: "Full Stack Developer" },
+              { value: "Otro", label: "Otro" },
             ]}
             value={puesto}
             onChange={(value: string) => setPuesto(value)}
             placeholder="Selecciona un puesto"
           />
+          {puesto === "Otro" && (
+            <Input
+              label="Indica el puesto"
+              value={puestoOtro}
+              onChange={(e) => setPuestoOtro(e.target.value)}
+              placeholder="Ej: Product Manager, Data Analyst..."
+              fullWidth
+              className={styles.puestoOtroInput}
+            />
+          )}
           <p className={styles.hint}>Se destacará tu experiencia acorde al rol que deseas</p>
         </div>
 
@@ -207,7 +221,7 @@ export default function CurriculumGeneratorPage() {
           )}
         </div>
 
-        <Button onClick={handleGenerate} disabled={!puesto || !cvFile || !userProfile || isGenerating}>
+        <Button onClick={handleGenerate} disabled={!puestoFinal || !cvFile || !userProfile || isGenerating}>
           <FiFileText />
           Generar CV Optimizado
         </Button>
