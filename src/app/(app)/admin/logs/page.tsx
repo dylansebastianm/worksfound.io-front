@@ -1,11 +1,11 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from "react"
-import { FiClock, FiCheckCircle, FiXCircle, FiAlertCircle, FiExternalLink, FiX, FiEye } from "react-icons/fi"
+import { FiClock, FiCheckCircle, FiXCircle, FiAlertCircle, FiExternalLink, FiX, FiEye, FiStopCircle } from "react-icons/fi"
 import { LoadingSpinner } from "@/components/UI/LoadingSpinner/LoadingSpinner"
 import { Alert } from "@/components/UI/Alert/Alert"
 import { Select } from "@/components/UI/Select/Select"
-import { getIngestionsSummary, getIngestionCountryDetail, getIngestionDetailByLog, type IngestionSummaryRow, type IngestionCountryDetailResponse } from "@/lib/ingestion"
+import { getIngestionsSummary, getIngestionCountryDetail, getIngestionDetailByLog, cancelIngestionRunCountry, type IngestionSummaryRow, type IngestionCountryDetailResponse } from "@/lib/ingestion"
 import styles from "./logs.module.css"
 
 export default function AdminLoggingsPage() {
@@ -19,6 +19,7 @@ export default function AdminLoggingsPage() {
     loading: false,
     detail: null,
   })
+  const [cancelingKey, setCancelingKey] = useState<string | null>(null)
   const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const loadSummary = useCallback(
@@ -126,6 +127,39 @@ export default function AdminLoggingsPage() {
     setDetailModal({ open: false, row: null, loading: false, detail: null })
   }, [])
 
+  const handleCancelRunCountry = useCallback(
+    async (row: IngestionSummaryRow) => {
+      const key = `${row.execution_id}-${row.country}`
+      const runLabel = row.ingestion_log_id != null ? `run #${row.ingestion_log_id}` : "esta ejecución"
+      if (
+        !window.confirm(
+          `¿Dar por cancelado el scraping de ${row.country} (${runLabel})? Así se libera para siguientes ejecuciones.`
+        )
+      ) {
+        return
+      }
+      setCancelingKey(key)
+      try {
+        const res = await cancelIngestionRunCountry(
+          row.execution_id,
+          row.country,
+          row.ingestion_log_id ?? undefined
+        )
+        if (res.success) {
+          setAlert({ status: "success", message: res.message || "Cancelado correctamente." })
+          await loadSummary(true)
+        } else {
+          setAlert({ status: "error", message: res.error || "Error al cancelar." })
+        }
+      } catch (e) {
+        setAlert({ status: "error", message: "Error al cancelar." })
+      } finally {
+        setCancelingKey(null)
+      }
+    },
+    [loadSummary]
+  )
+
   return (
     <div className={styles.container}>
       {isLoading && <LoadingSpinner />}
@@ -229,14 +263,33 @@ export default function AdminLoggingsPage() {
               </div>
 
               <div className={styles.columnScreen}>
-                <button
-                  type="button"
-                  className={styles.detailLinkButton}
-                  onClick={() => openDetailModal(row)}
-                  title="Ver batches"
-                >
-                  Ver <FiEye size={16} />
-                </button>
+                <div className={styles.actionsCell}>
+                  <button
+                    type="button"
+                    className={styles.detailLinkButton}
+                    onClick={() => openDetailModal(row)}
+                    title="Ver batches"
+                  >
+                    Ver <FiEye size={16} />
+                  </button>
+                  {row.status === "En Progreso" && (
+                    <button
+                      type="button"
+                      className={styles.cancelActionButton}
+                      onClick={() => handleCancelRunCountry(row)}
+                      disabled={cancelingKey === `${row.execution_id}-${row.country}`}
+                      title="Dar por cancelado este run/país (liberar para siguientes ejecuciones)"
+                    >
+                      {cancelingKey === `${row.execution_id}-${row.country}` ? (
+                        "Cancelando…"
+                      ) : (
+                        <>
+                          Cancelar <FiStopCircle size={16} />
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
             ))

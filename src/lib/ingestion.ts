@@ -457,3 +457,42 @@ export async function getIngestionDetailByLog(
   }
 }
 
+/**
+ * Marca como cancelado el scraping de un run+país (p. ej. proceso muerto y quedó en "En Progreso").
+ * Libera los batches para siguientes ejecuciones.
+ */
+export async function cancelIngestionRunCountry(
+  executionId: string,
+  country: string,
+  ingestionLogId?: number | null
+): Promise<{ success: boolean; message?: string; error?: string; updated_batches?: number }> {
+  try {
+    const response = await fetch(`${API_URL}/api/ingestions/cancel-run-country`, {
+      method: "POST",
+      headers: {
+        ...getAuthHeaders(),
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        execution_id: executionId,
+        country,
+        ...(ingestionLogId != null ? { ingestion_log_id: ingestionLogId } : {}),
+      }),
+    })
+
+    if (response.status === 401) return { success: false, error: "Token inválido o expirado. Por favor, inicia sesión nuevamente." }
+    if (response.status === 403) return { success: false, error: "Acceso denegado: Se requieren permisos de administrador." }
+
+    const data = await response.json()
+    if (!response.ok) return { success: false, error: (data as { error?: string }).error || "Error al cancelar." }
+    return {
+      success: true,
+      message: (data as { message?: string }).message,
+      updated_batches: (data as { updated_batches?: number }).updated_batches,
+    }
+  } catch (error) {
+    console.error("Error cancelando run/país:", error)
+    return { success: false, error: "Error conectando con el servidor" }
+  }
+}
+
