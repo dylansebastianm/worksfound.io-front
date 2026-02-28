@@ -21,7 +21,7 @@ import {
 import { SiIndeed, SiGlassdoor } from "react-icons/si"
 import { FcGoogle } from "react-icons/fc"
 import IngestionConfigModal, { type IngestionConfig } from "@/components/UI/IngestionConfigModal/IngestionConfigModal"
-import { getIngestionConfig, updateIngestionConfig } from "@/lib/ingestion"
+import { getIngestionConfig, updateIngestionConfig, getIngestionsSummary } from "@/lib/ingestion"
 import { scrapeJobs, getScrapeStatus, cancelScrapeJobs } from "@/lib/jobs"
 import { LoadingSpinner } from "@/components/UI/LoadingSpinner/LoadingSpinner"
 import DistributionCard from "@/components/UI/DistributionCard/DistributionCard"
@@ -109,25 +109,49 @@ export default function AdminDashboardPage() {
         }
       }
 
+      const stopIngestingUI = () => {
+        if (ingestPollRef.current) {
+          clearInterval(ingestPollRef.current)
+          ingestPollRef.current = null
+        }
+        ingestStartTimeRef.current = null
+        if (typeof window !== "undefined") {
+          sessionStorage.removeItem("ingesting_state")
+          sessionStorage.removeItem("ingest_start_ts")
+        }
+        setIsIngesting(false)
+        loadAdminStats()
+      }
+
       const pollStatus = async () => {
         if (!currentUser?.id) return
         const statusRes = await getScrapeStatus(currentUser.id)
         if (statusRes.success && statusRes.is_running === false) {
-          if (ingestPollRef.current) {
-            clearInterval(ingestPollRef.current)
-            ingestPollRef.current = null
-          }
-          ingestStartTimeRef.current = null
-          if (typeof window !== "undefined") {
-            sessionStorage.removeItem("ingesting_state")
-            sessionStorage.removeItem("ingest_start_ts")
-          }
-          setIsIngesting(false)
-          loadAdminStats()
+          stopIngestingUI()
           setAlert({
             status: "success",
             message: "Ingesta finalizada. Revisa Logs de ingesta para el resultado.",
           })
+          return
+        }
+        // Si el backend sigue diciendo "en curso" pero no hay ningún batch En Progreso
+        // (p. ej. worker murió con error de Playwright), dejar de mostrar "Realizando ingesta"
+        if (statusRes.success && statusRes.is_running === true) {
+          try {
+            const summaryRes = await getIngestionsSummary()
+            if (summaryRes.success && summaryRes.rows && summaryRes.rows.length > 0) {
+              const anyInProgress = summaryRes.rows.some((r) => r.status === "En Progreso")
+              if (!anyInProgress) {
+                stopIngestingUI()
+                setAlert({
+                  status: "warning",
+                  message: "La ingesta terminó (con fallos o sin más trabajo). Revisa Logs de ingesta.",
+                })
+              }
+            }
+          } catch {
+            // ignorar errores del summary; seguir confiando en scrape/status
+          }
         }
       }
 

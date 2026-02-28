@@ -13,6 +13,7 @@ export default function AdminLoggingsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [alert, setAlert] = useState<{ status: "success" | "error"; message: string } | null>(null)
   const [selectedStatus, setSelectedStatus] = useState<"all" | "En Progreso" | "Finalizado" | "Fallido" | "Cancelado">("all")
+  const [selectedDateRange, setSelectedDateRange] = useState<"all" | "today" | "last7" | "last30">("all")
   const [detailModal, setDetailModal] = useState<{ open: boolean; row: IngestionSummaryRow | null; loading: boolean; detail: IngestionCountryDetailResponse | null }>({
     open: false,
     row: null,
@@ -22,13 +23,31 @@ export default function AdminLoggingsPage() {
   const [cancelingKey, setCancelingKey] = useState<string | null>(null)
   const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
+  const filterRowsByDateRange = useCallback((rows: IngestionSummaryRow[], range: "all" | "today" | "last7" | "last30") => {
+    if (range === "all") return rows
+    const now = new Date()
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0)
+    const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000 - 1)
+    const cutoff7 = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+    const cutoff30 = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+    return rows.filter((r) => {
+      if (!r.start_date) return false
+      const d = new Date(r.start_date.replace(" ", "T"))
+      if (range === "today") return d >= todayStart && d <= todayEnd
+      if (range === "last7") return d >= cutoff7
+      if (range === "last30") return d >= cutoff30
+      return true
+    })
+  }, [])
+
   const loadSummary = useCallback(
     async (silent = false) => {
       if (!silent) setIsLoading(true)
       try {
         const res = await getIngestionsSummary()
         if (res.success && res.rows) {
-          const filtered = selectedStatus === "all" ? res.rows : res.rows.filter((r) => r.status === selectedStatus)
+          let filtered = selectedStatus === "all" ? res.rows : res.rows.filter((r) => r.status === selectedStatus)
+          filtered = filterRowsByDateRange(filtered, selectedDateRange)
           setRows(filtered)
         } else {
           setAlert({
@@ -46,13 +65,13 @@ export default function AdminLoggingsPage() {
         if (!silent) setIsLoading(false)
       }
     },
-    [selectedStatus]
+    [selectedStatus, selectedDateRange, filterRowsByDateRange]
   )
 
   // Carga inicial y al cambiar filtros/estado
   useEffect(() => {
     loadSummary()
-  }, [loadSummary, selectedStatus])
+  }, [loadSummary])
 
   // Polling cada 1 minuto para actualizar ingestas
   useEffect(() => {
@@ -69,6 +88,10 @@ export default function AdminLoggingsPage() {
 
   const handleStatusChange = (status: string) => {
     setSelectedStatus(status as typeof selectedStatus)
+  }
+
+  const handleDateRangeChange = (range: string) => {
+    setSelectedDateRange(range as typeof selectedDateRange)
   }
 
   const getStatusClass = (status: string) => {
@@ -185,10 +208,23 @@ export default function AdminLoggingsPage() {
             placeholder="Selecciona un estado"
           />
 
+          <Select
+            options={[
+              { value: "all", label: "Todo el período" },
+              { value: "today", label: "Hoy" },
+              { value: "last7", label: "Últimos 7 días" },
+              { value: "last30", label: "Último mes" },
+            ]}
+            value={selectedDateRange}
+            onChange={(value: string) => handleDateRangeChange(value)}
+            placeholder="Rango de fechas"
+          />
+
           <button
             className={styles.clearButton}
             onClick={() => {
               handleStatusChange("all")
+              handleDateRangeChange("all")
             }}
           >
             Limpiar filtros
